@@ -7,16 +7,15 @@ process Tidehunter{
         path fasta
 
     output:
-        path "${fasta.SimpleName}.consensus.fasta", emit: consensus
+        path "${fasta.SimpleName}_tide_consensus.fasta", emit: consensus
 
     script:
         """
-        TideHunter -t ${task.cpus} $fasta > ${fasta.SimpleName}.consensus.fasta
+        TideHunter -t ${task.cpus} $fasta > ${fasta.SimpleName}_tide_consensus.fasta
         """
 }
 
-process TidehunterPrimersFixedParams{
-    // tide_consensus_full_length in ConCall
+process TidehunterFullLength{
     publishDir "$baseDir/data/out/$workflow.runName/tidehunter"
     container 'tidehunter'
     
@@ -26,15 +25,34 @@ process TidehunterPrimersFixedParams{
         path prime_5
 
     output:
-        path "${fasta.SimpleName}.consensus.fasta", emit: consensus
+        path "${fasta.SimpleName}_tide_consensus_full_length.fasta", emit: consensus
 
     script:
         """
-        TideHunter -t ${task.cpus} -5 $prime_5 -3 $prime_3 -p 20 -a 0.60 > ${fasta.SimpleName}.consensus.fasta
+        TideHunter -t ${task.cpus} -p 20 -a 0.7 $fasta > ${fasta.SimpleName}_tide_consensus_full_length.fasta
         """
 }
 
+process TidehunterAggregate{
+    publishDir "$baseDir/data/out/$workflow.runName/tidehunter/agg"
+
+    input:
+        path fastas
+        path fastas_fl
+
+    output:
+        path "tide_consensus.fasta", emit: aggregate
+
+    script:
+    """
+    cat *_tide_consensus.fasta > tide_consensus.fasta
+    cat *_full_length.fasta> tide_consensus_full_length.fasta
+    """
+}
+
+
 process Tidehunter53{
+    // Parameterized, but unused right now
     publishDir "$baseDir/data/out/$workflow.runName/tidehunter"
     container 'tidehunter'
     
@@ -53,12 +71,13 @@ process Tidehunter53{
         """
 }
 
-process TideHunterTrimmmerFasta {
+process TideHunterTrimmmer {
     // Plug tidehunter fasta into this
     publishDir "$baseDir/data/out/$workflow.runName/tidehunter/trimmed"
 
     input:
-        path original_fasta
+        path fasta_full_length
+        path fasta_all
     
     output:
         path "${original_fasta.SimpleName}.full_length.fasta", emit: fasta_full_length 
@@ -68,23 +87,3 @@ process TideHunterTrimmmerFasta {
         sed 's/,.*//' $original_fasta > ${original_fasta.SimpleName}.full_length.fasta
         """
 }   
-
-process TideHunterTrimmmerPrimer {
-    // plug tidehunter primer into this
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter/trimmed"
-
-    input:
-        path consensus_fasta
-    
-    output:
-        path "${consensus_fasta.SimpleName}_consensus_full_length.fasta", emit: fasta_all 
-        path "${consensus_fasta.SimpleName}metadata.txt", emit: metadata_all 
-
-    script:
-        // # only export metadata from flexible parameter since it is the same if the pattern is found.
-        """
-        sed -n -e 's/^>//p' $consensus_fasta > ${consensus_fasta.SimpleName}metadata.txt
-        sed 's/,.*//' $consensus_fasta > ${consensus_fasta.SimpleName}_consensus_full_length.fasta
-        """
-}   
-
