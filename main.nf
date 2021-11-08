@@ -16,90 +16,171 @@ nextflow.enable.dsl = 2
 ========================================================================================
 */
 // ### PARAMETERS
-params.input_reads           = "/home/dami/data/raw_data/JAG6252/fastq_pass/FAO43712_pass_75edb72a_?.fastq"
+params.input_read_dir             = "/home/dami/data/raw_data/MAR6228/"
+params.read_pattern               = "fastq_pass/**.{fq,fastq}"
+params.sequencing_quality_summary = "sequencing_summary*.txt"
 
-params.backbone_locus        = "BB22"
-params.backbone_fasta        = "/home/dami/data/backbones/backbones/BB22.fa"
-params.backbone_prime_length = 40
+params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/"
+params.reference_indexes = 
 
-params.insert_target         = "TP53:1-27760"
-params.insert_target_genome  = "/home/dami/data/ref_genomes/hg_19/tp53/tp53_w_1000.fasta"
+params.qc                   = "simple"
+params.filtering            = "simple"
+params.repeat_split         = "simple"
+params.repeat_splitting     = "simple"
+params.consensus_calling    = "simple"
 
-params.full_reference_genome = "/home/dami/data/ref_genomes/hg_19/hg19.p13.plusMT.full_analysis_set.fa*"
-
-// params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
-// if (params.gtf) {
-//     Channel.fromPath(params.gtf)
-//            .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-//            .into { my_gtf_channel }
-// }
 /*
 ========================================================================================
     VALIDATE & PRINT PARAMETER SUMMARY
 ========================================================================================
 */
-indexed_ref = Channel.fromPath(params.full_reference_genome)
-// println indexed_ref.view()
-input_reads = Channel.fromPath(params.input_reads)
-// input_reads_count = input_reads.count().view( x -> "found $x read files")
-// input_reads.first().view()
 
-log.info """
-    ===================================================
-    Cyclomics/CycloSeq : Cyclomics consensus pipeline
-    ===================================================
-        input_reads : $params.input_reads
-        backbone_locus : $params.backbone_locus
-        backbone_fasta : $params.backbone_fasta
-        backbone_prime_length : $params.backbone_prime_length
-        insert_target : $params.insert_target
-        insert_target_genome : $params.insert_target_genome
-        full_reference_genome : $params.full_reference_genome
-        genome               : $params.genome
-        
-"""
 
-/*
-========================================================================================
-    NAMED WORKFLOW FOR PIPELINE
-========================================================================================
-*/
 
-//
-// WORKFLOW: Run main analysis pipeline
-//
 
+//  main channels with the input dir and the reads
+// read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
+// read_file_ch = Channel.fromPath(read_pattern, checkIfExists: true)
+
+// // qc file
+// qc_seq_file_ch = Channel.create()
+// Channel.fromPath(sequencing_quality_summary_pattern).into(qc_seq_file_ch)
 include {BwaIndex;
         BwaMemSorted
 } from "./modules/bwa.nf"
 
 include {
-    Extract5PrimeFasta;
-    Extract3PrimeFasta;
-} from "./modules/primes.nf"
+    QC_pycoqc;
+} from "./subworkflows/QC.nf"
 
 include {
-    Tidehunter;
-    TidehunterFullLength;
-    TidehunterAggregate;
-    Tidehunter53;
-    TideHunterTrimmmerFasta;
-    TideHunterTrimmmerPrimer;
-} from "./modules/tidehunter.nf"
+    FilteringBasic;
+} from "./subworkflows/filtering.nf"
+
+include {
+    TideHunterBasic;
+} from "./subworkflows/repeat_identifier.nf"
 
 
 workflow {
-    Extract3PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
-    Extract5PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
-    
-    Tidehunter(input_reads)
-    TidehunterFullLength(input_reads,
-        Extract3PrimeFasta.out,
-        Extract5PrimeFasta.out)
+    read_pattern = "${params.input_read_dir}${params.read_pattern}"
+    sequencing_quality_summary_pattern = "${params.input_read_dir}/${params.sequencing_quality_summary}"
 
-    TidehunterAggregate(Tidehunter.out,
-    TidehunterFullLength.out)
-    TideHunterTrimmmerPrimer(TidehunterAggregate.out)
+    read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
+    read_file_ch = Channel.fromPath(read_pattern, checkIfExists: true)
+
+    qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
+    
+    // form a pair for both .fa as well as .fasta ref genomes
+    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1)
+    // TODO: check for .amb,.ann,.bwt,.pac,.sa
+    // TODO: index when no index files present
+
+
+    println "Starting workflow"
+
+    /*
+    ========================================================================================
+    01.    Quality Control
+    ========================================================================================
+    */
+    if( params.qc == 'simple' )
+        qc_report = QC_pycoqc(qc_seq_file_ch)
+
+    else if( params.qc == 'skip' )
+        println "Skipping QC control"
+
+    else
+        error "Invalid qc selector: ${params.qc}"
+
+
+    /*
+    ========================================================================================
+    01.    Filtering
+    ========================================================================================
+    */ 
+    if( params.filtering == 'simple' )
+        repeats = FilteringBasic(read_file_ch.flatten())
+    else if( params.qc == 'skip' )
+        println "Skipping  Filtering"
+    else
+        error "Invalid repeat finder selector: ${params.filtering}"
+
+    // /*
+    // ========================================================================================
+    // 02.    repeat splitting
+    // ========================================================================================
+    // */ 
+    if( params.repeat_split == 'simple' )
+        repeats = TideHunterBasic(read_file_ch)
+    else if( params.repeat_split == 'skip' )
+        println "Skipping  Filtering"
+    else
+        error "Invalid repeat finder selector: ${params.repeat_split}"
+
+
+    reference_tmp = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1).first()
+
+    println "${read_file_ch.view()}"
+    println "${reference_tmp.view()}"
+    
+    BwaMemSorted(
+        read_file_ch,
+        reference_genome_indexed,
+    )
+
+    // if( params.repeat_splitting == 'simple' )
+    //     repeats = RepeatSplitBasic(input_reads, input_reads)
+    // else
+    //     error "Invalid repeat finder selector: ${params.repeat_splitting}"
+    // /*
+    // ========================================================================================
+    // 04.    Consensus calling Identification
+    // ========================================================================================
+    // */ 
+    // if( params.consensus_calling == 'simple' )
+    //     repeats = ConsensusBasic(input_reads, input_reads)
+    // else
+    //     error "Invalid repeat finder selector: ${params.consensus_calling}"
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Extract3PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
+    // Extract5PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
+
+    // Tidehunter(input_reads)
+    // TidehunterFullLength(input_reads,
+    //     Extract3PrimeFasta.out,
+    //     Extract5PrimeFasta.out)
+
+    // TidehunterAggregate(Tidehunter.out,
+    // TidehunterFullLength.out)
+    // TideHunterTrimmmerPrimer(TidehunterAggregate.out)
 
     // Tidehunter53(
     //     input_reads,
@@ -118,7 +199,7 @@ workflow {
 //         Tidehunter.out.consensus,
 //         indexed_ref,
 //     )
-}
+// }
 
 /*
 ========================================================================================

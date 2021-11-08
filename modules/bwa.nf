@@ -19,15 +19,16 @@ process BwaMemSorted{
     container 'mgibio/dna-alignment:1.0.0'
     
     input:
-        path fasta
-        path ref
+        each path(fasta)
+        tuple val(sampleId), file(reference)
 
     output:
         path "${fasta.simpleName}.bam"
         
     script:
+        // TODO: add a grep to find out if ref is fa or fasta
         """
-        bwa mem -M -t ${task.cpus} -c 100 $ref $fasta | \
+        bwa mem -M -t ${task.cpus} -c 100 ${sampleId}.fa $fasta | \
         sambamba view -S -f bam /dev/stdin | \
         sambamba sort -t ${task.cpus} /dev/stdin -o "${fasta.simpleName}.bam"
         """
