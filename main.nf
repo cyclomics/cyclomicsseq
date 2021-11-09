@@ -99,12 +99,12 @@ workflow {
     01.    Filtering
     ========================================================================================
     */ 
-    if( params.filtering == 'simple' )
-        repeats = FilteringBasic(read_file_ch.flatten())
-    else if( params.qc == 'skip' )
-        println "Skipping  Filtering"
-    else
-        error "Invalid repeat finder selector: ${params.filtering}"
+    // if( params.filtering == 'simple' )
+    //     repeats = FilteringBasic(read_file_ch.flatten())
+    // else if( params.qc == 'skip' )
+    //     println "Skipping  Filtering"
+    // else
+    //     error "Invalid repeat finder selector: ${params.filtering}"
 
     // /*
     // ========================================================================================
@@ -112,22 +112,22 @@ workflow {
     // ========================================================================================
     // */ 
     if( params.repeat_split == 'simple' )
-        repeats = TideHunterBasic(read_file_ch)
+        repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
     else if( params.repeat_split == 'skip' )
         println "Skipping  Filtering"
     else
         error "Invalid repeat finder selector: ${params.repeat_split}"
 
 
-    reference_tmp = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1).first()
+    // reference_tmp = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1).first()
 
-    println "${read_file_ch.view()}"
-    println "${reference_tmp.view()}"
+    // println "${read_file_ch.view()}"
+    // println "${reference_tmp.view()}"
     
-    BwaMemSorted(
-        read_file_ch,
-        reference_genome_indexed,
-    )
+    // BwaMemSorted(
+    //     read_file_ch,
+    //     reference_genome_indexed,
+    // )
 
     // if( params.repeat_splitting == 'simple' )
     //     repeats = RepeatSplitBasic(input_reads, input_reads)
