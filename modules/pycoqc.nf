@@ -1,4 +1,6 @@
 
+nextflow.enable.dsl=2
+
 process PYCOQC {
     container "quay.io/biocontainers/pycoqc:2.5.2--py_0"
 

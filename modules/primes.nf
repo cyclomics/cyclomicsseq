@@ -1,4 +1,5 @@
 
+nextflow.enable.dsl=2
 
 
 // Steps to extract prime end of fastq files

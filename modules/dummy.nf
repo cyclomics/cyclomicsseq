@@ -24,3 +24,45 @@ process DummyProcess{
     echo dummy123 > file.txt
   """
 }
+
+process foo {
+    output:
+      path 'foo.txt'
+    script:
+      """
+      echo 'Defined in nf' >> foo.txt
+      """
+}
+
+ process bar {
+    input:
+      path x
+    output:
+      path 'bar.txt'
+    script:
+      """
+      cat $x > bar.txt
+      """
+}
+ process bara {
+    input:
+      path x
+    output:
+      path 'bara.txt'
+    script:
+      """
+      cat $x > bara.txt
+      """
+}
+
+ process baz {
+    input:
+      path x
+    output:
+      path 'baz.txt'
+    script:
+      """
+      cat $x >> baz.txt
+      echo bonus_baz >> baz.txt
+      """
+}

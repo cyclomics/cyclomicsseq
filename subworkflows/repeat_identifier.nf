@@ -1,14 +1,6 @@
 
 nextflow.enable.dsl=2
 
-include{
-    DummyProcess as Rotate
-} from "../modules/dummy.nf"
-
-// include {
-//     Rotate
-// } from "../modules/"
-
 include {
     BwaMemSorted
 } from "../modules/bwa.nf"
@@ -34,8 +26,6 @@ workflow  TideHunterBasic{
     take:
         read_fq_ch
         reference_genome
-    emit:
-        RotateByCigar
     main:
         Tidehunter(read_fq_ch)
         // collect (process in one go) all the tidehunter files
@@ -45,4 +35,6 @@ workflow  TideHunterBasic{
         SamtoolsIndex(BwaMemSorted.out)
         // we need indexed bams to rotate them
         RotateByCigar(SamtoolsIndex.out)
+    emit:
+        RotateByCigar.out
 }

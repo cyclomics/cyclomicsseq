@@ -1,3 +1,6 @@
+
+nextflow.enable.dsl=2
+
 process BwaIndex{
     publishDir "$baseDir/data/out/$workflow.runName/bwa/index"
     container 'biocontainers/bwa:v0.7.17_cv1'

@@ -1,3 +1,6 @@
+
+nextflow.enable.dsl=2
+
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
     publishDir "$baseDir/data/out/$workflow.runName/tidehunter"

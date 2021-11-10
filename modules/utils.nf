@@ -1,4 +1,6 @@
 
+nextflow.enable.dsl=2
+
 process TrimFasta {
     // sed call to remove all info after first comma in every line.
     // used to reduce the length of the readname in fasta files
