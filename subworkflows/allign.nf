@@ -2,15 +2,12 @@
 nextflow.enable.dsl=2
 
 
-include {DummyProcess as RepeatSplit;
-} from "../modules/dummy.nf"
-
 include {
-    
+    BwaMemSorted
 } from "../modules/bwa.nf"
 
 
-workflow RepeatSplitBasic{
+workflow AlignBWA{
     take:
         read_fq_ch
         reference_genome

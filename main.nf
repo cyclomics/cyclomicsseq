@@ -31,23 +31,9 @@ params.consensus_calling    = "simple"
 
 /*
 ========================================================================================
-    VALIDATE & PRINT PARAMETER SUMMARY
+    Reference subworkflows
 ========================================================================================
 */
-
-
-
-
-//  main channels with the input dir and the reads
-// read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
-// read_file_ch = Channel.fromPath(read_pattern, checkIfExists: true)
-
-// // qc file
-// qc_seq_file_ch = Channel.create()
-// Channel.fromPath(sequencing_quality_summary_pattern).into(qc_seq_file_ch)
-include {BwaIndex;
-        BwaMemSorted
-} from "./modules/bwa.nf"
 
 include {
     QC_pycoqc;
@@ -61,6 +47,9 @@ include {
     TideHunterBasic;
 } from "./subworkflows/repeat_identifier.nf"
 
+include {
+    AlignBWA as Align
+} from "./subworkflows/align.nf"
 
 workflow {
     read_pattern = "${params.input_read_dir}${params.read_pattern}"
@@ -81,7 +70,7 @@ workflow {
 
     /*
     ========================================================================================
-    01.    Quality Control
+    00.    Quality Control
     ========================================================================================
     */
     if( params.qc == 'simple' )
@@ -93,24 +82,11 @@ workflow {
     else
         error "Invalid qc selector: ${params.qc}"
 
-
     /*
     ========================================================================================
-    01.    Filtering
+    01.    repeat splitting
     ========================================================================================
     */ 
-    // if( params.filtering == 'simple' )
-    //     repeats = FilteringBasic(read_file_ch.flatten())
-    // else if( params.qc == 'skip' )
-    //     println "Skipping  Filtering"
-    // else
-    //     error "Invalid repeat finder selector: ${params.filtering}"
-
-    // /*
-    // ========================================================================================
-    // 02.    repeat splitting
-    // ========================================================================================
-    // */ 
     if( params.repeat_split == 'simple' )
         repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
     else if( params.repeat_split == 'skip' )
@@ -118,91 +94,24 @@ workflow {
     else
         error "Invalid repeat finder selector: ${params.repeat_split}"
 
+    /*
+    ========================================================================================
+    02.    Filtering
+    ========================================================================================
+    */ 
+    if( params.filtering == 'simple' )
+        println "Not implemented"
+        exit 1
+        filtered_reads = FilteringBasic(read_file_ch.flatten())
+    else if( params.qc == 'skip' )
+        filtered_reads = read_file_ch
+        println "Skipping  Filtering"
+    else
+        error "Invalid repeat finder selector: ${params.filtering}"
 
-    // reference_tmp = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1).first()
-
-    // println "${read_file_ch.view()}"
-    // println "${reference_tmp.view()}"
-    
-    // BwaMemSorted(
-    //     read_file_ch,
-    //     reference_genome_indexed,
-    // )
-
-    // if( params.repeat_splitting == 'simple' )
-    //     repeats = RepeatSplitBasic(input_reads, input_reads)
-    // else
-    //     error "Invalid repeat finder selector: ${params.repeat_splitting}"
-    // /*
-    // ========================================================================================
-    // 04.    Consensus calling Identification
-    // ========================================================================================
-    // */ 
-    // if( params.consensus_calling == 'simple' )
-    //     repeats = ConsensusBasic(input_reads, input_reads)
-    // else
-    //     error "Invalid repeat finder selector: ${params.consensus_calling}"
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // Extract3PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
-    // Extract5PrimeFasta(params.backbone_fasta, params.backbone_prime_length)
-
-    // Tidehunter(input_reads)
-    // TidehunterFullLength(input_reads,
-    //     Extract3PrimeFasta.out,
-    //     Extract5PrimeFasta.out)
-
-    // TidehunterAggregate(Tidehunter.out,
-    // TidehunterFullLength.out)
-    // TideHunterTrimmmerPrimer(TidehunterAggregate.out)
-
-    // Tidehunter53(
-    //     input_reads,
-    //     Extract3PrimeFasta.out,
-    //     Extract5PrimeFasta.out
-    // )
-//     Tidehunter(
-//         input_reads
-//     )
-
-//     // BwaIndex(
-//     //     input_reads_count
-//     // )
-// // align consensus to the expected target
-//     BwaMemSorted(
-//         Tidehunter.out.consensus,
-//         indexed_ref,
-//     )
-// }
-
-/*
-========================================================================================
-    THE END
-========================================================================================
-*/
+     /*
+    ========================================================================================
+    03.    Align
+    ========================================================================================
+    */ 
+    Align(filtered_reads)
