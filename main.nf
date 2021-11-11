@@ -72,7 +72,7 @@ workflow {
     qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
     
     // form a pair for both .fa as well as .fasta ref genomes
-    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1)
+    reference_genome_indexed = Channel.fromFilePairs("${params.reference}/genome.{fa,fasta}*", size: -1)
     // TODO: check for .amb,.ann,.bwt,.pac,.sa
     // TODO: index when no index files present
 

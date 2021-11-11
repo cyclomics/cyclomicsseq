@@ -12,11 +12,11 @@ process TrimFasta {
         each path(fasta)
 
     output:
-        path "trimmed.fasta"
+        path "*_trimmed.fasta"
 
     script:
         """
-        sed 's/,.*//' $fasta > trimmed.fasta
+        sed 's/,.*//' $fasta > ${fasta.SimpleName}_trimmed.fasta
         """
 }
 

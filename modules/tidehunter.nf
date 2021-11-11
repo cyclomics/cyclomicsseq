@@ -36,24 +36,6 @@ process TidehunterFullLength{
         """
 }
 
-process TidehunterAggregate{
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter/agg"
-
-    input:
-        path fastas
-        path fastas_fl
-
-    output:
-        path "tide_consensus.fasta", emit: aggregate
-
-    script:
-    """
-    cat *_tide_consensus.fasta > tide_consensus.fasta
-    cat *_full_length.fasta> tide_consensus_full_length.fasta
-    """
-}
-
-
 process Tidehunter53{
     // Parameterized, but unused right now
     publishDir "$baseDir/data/out/$workflow.runName/tidehunter"

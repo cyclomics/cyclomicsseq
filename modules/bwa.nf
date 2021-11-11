@@ -30,9 +30,33 @@ process BwaMemSorted{
         
     script:
         // TODO: add a grep to find out if ref is fa or fasta
+        // piplefail for better control over failures
         """
+        set -euxo pipefail
         bwa mem -M -t ${task.cpus} -c 100 ${sampleId}.fa $fasta | \
         sambamba view -S -f bam /dev/stdin | \
         sambamba sort -t ${task.cpus} /dev/stdin -o "${fasta.simpleName}.bam"
+        """
+}
+
+process BwaMem16c{
+    // Run bwa with sam output using 16 cores
+    publishDir "$baseDir/data/out/$workflow.runName/bwa/"
+    container 'mgibio/dna-alignment:1.0.0'
+    
+    cpus = 16
+
+    input:
+        each path(fasta)
+        tuple val(sampleId), file(reference)
+
+    output:
+        path "${fasta.simpleName}.sam"
+        
+    script:
+        // TODO: add a grep to find out if ref is fa or fasta
+        """
+        set -euxo pipefail
+        bwa mem -M -t ${task.cpus} -c 100 ${sampleId}.fa $fasta > ${fasta.simpleName}.sam
         """
 }

@@ -11,11 +11,10 @@ process RotateByCigar{
         tuple path(bam), path(bai)
 
     output:
-        path "rotatated.fasta"
+        path "*_rotated.fasta"
 
     script:
         """
-        python /rotate_by_cigar.py -i $bam -o rotatated.fasta
+        python /rotate_by_cigar.py -i $bam -o ${bam.SimpleName}_rotated.fasta
         """
 }
-
