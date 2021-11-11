@@ -29,9 +29,19 @@ params.repeat_split         = "simple"
 params.repeat_splitting     = "simple"
 params.consensus_calling    = "simple"
 
+
+log.info """
+    ===================================================
+    Cyclomics/CycloSeq : Cyclomics consensus pipeline
+    ===================================================
+        input_reads   : $params.input_read_dir
+        read_pattern  : $params.read_pattern
+        reference     : $params.reference
+"""
+
 /*
 ========================================================================================
-    Reference subworkflows
+    Loading
 ========================================================================================
 */
 
@@ -48,8 +58,9 @@ include {
 } from "./subworkflows/repeat_identifier.nf"
 
 include {
-    AlignBWA as Align
+    AlignBWA as Align;
 } from "./subworkflows/align.nf"
+
 
 workflow {
     read_pattern = "${params.input_read_dir}${params.read_pattern}"
@@ -99,19 +110,24 @@ workflow {
     02.    Filtering
     ========================================================================================
     */ 
-    if( params.filtering == 'simple' )
-        println "Not implemented"
-        exit 1
-        filtered_reads = FilteringBasic(read_file_ch.flatten())
-    else if( params.qc == 'skip' )
-        filtered_reads = read_file_ch
-        println "Skipping  Filtering"
-    else
-        error "Invalid repeat finder selector: ${params.filtering}"
+    // if( params.filtering == 'simple' )
+    //     reads_filtered = FilteringBasic(repeats.flatten())
+    // else if( params.filtering == 'skip' ) {
+    //     reads_filtered = repeats
+    //     println "Skipping  Filtering"
+    // }
+    // else
+    //     error "Invalid repeat finder selector: ${params.filtering}"
+    
 
-     /*
+
+    /*
     ========================================================================================
-    03.    Align
+    03.    Alignment
     ========================================================================================
     */ 
-    Align(filtered_reads)
+
+    // dont call .out on assigned workflow outputs
+    Align(repeats,  reference_genome_indexed)
+
+}
