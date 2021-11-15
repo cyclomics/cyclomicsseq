@@ -23,7 +23,7 @@ process LastCreateDB{
        """
 }
 
-process LastTrainModel{
+process LastTrainModelFasta{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
     
@@ -38,6 +38,24 @@ process LastTrainModel{
         // Add -Q1 to train on fastq files
         """ 
         /lastal_921/scripts/last-train db $read_fq > train.out
+        """
+}
+
+process LastTrainModelFastq{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'lastal'
+    
+    input:
+        path read_fq
+        path last_db
+
+    output:
+        path "train.out"
+
+    script:
+        // Add -Q1 to train on fastq files
+        """ 
+        /lastal_921/scripts/last-train -Q1 db $read_fq > train.out
         """
 }
 
@@ -73,8 +91,9 @@ process LastAlignTrained{
 
     script:
         // lastal -p $trainfile $last_db $read_fq > "${read_fq.simpleName}.lastal"
+        // -Q 1 makes it accept both fasta and fastq
         """
-        lastal -p $trainfile db $read_fq > "${read_fq.simpleName}.lastal"
+        lastal -Q 1 -p $trainfile db $read_fq > "${read_fq.simpleName}.lastal"
         """
 }
 
@@ -91,7 +110,7 @@ process LastAlign{
     script:
         // lastal -p $trainfile $last_db $reads > "${reads.simpleName}.lastal"
         """
-        lastal db $reads > ${reads.simpleName}.maf
+        lastal -Q 1 db $reads > ${reads.simpleName}.maf
         """
 }
 

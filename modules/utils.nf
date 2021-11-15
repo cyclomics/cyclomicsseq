@@ -39,19 +39,20 @@ process ConcatenateFasta {
         """
 }
 
-process Maf2sam {
+process ConcatenateFastq {
+    // Call `cat` on all files (eg fasta) that enter the process
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
-    container "lastal"
-
-    input:
-        path(maf)
+    container "ubuntu:20.04"
     
+    input:
+        path(fasta)
+
     output:
-        path "${maf.SimpleName}.sam"
+        path "concat.fastq"
 
     script:
-    """
-    /lastal_921/scripts/maf-convert sam $maf > ${maf.SimpleName}.sam
-    """
+        """
+        cat *.fastq > concat.fastq
+        """
 }
