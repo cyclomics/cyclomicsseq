@@ -16,7 +16,6 @@ include {
 
 include{
     ConcatenateFasta
-    Maf2sam
 } from "../modules/utils.nf"
 
 include {
