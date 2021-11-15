@@ -41,7 +41,7 @@ workflow LastalAlignFasta{
         read_fq_ch
         reference_genome
     main:
-        ConcatenateFasta(read_fq_ch)
+        ConcatenateFasta(read_fq_ch.collect())
         LastCreateDB(reference_genome)
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
@@ -58,7 +58,7 @@ workflow LastalAlignFastq{
         read_fq_ch
         reference_genome
     main:
-        ConcatenateFastq(read_fq_ch)
+        ConcatenateFastq(read_fq_ch.collect())
         LastCreateDB(reference_genome)
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
@@ -79,7 +79,7 @@ workflow LastalAlignTrainedFasta{
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
         
-        reads = ConcatenateFasta(read_fq_ch)
+        reads = ConcatenateFasta(read_fq_ch.collect())
         model =  LastTrainModelFasta(read_fq_ch, last_db_collection)
 
         // pass the read_fq into lastal
@@ -102,7 +102,7 @@ workflow LastalAlignTrainedFastq{
         LastCreateDB(reference_genome)
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
-        reads = ConcatenateFastq(read_fq_ch)
+        reads = ConcatenateFastq(read_fq_ch.collect())
         model =  LastTrainModelFastq(read_fq_ch, last_db_collection)
         alignment = LastAlignTrained(reads, 
             last_db_collection,
