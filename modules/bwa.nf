@@ -2,7 +2,7 @@
 nextflow.enable.dsl=2
 
 process BwaIndex{
-    publishDir "$baseDir/data/out/$workflow.runName/bwa/index"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/bwa:v0.7.17_cv1'
     
     input:
@@ -18,7 +18,7 @@ process BwaIndex{
 }
 
 process BwaMemSorted{
-    publishDir "$baseDir/data/out/$workflow.runName/bwa/sorted"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
     
     input:
@@ -41,7 +41,7 @@ process BwaMemSorted{
 
 process BwaMem16c{
     // Run bwa with sam output using 16 cores
-    publishDir "$baseDir/data/out/$workflow.runName/bwa/"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
     
     cpus = 16

@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 // Steps to extract prime end of fastq files
 process Extract5PrimeFasta {
-    publishDir "$baseDir/data/out/$workflow.runName/primes"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     container "staphb/seqtk:1.3"
     
@@ -22,7 +22,7 @@ process Extract5PrimeFasta {
 }
 
 process Extract3PrimeFasta {
-    publishDir "$baseDir/data/out/$workflow.runName/primes"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "staphb/seqtk:1.3"
 
     input:

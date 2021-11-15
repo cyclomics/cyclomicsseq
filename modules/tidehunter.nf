@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'tidehunter'
     
     input:
@@ -19,7 +19,7 @@ process Tidehunter{
 }
 
 process TidehunterFullLength{
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'tidehunter'
     
     input:
@@ -38,7 +38,7 @@ process TidehunterFullLength{
 
 process Tidehunter53{
     // Parameterized, but unused right now
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'tidehunter'
     
     input:
@@ -58,7 +58,7 @@ process Tidehunter53{
 
 process TideHunterTrimmmer {
     // Plug tidehunter fasta into this
-    publishDir "$baseDir/data/out/$workflow.runName/tidehunter/trimmed"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path fasta_full_length

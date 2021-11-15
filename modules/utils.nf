@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 process TrimFasta {
     // sed call to remove all info after first comma in every line.
     // used to reduce the length of the readname in fasta files
-    publishDir "$baseDir/data/out/$workflow.runName/trim"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     container "ubuntu:20.04"
     
@@ -23,7 +23,7 @@ process TrimFasta {
 
 process ConcatenateFasta {
     // Call `cat` on all files (eg fasta) that enter the process
-    publishDir "$baseDir/data/out/$workflow.runName/concat"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     container "ubuntu:20.04"
     
@@ -37,4 +37,21 @@ process ConcatenateFasta {
         """
         cat *.fasta > concat.fasta
         """
+}
+
+process Maf2sam {
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    container "lastal"
+
+    input:
+        path(maf)
+    
+    output:
+        path "${maf.SimpleName}.sam"
+
+    script:
+    """
+    /lastal_921/scripts/maf-convert sam $maf > ${maf.SimpleName}.sam
+    """
 }

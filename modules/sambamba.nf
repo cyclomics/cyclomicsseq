@@ -2,7 +2,7 @@
 
 
 process SambambaSortSam{
-    publishDir "$baseDir/data/out/$workflow.runName/sambamba/sort"
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
     
     cpus = 6

@@ -21,15 +21,15 @@ params.read_pattern               = "fastq_pass/**.{fq,fastq}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 
 params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/"
-params.reference_indexes = 
+// freference indexes are expected to be in reference folder
+params.output_dir = "data/out/$workflow.runName"
 
 params.qc                   = "simple"
 params.filtering            = "simple"
-params.repeat_split         = "simple"
 params.repeat_splitting     = "simple"
 params.consensus_calling    = "simple"
 
-
+// ### Printout for user
 log.info """
     ===================================================
     Cyclomics/CycloSeq : Cyclomics consensus pipeline
@@ -98,12 +98,12 @@ workflow {
     01.    repeat splitting
     ========================================================================================
     */ 
-    if( params.repeat_split == 'simple' )
+    if( params.repeat_splitting == 'simple' )
         repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
-    else if( params.repeat_split == 'skip' )
+    else if( params.repeat_splitting == 'skip' )
         println "Skipping  Filtering"
     else
-        error "Invalid repeat finder selector: ${params.repeat_split}"
+        error "Invalid repeat finder selector: ${params.repeat_splitting}"
 
     /*
     ========================================================================================
