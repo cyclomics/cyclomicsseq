@@ -11,12 +11,18 @@ include {
     LastTrainModel
     LastAlign
     LastSplit
+    SamtoolsFixSam
 } from "../modules/last.nf"
 
 include{
     ConcatenateFasta
     Maf2sam
 } from "../modules/utils.nf"
+
+include {
+    SamtoolsIndex
+} from "../modules/samtools"
+
 
 workflow AlignBWA{
     take:
@@ -61,6 +67,9 @@ workflow LastalAlignTrained{
             last_db_collection,
             )
         Maf2sam(LastAlign.out)
+        SamtoolsFixSam(Maf2sam.out, reference_genome)
+        SamtoolsIndex(SamtoolsFixSam.out)
+
     emit:
-        LastAlign.out
+        SamtoolsIndex.out
 }
