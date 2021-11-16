@@ -33,7 +33,7 @@ process BwaMemSorted{
         // piplefail for better control over failures
         """
         set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c 100 ${sampleId}.fa $fasta | \
+        bwa mem -M -t ${task.cpus} -c 100 $reference $fasta | \
         sambamba view -S -f bam /dev/stdin | \
         sambamba sort -t ${task.cpus} /dev/stdin -o "${fasta.simpleName}.bam"
         """
@@ -57,6 +57,6 @@ process BwaMem16c{
         // TODO: add a grep to find out if ref is fa or fasta
         """
         set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c 100 ${sampleId}.fa $fasta > ${fasta.simpleName}.sam
+        bwa mem -M -t ${task.cpus} -c 100 $reference $fasta > ${fasta.simpleName}.sam
         """
 }
