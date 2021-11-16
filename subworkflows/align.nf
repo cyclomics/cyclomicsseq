@@ -13,6 +13,7 @@ include {
     LastAlign
     LastAlignTrained
     LastSplit
+    Maf2sam
     SamtoolsFixSam
 } from "../modules/last.nf"
 
@@ -46,9 +47,13 @@ workflow LastalAlignFasta{
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
         // pass the read_fq into lastal
-        LastAlign(ConcatenateFasta.out, 
+        alignment = LastAlign(ConcatenateFasta.out, 
             last_db_collection,
             )
+        samfile = Maf2sam(alignment)
+        SamtoolsFixSam(samfile, reference_genome)
+        SamtoolsIndex(SamtoolsFixSam.out)
+        
     emit:
         LastAlign.out
 }
@@ -63,9 +68,13 @@ workflow LastalAlignFastq{
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
         // pass the read_fq into lastal
-        LastAlign(ConcatenateFastq.out, 
+        alignment = LastAlign(ConcatenateFastq.out, 
             last_db_collection,
-            )
+        )
+            samfile = Maf2sam(alignment)
+            SamtoolsFixSam(samfile, reference_genome)
+            SamtoolsIndex(SamtoolsFixSam.out)
+
     emit:
         LastAlign.out
 }
@@ -80,14 +89,15 @@ workflow LastalAlignTrainedFasta{
         last_db_collection = LastCreateDB.out.collect()
         
         reads = ConcatenateFasta(read_fq_ch.collect())
-        model =  LastTrainModelFasta(read_fq_ch, last_db_collection)
+        model =  LastTrainModelFasta(reads, last_db_collection)
 
         // pass the read_fq into lastal
         alignment = LastAlignTrained(reads, 
             last_db_collection,
             model
             )
-        SamtoolsFixSam(alignment, reference_genome)
+        samfile = Maf2sam(alignment)
+        SamtoolsFixSam(samfile, reference_genome)
         SamtoolsIndex(SamtoolsFixSam.out)
 
     emit:
@@ -103,12 +113,13 @@ workflow LastalAlignTrainedFastq{
         // CreateDB makes many db.* files, need all of them downstream
         last_db_collection = LastCreateDB.out.collect()
         reads = ConcatenateFastq(read_fq_ch.collect())
-        model =  LastTrainModelFastq(read_fq_ch, last_db_collection)
+        model =  LastTrainModelFastq(reads, last_db_collection)
         alignment = LastAlignTrained(reads, 
             last_db_collection,
             model
             )
-        SamtoolsFixSam(alignment, reference_genome)
+        samfile = Maf2sam(alignment)
+        SamtoolsFixSam(samfile, reference_genome)
         SamtoolsIndex(SamtoolsFixSam.out)
 
     emit:
