@@ -38,3 +38,32 @@ process SamtoolsSort{
 
 }
 
+process SamtoolsQuickcheck{
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    input:
+        path(input_sam)
+
+    output:
+        stdout
+
+    script:
+        """
+        samtools quickcheck $input_sam && echo 'Samtools quickcheck ok' || echo 'Samtools quickcheck fail!'
+        """
+}
+
+process SamtoolsFlagstats{
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    input:
+        path(input_sam)
+    
+    output:
+        stdout
+
+    script:
+        """
+        samtools flagstat $input_sam
+        """
+}

@@ -17,6 +17,9 @@ include {
     LastalAlignTrainedFastq
 } from "../subworkflows/align.nf"
 
+include {
+    PostAlignmentQC
+} from "../subworkflows/post_align_qc"
 
 reads_ch = Channel.fromPath(params.reads, checkIfExists: true)
 ref_ch = Channel.fromPath(params.reference_genome, checkIfExists: true)
@@ -51,6 +54,9 @@ workflow {
             )
         }
     }
+    PostAlignmentQC(aligned)
+
+
     emit:
         aligned
      

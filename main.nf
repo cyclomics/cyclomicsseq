@@ -24,10 +24,11 @@ params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/B
 // freference indexes are expected to be in reference folder
 params.output_dir = "data/out/$workflow.runName"
 
-params.qc                   = "simple"
-params.filtering            = "simple"
-params.repeat_splitting     = "simple"
-params.consensus_calling    = "simple"
+params.qc                   = "simple" // simple or skip
+params.filtering            = "simple" // simple or skip
+params.repeat_splitting     = "simple" // simple, tidehunterquality or skip
+params.consensus_calling    = "simple" // simple or skip
+params.final_alignment      = "BWA"  // BWA, Latal, Lastal-trained or skip
 
 // ### Printout for user
 log.info """
@@ -47,20 +48,23 @@ log.info """
 
 include {
     QC_pycoqc;
-} from "./subworkflows/QC.nf"
+} from "./subworkflows/QC"
 
 include {
-    FilteringBasic;
-} from "./subworkflows/filtering.nf"
+    FilteringBasic
+} from "./subworkflows/filtering"
 
 include {
-    TideHunterBasic;
-} from "./subworkflows/repeat_identifier.nf"
+    TideHunterBasic
+} from "./subworkflows/repeat_identifier"
 
 include {
-    AlignBWA as Align;
-} from "./subworkflows/align.nf"
+    AlignBWA
+} from "./subworkflows/align"
 
+include {
+    PostAlignmentQC
+} from "./subworkflows/post_align_qc"
 
 workflow {
     read_pattern = "${params.input_read_dir}${params.read_pattern}"
@@ -72,7 +76,8 @@ workflow {
     qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
     
     // form a pair for both .fa as well as .fasta ref genomes
-    reference_genome_indexed = Channel.fromFilePairs("${params.reference}/genome.{fa,fasta}*", size: -1)
+    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1)
+    // println reference_genome_indexed.view()
     // TODO: check for .amb,.ann,.bwt,.pac,.sa
     // TODO: index when no index files present
 
@@ -84,7 +89,8 @@ workflow {
     00.    Quality Control
     ========================================================================================
     */
-    if( params.qc == 'simple' )
+
+    if( params.qc == "simple" )
         qc_report = QC_pycoqc(qc_seq_file_ch)
 
     else if( params.qc == 'skip' )
@@ -97,11 +103,17 @@ workflow {
     ========================================================================================
     01.    repeat splitting
     ========================================================================================
-    */ 
-    if( params.repeat_splitting == 'simple' )
+    */
+
+    if( params.repeat_splitting == "simple" )
         repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
+
+    else if( params.repeat_splitting == 'tidehunterquality')
+        repeats = TideHunterQuality(read_file_ch, reference_genome_indexed)
+
     else if( params.repeat_splitting == 'skip' )
         println "Skipping  Filtering"
+
     else
         error "Invalid repeat finder selector: ${params.repeat_splitting}"
 
@@ -110,7 +122,7 @@ workflow {
     02.    Filtering
     ========================================================================================
     */ 
-    // if( params.filtering == 'simple' )
+    // if( params.filtering == "simple" )
     //     reads_filtered = FilteringBasic(repeats.flatten())
     // else if( params.filtering == 'skip' ) {
     //     reads_filtered = repeats
@@ -128,6 +140,7 @@ workflow {
     */ 
 
     // dont call .out on assigned workflow outputs
-    Align(repeats,  reference_genome_indexed)
+    AlignBWA(repeats,  reference_genome_indexed)
 
+    PostAlignmentQC(AlignBWA.out)
 }
