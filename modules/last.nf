@@ -79,7 +79,9 @@ process LastSplit{
 process LastAlignTrained{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
-    
+
+    cpus = 16
+
     input:
         path read_fq
         path last_db
@@ -93,13 +95,15 @@ process LastAlignTrained{
         // lastal -p $trainfile $last_db $read_fq > "${read_fq.simpleName}.lastal"
         // -Q 1 makes it accept both fasta and fastq
         """
-        lastal -Q 1 -p $trainfile db $read_fq > "${read_fq.simpleName}.lastal"
+        lastal -Q 1 -P ${task.cpus} -p $trainfile db $read_fq > "${read_fq.simpleName}.lastal"
         """
 }
 
 process LastAlign{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
+
+    cpus = 16
 
     input:
         path reads
@@ -110,7 +114,7 @@ process LastAlign{
     script:
         // lastal -p $trainfile $last_db $reads > "${reads.simpleName}.lastal"
         """
-        lastal -Q 1 db $reads > ${reads.simpleName}.maf
+        lastal -P ${task.cpus} -Q 1 db $reads > ${reads.simpleName}.maf
         """
 }
 
