@@ -20,13 +20,13 @@ params.input_read_dir             = "/home/dami/data/raw_data/MAR6228/"
 params.read_pattern               = "fastq_pass/**.{fq,fastq}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 
-params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/"
+params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
 // freference indexes are expected to be in reference folder
 params.output_dir = "data/out/$workflow.runName"
 
 params.qc                   = "simple" // simple or skip
 params.filtering            = "simple" // simple or skip
-params.repeat_splitting     = "simple" // simple, tidehunterquality or skip
+params.repeat_splitting     = "simple" // simple, longest, tidehunterquality or skip
 params.consensus_calling    = "simple" // simple or skip
 params.final_alignment      = "BWA"  // BWA, Latal, Lastal-trained or skip
 
@@ -56,6 +56,7 @@ include {
 
 include {
     TideHunterBasic
+    TideHunterKeepLongest
 } from "./subworkflows/repeat_identifier"
 
 include {
@@ -76,7 +77,7 @@ workflow {
     qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
     
     // form a pair for both .fa as well as .fasta ref genomes
-    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*.{fa,fasta}*", size: -1)
+    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     // println reference_genome_indexed.view()
     // TODO: check for .amb,.ann,.bwt,.pac,.sa
     // TODO: index when no index files present
@@ -107,7 +108,10 @@ workflow {
 
     if( params.repeat_splitting == "simple" )
         repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
-
+    
+    else if( params.repeat_splitting == 'longest')
+        repeats = TideHunterKeepLongest(read_file_ch, reference_genome_indexed)
+    
     else if( params.repeat_splitting == 'tidehunterquality')
         repeats = TideHunterQuality(read_file_ch, reference_genome_indexed)
 
@@ -140,7 +144,7 @@ workflow {
     */ 
 
     // dont call .out on assigned workflow outputs
-    AlignBWA(repeats,  reference_genome_indexed)
+    // AlignBWA(repeats,  reference_genome_indexed)
 
-    PostAlignmentQC(AlignBWA.out)
+    PostAlignmentQC(repeats)
 }
