@@ -38,6 +38,27 @@ process SamtoolsSort{
 
 }
 
+process SamtoolsMerge{
+    //  samtools merge – merges multiple sorted files into a single file 
+
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    input:
+        path(input_sam)
+        val output_base
+
+    output:
+        path "${output_base}.bam"
+
+    script:
+        """
+        samtools merge -O bam ${output_base}.bam $input_sam
+        """
+
+}
+
+
 process SamtoolsQuickcheck{
     container 'biocontainers/samtools:v1.7.0_cv4'
 

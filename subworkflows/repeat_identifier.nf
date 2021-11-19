@@ -4,33 +4,38 @@ nextflow.enable.dsl=2
 include {
     BwaMemSorted
     BwaMem16c
-} from "../modules/bwa.nf"
+    BwaMem
+} from "../modules/bwa"
 
 include {
     RotateByCigar
-} from "../modules/rotate_reads.nf"
+} from "../modules/rotate_reads"
 
 include {
     Extract5PrimeFasta
     Extract3PrimeFasta
-} from "../modules/primes.nf"
+} from "../modules/primes"
 
 include {
     SamtoolsIndex
-} from "../modules/samtools.nf"
+    SamtoolsSort
+    SamtoolsMerge
+} from "../modules/samtools"
 
 include {
     SambambaSortSam
-} from "../modules/sambamba.nf"
+} from "../modules/sambamba"
 
 include {
     Tidehunter
-} from "../modules/tidehunter.nf"
+    TidehunterLongest
+    TideHunterTrimmmer
+} from "../modules/tidehunter"
 
 include {
     TrimFasta
     ConcatenateFasta
-} from "../modules/utils.nf"
+} from "../modules/utils"
 
 
 workflow  TideHunterBasic{
@@ -49,6 +54,34 @@ workflow  TideHunterBasic{
         RotateByCigar(SamtoolsIndex.out)
     emit:
         RotateByCigar.out
+}
+
+workflow TideHunterKeepLongest{
+    take:
+        read_fq_ch
+        reference_genome
+    main:
+        consensus = TidehunterLongest(read_fq_ch)
+        trimmed_consensus = TideHunterTrimmmer(consensus)
+        // TODO make an append like rolling process
+        mapped_consensus = BwaMem(trimmed_consensus.trimmed_fasta, reference_genome)
+        sorted_mapped_consensus = SamtoolsSort(mapped_consensus)
+        
+        single_bam = SamtoolsMerge(sorted_mapped_consensus.collect(), "abc")
+        // TODO debug rotateby cigar
+
+        // SamtoolsIndex(single_bam)
+        // RotateByCigar(SamtoolsIndex.out)
+    emit:
+        single_bam
+}
+
+
+workflow TideHunterQuality{
+    take:
+        read_fq_ch
+        reference_genome
+
 }
 
 // workflow TidehunterBackBone {

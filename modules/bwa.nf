@@ -17,6 +17,27 @@ process BwaIndex{
         """
 }
 
+process BwaMem{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'mgibio/dna-alignment:1.0.0'
+
+    cpus = 2
+
+    input:
+        each path(fasta)
+        tuple val(sampleId), file(reference)
+
+    output:
+        path "${fasta.simpleName}.sam"
+        
+    script:
+        // using grep to find out if ref is fa or fasta, plug in env var to bwa
+        """
+        REF=\$(ls | grep -E "${sampleId}.(fasta\$|fa\$)")
+        bwa mem -M -t ${task.cpus} -c 100 \$REF $fasta > ${fasta.simpleName}.sam
+        """
+}
+
 process BwaMemSorted{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
@@ -29,11 +50,12 @@ process BwaMemSorted{
         path "${fasta.simpleName}.bam"
         
     script:
-        // TODO: add a grep to find out if ref is fa or fasta
+        // using grep to find out if ref is fa or fasta, plug in env var to bwa
         // piplefail for better control over failures
         """
+        REF=\$(ls | grep -E "${sampleId}.(fasta\$|fa\$)")
         set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c 100 $reference $fasta | \
+        bwa mem -M -t ${task.cpus} -c 100 \$REF $fasta | \
         sambamba view -S -f bam /dev/stdin | \
         sambamba sort -t ${task.cpus} /dev/stdin -o "${fasta.simpleName}.bam"
         """
@@ -54,9 +76,9 @@ process BwaMem16c{
         path "${fasta.simpleName}.sam"
         
     script:
-        // TODO: add a grep to find out if ref is fa or fasta
+        // using grep to find out if ref is fa or fasta, plug in env var to bwa
         """
-        set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c 100 $reference $fasta > ${fasta.simpleName}.sam
+        REF=\$(ls | grep -E "${sampleId}.(fasta\$|fa\$)")
+        bwa mem -M -t ${task.cpus} -c 100 \$REF $fasta > ${fasta.simpleName}.sam
         """
 }
