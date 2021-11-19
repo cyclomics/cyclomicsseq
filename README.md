@@ -1,6 +1,6 @@
 # CycloSeq
 
-Pipeline to process Cyclomics data
+Pipeline to process Cyclomics data.
 
 ## Dependencies
 
