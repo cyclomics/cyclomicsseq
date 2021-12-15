@@ -1,0 +1,21 @@
+FROM centos:8.4.2105
+
+# installing required tools for installation
+RUN dnf install git unzip make gcc gcc-c++ zlib-devel python2 -y
+RUN ln -s /usr/bin/python2 /usr/bin/python
+
+# get version 921 from a specific commit and compile it
+ENV TARGET_COMMIT=8430dbf5abe7
+RUN curl -o lastal_921.zip "http://last.cbrc.jp/last/index.cgi/archive/${TARGET_COMMIT}.zip"
+RUN unzip lastal_921.zip && mv last-${TARGET_COMMIT} lastal_921
+WORKDIR /lastal_921 
+RUN make
+
+# link the exec's to bin for ease of use
+RUN ln -s /lastal_921/src/last-split /usr/bin/last-split
+RUN ln -s /lastal_921/src/lastal /usr/bin/lastal
+RUN ln -s /lastal_921/src/lastdb /usr/bin/lastdb
+
+RUN ln -s /lastal_921/scripts/maf-convert /usr/bin/maf-convert
+
+WORKDIR /
