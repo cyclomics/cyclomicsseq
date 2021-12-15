@@ -144,7 +144,7 @@ workflow {
     */ 
 
     // dont call .out on assigned workflow outputs
-    // AlignBWA(repeats,  reference_genome_indexed)
+    AlignBWA(repeats,  reference_genome_indexed)
 
-    PostAlignmentQC(repeats)
+    PostAlignmentQC(AlignBWA.out)
 }
