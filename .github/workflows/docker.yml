@@ -27,10 +27,10 @@ jobs:
       - name: Set output env var
         id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-      - name: Check output
+      - name: Check_output
         env:
           RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
-      - name: build dockers
+      - name: build_dockers
         run: |
           for i in $(ls docker); do
             echo $i
