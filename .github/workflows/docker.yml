@@ -22,15 +22,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-      - name: Set output env var
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-      - name: Check output
-        env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
-      - name: build dockers
+      - name: build_dockers
         run: |
           for i in $(ls docker); do
             echo $i
