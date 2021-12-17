@@ -22,6 +22,10 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - uses: actions/checkout@v2
+      - name: Set output env var
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
       - name: build_dockers
         run: |
           for i in $(ls docker); do
