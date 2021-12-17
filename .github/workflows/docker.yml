@@ -27,12 +27,6 @@ jobs:
         run: |
           for i in $(ls docker); do
             echo $i
-            echo docker build docker/$i -t cyclomics/$i:$GITHUB_REF 
+            echo docker build docker/$i -t cyclomics/$i:${GITHUB_REF#refs/heads/}-(git rev-parse --short "$GITHUB_SHA")
           done
-      - name: parameters
-        run: |
-          echo $(git rev-parse --short "$GITHUB_SHA")
-          echo ${GITHUB_REF#refs/heads/}
-          echo ${ job.id }
-
 
