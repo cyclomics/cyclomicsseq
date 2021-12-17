@@ -29,3 +29,8 @@ jobs:
             echo $i
             echo docker build docker/$i -t cyclomics/$i:$GITHUB_REF 
           done
+      - name: parameters
+        run: |
+          echo $(git rev-parse --short "$GITHUB_SHA")
+          echo ${GITHUB_REF#refs/heads/}
+
