@@ -24,9 +24,15 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: Run a multi-line script
+      - name: Set output env var
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Check output
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+      - name: build dockers
         run: |
           for i in $(ls docker); do
             echo $i
-            echo dockerbuild docker/$i -t cycloics/$i:$GITHUB_REF 
+            echo docker build docker/$i -t cyclomics/$i:$GITHUB_REF 
           done
