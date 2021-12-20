@@ -29,11 +29,26 @@ process TidehunterLongest{
         path fasta
 
     output:
-        path "${fasta.SimpleName}_tide_consensus.fasta", emit: consensus
+        path "${fasta.SimpleName}_tide_consensus.tsv", emit: consensus
 
     script:
         """
-        TideHunter -t ${task.cpus} -k ${params.tidehunter.kmer_length} --min-copy ${params.tidehunter.min_copy} --min-period ${params.tidehunter.min_period} --longest --thread ${task.cpus} $fasta > ${fasta.SimpleName}_tide_consensus.fasta
+        TideHunter -f 2 -t ${task.cpus} -k ${params.tidehunter.kmer_length} --min-copy ${params.tidehunter.min_copy} --min-period ${params.tidehunter.min_period} --longest --thread ${task.cpus} $fasta > ${fasta.SimpleName}_tide_consensus.tsv
+        """
+}
+
+process TideHunterTableToFasta{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        path tidehuntertable
+    
+    output:
+        path "${tidehuntertable.SimpleName}.fasta", emit: consensus
+
+    script:
+        """
+        awk '{print ">"\$1"_"\$3"_2_3_4", "\\n", \$11}' $tidehuntertable > ${tidehuntertable.SimpleName}.fasta
         """
 }
 

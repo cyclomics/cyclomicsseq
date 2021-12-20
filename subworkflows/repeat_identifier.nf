@@ -5,6 +5,7 @@ include {
     BwaMemSorted
     BwaMem16c
     BwaMem
+    BwaMem as BwaMemRealign
 } from "../modules/bwa"
 
 include {
@@ -30,6 +31,7 @@ include {
     Tidehunter
     TidehunterLongest
     TideHunterTrimmmer
+    TideHunterTableToFasta
 } from "../modules/tidehunter"
 
 include {
@@ -61,19 +63,22 @@ workflow TideHunterKeepLongest{
         read_fq_ch
         reference_genome
     main:
-        consensus = TidehunterLongest(read_fq_ch)
-        trimmed_consensus = TideHunterTrimmmer(consensus)
-        // TODO make an append like rolling process
-        mapped_consensus = BwaMem(trimmed_consensus.trimmed_fasta, reference_genome)
+        consensus_tsv = TidehunterLongest(read_fq_ch)
+        consensus_fasta = TideHunterTableToFasta(consensus_tsv)
+        mapped_consensus = BwaMem(consensus_fasta, reference_genome)
+
         sorted_mapped_consensus = SamtoolsSort(mapped_consensus)
-        
+
+        // TODO make an append like rolling process
         single_bam = SamtoolsMerge(sorted_mapped_consensus.collect(), "abc")
+
         // TODO debug rotateby cigar
 
-        // SamtoolsIndex(single_bam)
-        // RotateByCigar(SamtoolsIndex.out)
+        SamtoolsIndex(single_bam)
+        RotateByCigar(SamtoolsIndex.out)
+        // BwaMemRealign(RotateByCigar.out, reference_genome)
     emit:
-        single_bam
+        RotateByCigar.out
 }
 
 

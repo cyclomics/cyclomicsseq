@@ -1,0 +1,8 @@
+FROM atan/jvarkit
+
+RUN mkdir new
+WORKDIR /new
+RUN git clone "https://github.com/lindenb/jvarkit.git" 
+WORKDIR /new/jvarkit 
+
+RUN ./gradlew sam4weblog
