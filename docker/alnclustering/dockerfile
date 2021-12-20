@@ -5,3 +5,5 @@ RUN pip3 install biopython
 RUN pip3 install numpy
 
 COPY cluster.py /cluster.py
+
+LABEL org.opencontainers.image.source=https://github.com/cyclomics/cycloseq
