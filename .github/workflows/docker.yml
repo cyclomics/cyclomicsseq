@@ -21,11 +21,6 @@ jobs:
     steps:
       -
         name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DR_PAT_GHCR }}
   
   # This workflow contains a single job called "build"
   build:
@@ -34,6 +29,12 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.DR_PAT_GHCR }}
+
       - uses: actions/checkout@v2
       - name: build_dockers
         run: |
