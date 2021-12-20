@@ -40,10 +40,10 @@ jobs:
           echo $$GITHUB_SHA
           for i in $(ls docker); do
             echo $i
-            echo docker build docker/$i -t cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            echo docker tag cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA") cyclomics/$i:latest
-            echo docker push cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            echo docker push cyclomics/$i:latest
+            docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
+            docker tag ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA") ghcr.io/cyclomics/$i:latest
+            docker push ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
+            docker push ghcr.io/cyclomics/$i:latest
           done
 
 
