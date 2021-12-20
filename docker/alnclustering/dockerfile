@@ -1,4 +1,4 @@
-FROM python:3.6.2
+FROM python:3.8.12
 
 RUN pip3 install cython pysam BioUtil
 RUN pip3 install biopython
