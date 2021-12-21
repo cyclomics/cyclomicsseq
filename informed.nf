@@ -83,5 +83,18 @@ workflow {
 
     base_units = TidehunterBackBoneQual(read_fastq.flatten(), reference_genome_indexed,backbone_fasta,params.tidehunter.primer_length, params.backbone_name)
 
+/*
+========================================================================================
+02.    Alignment
+========================================================================================
+*/
+    Minimap2Align(base_units, reference_genome_raw)
+
+/*
+========================================================================================
+03.    Variant calling
+========================================================================================
+*/
+
 }
 

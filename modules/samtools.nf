@@ -127,3 +127,20 @@ process SamtoolsFlagstatsMapPercentage{
         samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1 | head -n 1
         """ 
 }
+
+process SamtoolsMergeTuple{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    input:
+        tuple val(X), path(bam), path(bai)
+
+    output:
+        tuple val(X), path("${X}.merged.bam"), path("${X}.merged.bam.bai")
+    
+    script:
+    """
+    samtools merge -O bam ${X}.merged.bam \$(ls *.bam)
+    samtools index ${X}.merged.bam
+    """
+}

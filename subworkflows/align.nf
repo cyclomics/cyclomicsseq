@@ -7,6 +7,10 @@ include {
 } from "../modules/bwa.nf"
 
 include {
+    MinimapAlign
+} from "../modules/minimap.nf"
+
+include {
     LastCreateDB
     LastTrainModelFastq
     LastTrainModelFasta
@@ -24,6 +28,8 @@ include{
 
 include {
     SamtoolsIndex
+    SamToBam
+    SamtoolsMergeTuple
 } from "../modules/samtools"
 
 
@@ -35,6 +41,19 @@ workflow AlignBWA{
         BwaMemSorted(read_fq_ch, reference_genome)
     emit:
         BwaMemSorted.out
+}
+
+workflow Minimap2Align{
+    // Call minimap2 on all reads files (tuple(x,bam)) convert to bam and merge using samtools
+    take:
+        reads
+        reference_genome
+    main:
+        MinimapAlign(reads.combine(reference_genome))
+        SamToBam(MinimapAlign.out)
+        SamtoolsMergeTuple(SamToBam.out.collect())
+    emit:
+        SamtoolsMergeTuple.out
 }
 
 workflow LastalAlignFasta{
