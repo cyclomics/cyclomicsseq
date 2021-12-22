@@ -55,6 +55,11 @@ include {
     Minimap2Align
 } from "./subworkflows/align"
 
+include {
+    FreebayesSimple
+    Mutect2
+} from "./subworkflows/variant_calling"
+
 /*
 ========================================================================================
     Workflow
@@ -69,8 +74,9 @@ workflow {
     // read_fastq.view()
     qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
     backbone_fasta = Channel.fromPath(params.backbone_fasta, checkIfExists: true)
-    // form a pair for both .fa as well as .fasta ref genomes
+    
     reference_genome_raw = Channel.fromPath(params.reference, checkIfExists: true)
+    // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
 
 /*
@@ -88,13 +94,17 @@ workflow {
 02.    Alignment
 ========================================================================================
 */
-    Minimap2Align(base_units, reference_genome_raw)
+    // TODO: Better naming of the merged bam (eg remove number extension)
+    // TODO: Annotate the info from the sequencing summary eg: AnnotateSequencingSummary(Minimap2Align.out, )
+    // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
 
+    Minimap2Align(base_units, reference_genome_raw)
 /*
 ========================================================================================
 03.    Variant calling
 ========================================================================================
 */
-
+    FreebayesSimple(Minimap2Align.out, reference_genome_raw)
+    Mutect2(Minimap2Align.out, reference_genome_raw)
 }
 
