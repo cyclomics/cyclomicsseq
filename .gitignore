@@ -8,3 +8,4 @@ testing*
 *.pyc
 
 nextflow.config
+tidehunter_exec_test

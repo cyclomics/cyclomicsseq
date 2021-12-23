@@ -5,6 +5,7 @@ include {
     BwaMemSorted
     BwaMem16c
     BwaMem
+    BwaMem as BwaMemRealign
 } from "../modules/bwa"
 
 include {
@@ -30,6 +31,7 @@ include {
     Tidehunter
     TidehunterLongest
     TideHunterTrimmmer
+    TideHunterTableToFasta
 } from "../modules/tidehunter"
 
 include {
@@ -61,19 +63,22 @@ workflow TideHunterKeepLongest{
         read_fq_ch
         reference_genome
     main:
-        consensus = TidehunterLongest(read_fq_ch)
-        trimmed_consensus = TideHunterTrimmmer(consensus)
-        // TODO make an append like rolling process
-        mapped_consensus = BwaMem(trimmed_consensus.trimmed_fasta, reference_genome)
+        consensus_tsv = TidehunterLongest(read_fq_ch)
+        consensus_fasta = TideHunterTableToFasta(consensus_tsv)
+        mapped_consensus = BwaMem(consensus_fasta, reference_genome)
+
         sorted_mapped_consensus = SamtoolsSort(mapped_consensus)
-        
+
+        // TODO make an append like rolling process
         single_bam = SamtoolsMerge(sorted_mapped_consensus.collect(), "abc")
+
         // TODO debug rotateby cigar
 
-        // SamtoolsIndex(single_bam)
-        // RotateByCigar(SamtoolsIndex.out)
+        SamtoolsIndex(single_bam)
+        RotateByCigar(SamtoolsIndex.out)
+        // BwaMemRealign(RotateByCigar.out, reference_genome)
     emit:
-        single_bam
+        RotateByCigar.out
 }
 
 
@@ -84,25 +89,28 @@ workflow TideHunterQuality{
 
 }
 
-// workflow TidehunterBackBone {
-//     take:
-//         read_fq_ch
-//         reference_genome
-//         backbone
-//     main:
-//         // get backbones
-//         p5_babo = Extract5PrimeFasta(backbone, 10)
-//         p3_babo = Extract3PrimeFasta(backbone, 10)
+workflow TidehunterBackBone {
+    take:
+        read_fq_ch
+        reference_genome
+        backbone
+    main:
+        // get backbones
+        // TODO: get backbone from a fasta so no custom work is needed
+        // TODO: or pick the most occuring backbone 
+        backbone_fa = ExtractRead(backbone, "BB22")
+        p5_babo = Extract5PrimeFasta(backbone, params.tidehunter.primer_length)
+        p3_babo = Extract3PrimeFasta(backbone, params.tidehunter.primer_length)
 
-//         Tidehunter53(read_fq_ch, p3_babo, p5_babo)
-//         ConcatenateFasta(Tidehunter53.out.collect())
-//         TrimFasta(ConcatenateFasta.out)
-//         Cutadapt(TrimFasta.out)
-//         BWaMemSorted(Cutadapt.out, reference_gen)
-//         SambambaSortSam(BwaMemSorted.out)
-//         SamtoolsIndex(SambambaSortSam.out)
-//         RotateByCigar(SamtoolsIndex.out)
+        Tidehunter53(read_fq_ch, p3_babo, p5_babo)
+        ConcatenateFasta(Tidehunter53.out.collect())
+        TrimFasta(ConcatenateFasta.out)
+        Cutadapt(TrimFasta.out)
+        BWaMemSorted(Cutadapt.out, reference_gen)
+        SambambaSortSam(BwaMemSorted.out)
+        SamtoolsIndex(SambambaSortSam.out)
+        RotateByCigar(SamtoolsIndex.out)
 
-//     emit:
-//      RotateByCigar.out
-// }
+    emit:
+     RotateByCigar.out
+}

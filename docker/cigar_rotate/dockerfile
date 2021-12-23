@@ -1,0 +1,7 @@
+FROM python:3.6.2
+LABEL org.opencontainers.image.source=https://github.com/cyclomics/cycloseq
+
+
+RUN pip3 install cython pysam biopython
+
+COPY rotate.py /src/rotate.py
