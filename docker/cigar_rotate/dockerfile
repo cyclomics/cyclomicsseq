@@ -1,6 +1,5 @@
 FROM python:3.6.2
 
-RUN pip3 install cython pysam BioUtil
-RUN pip3 install biopython
+RUN pip3 install cython pysam biopython
 
 COPY rotate.py /src/rotate.py
