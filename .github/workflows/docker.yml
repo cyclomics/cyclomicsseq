@@ -40,4 +40,10 @@ jobs:
             docker push ghcr.io/cyclomics/$i:latest
           done
 
-
+  test_pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Nextflow pipeline
+        run: |
+          echo "To be Implemented"

@@ -38,6 +38,25 @@ process SamtoolsSort{
 
 }
 
+process SamToBam{
+    // Sort, convert and index 
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+    cpus 1
+
+    input:
+        tuple val(X), path(sam_file)
+
+    output:
+        tuple val(X), path("${X}.bam"), path("${X}.bam.bai")
+
+    script:
+        """
+        samtools view -Sb $sam_file | samtools sort /dev/stdin -o ${X}.bam
+        samtools index ${X}.bam
+        """
+}
+
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
 
@@ -87,4 +106,41 @@ process SamtoolsFlagstats{
         """
         samtools flagstat $input_sam
         """
+}
+
+process SamtoolsFlagstatsMapPercentage{
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    cpus 1
+
+    input:
+        tuple val(X), path(bam), path(bai)
+    
+    output:
+        tuple val(X), stdout
+
+    script:
+    //         samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1
+
+        """
+        set -e -o pipefail
+        samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1 | head -n 1
+        """ 
+}
+
+process SamtoolsMergeTuple{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+
+    input:
+        tuple val(X), path(bam), path(bai)
+
+    output:
+        tuple val(X), path("${X}.merged.bam"), path("${X}.merged.bam.bai")
+    
+    script:
+    """
+    samtools merge -O bam ${X}.merged.bam \$(ls *.bam)
+    samtools index ${X}.merged.bam
+    """
 }

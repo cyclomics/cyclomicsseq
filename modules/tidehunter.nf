@@ -71,58 +71,64 @@ process TideHunterTrimmmer {
         """
 }   
 
-// process TidehunterFullLength{
-//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-//     container 'tidehunter'
+
+process Tidehunter53QualTable{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'tidehunter:1.5.3'
     
-//     input:
-//         path fasta
-//         path prime_3
-//         path prime_5
+    cpus = 2
 
-//     output:
-//         path "${fasta.SimpleName}_tide_consensus_full_length.fasta", emit: consensus
+    input:
+        tuple path(fasta),  path(prime_3_fasta),  path(prime_5_fasta)
 
-//     script:
-//         """
-//         TideHunter -t ${task.cpus} -p 20 -a 0.7 $fasta > ${fasta.SimpleName}_tide_consensus_full_length.fasta
-//         """
-// }
+    output:
+        tuple( val("${fasta.baseName}"), path("*consensus.tsv"))
 
-// process Tidehunter53{
-//     // Parameterized, but unused right now
-//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-//     container 'tidehunter'
+    script:
+        """
+        echo "$params.tidehunter.headerlinesQual" > ${fasta.SimpleName}.consensus.tsv
+        TideHunter \
+        --out-fmt 4  \
+        --kmer-length 16 \
+        --longest  \
+        --thread ${task.cpus} \
+        --five-prime $prime_5_fasta \
+        --three-prime $prime_3_fasta \
+        --min-period $params.tidehunter.minimum_period \
+        --min-len $params.tidehunter.minimum_period \
+        --min-copy $params.tidehunter.minimum_copy \
+        -a $params.tidehunter.minimum_match_ratio \
+        $fasta >> ${fasta.SimpleName}.consensus.tsv
+        """
+}
+process TideHunterFilterTableStartpos{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple( val(X), path(tidehuntertable))
     
-//     input:
-//         path fasta
-//         path prime_3
-//         path prime_5
+    output:
+        tuple( val(X), path("${tidehuntertable.baseName}.startposfilter.tsv"))
 
-//     output:
-//         path "${fasta.SimpleName}.consensus.tsv", emit: consensus
+    script:
+        """
+            awk 'BEGIN {getline; print }{ if (\$5 < 100) { print }}' $tidehuntertable > ${tidehuntertable.baseName}.startposfilter.tsv
+        """
+}
 
-//     script:
-//         """
-//         echo "$params.tidehunter.headerlines" > ${fasta.SimpleName}.consensus.tsv
-//         TideHunter -f 2 -t ${task.cpus} -5 $prime_5 -3 $prime_3 -p $params.tidehunter.minimum_period -a $params.tidehunter.minimum_match_ratio $fasta >> ${fasta.SimpleName}.consensus.tsv
-//         """
-// }
+process TideHunterQualTableToFastq{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
-// process TideHunterTrimmmer {
-//     // Plug tidehunter fasta into this
-//     // removes everyting after the first comma, since this messes with the bam spec
-//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    input:
+        tuple val(X), path(tidehuntertable)
 
-//     input:
-//         path fasta_full_length
-//         path fasta_all
     
-//     output:
-//         path "${original_fasta.SimpleName}.full_length.fasta", emit: fasta_full_length 
+    output:
+        tuple val(X), path("${tidehuntertable.SimpleName}.fastq")
 
-//     script:
-//         """
-//         sed 's/,.*//' $original_fasta > ${original_fasta.SimpleName}.full_length.fasta
-//         """
-// }   
+    script:
+        //  skip first line (header), go on to convert all lines to fastq entries
+        """
+            awk 'BEGIN { getline }{print "@"\$1"\\n"\$11"\\n+\\n"\$12}' $tidehuntertable > ${tidehuntertable.SimpleName}.fastq
+        """
+}
