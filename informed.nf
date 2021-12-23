@@ -106,5 +106,12 @@ workflow {
 */
     FreebayesSimple(Minimap2Align.out, reference_genome_raw)
     Mutect2(Minimap2Align.out, reference_genome_raw)
+
+/*
+========================================================================================
+03.    Reporting
+========================================================================================
+*/
+
 }
 
