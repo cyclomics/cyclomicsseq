@@ -4,7 +4,8 @@ nextflow.enable.dsl=2
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'tidehunter'
+    // container 'tidehunter'
+    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
     
     input:
         path fasta
@@ -21,7 +22,8 @@ process Tidehunter{
 process TidehunterLongest{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'tidehunter:1.5.1'
+    // container 'tidehunter:1.5.1'
+    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
     
     cpus = 1
 
@@ -74,8 +76,10 @@ process TideHunterTrimmmer {
 
 process Tidehunter53QualTable{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'tidehunter:1.5.3'
-    
+    // container 'tidehunter:1.5.3'
+    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
+
+
     cpus = 2
 
     input:
