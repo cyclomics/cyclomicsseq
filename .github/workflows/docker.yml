@@ -31,6 +31,7 @@ jobs:
       - name: build_dockers
         run: |
           echo $$GITHUB_SHA
+          echo "Building $(ls docker)"
           for i in $(ls docker); do
             echo $i
             echo docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
