@@ -1,0 +1,11 @@
+python circlesim.py rca  \
+ --backbone-strategy BackboneFile \
+ --backbone-source /home/dami/Software/cycloseq/tests/informed/backbone_test.fa \
+ --insert-strategy FromFile \
+ --insert-source /home/dami/Software/cycloseq/tests/informed/tp53.fasta \
+ --insert-length 300 \
+ --circularization-strategy BothStrandCircularizer \
+ --RCA-strategy TruncatingRCA \
+ --sequencing-strategy NoisedRandomErrorSequencer \
+ --noise 0.1 \
+ --reads 100 

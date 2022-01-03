@@ -47,4 +47,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run Nextflow pipeline
         run: |
-          echo "To be Implemented"
+          nextflow run informed.nf \
+          --input_read_dir 'tests/informed'\
+          --read_pattern '/fastq_pass/*.fastq' \
+          --backbone_fasta 'tests/informed/backbone_test.fa' \
+          --backbone_name BB_fake \
+          --ci_run
