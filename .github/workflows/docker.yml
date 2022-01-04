@@ -54,7 +54,7 @@ jobs:
       - name: Run Nextflow pipeline
         run: |
           nextflow run informed.nf \
-          --input_read_dir 'tests/informed'\
+          --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --backbone_name BB_fake \
