@@ -30,14 +30,14 @@ jobs:
         
       - name: build_dockers
         run: |
-          echo $$GITHUB_SHA
+          echo $GITHUB_RUN_ID
           echo "Building $(ls docker)"
           for i in $(ls docker); do
             echo $i
-            echo docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            docker tag ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA") ghcr.io/cyclomics/$i:latest
-            docker push ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
+            echo docker build docker/$i -t ghcr.io/cyclomics/$i:GITHUB_RUN_ID
+            docker build docker/$i -t ghcr.io/cyclomics/$i:GITHUB_RUN_ID
+            docker tag ghcr.io/cyclomics/$i:GITHUB_RUN_ID ghcr.io/cyclomics/$i:latest
+            docker push ghcr.io/cyclomics/$i:GITHUB_RUN_ID
             docker push ghcr.io/cyclomics/$i:latest
           done
 
