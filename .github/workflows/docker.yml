@@ -41,15 +41,6 @@ jobs:
             docker push ghcr.io/cyclomics/$i:latest
           done
 
-  test_pipeline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DR_PAT_GHCR }}
-          
       - name: Install Nextflow
         run: |
           wget -qO- get.nextflow.io | bash
