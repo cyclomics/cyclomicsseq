@@ -58,4 +58,5 @@ jobs:
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --backbone_name BB_fake \
+          --reference 'tests/informed/tp53.fasta' \
           --ci_run
