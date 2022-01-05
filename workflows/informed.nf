@@ -47,6 +47,10 @@ log.info """
 ========================================================================================
 */
 include {
+    QC_MinionQc
+} from "../subworkflows/QC"
+
+include {
     ReverseMapping
     TidehunterBackBoneQual
 } from "../subworkflows/consensus"
@@ -79,6 +83,8 @@ workflow {
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
 
+
+    QC_MinionQc(params.input_read_dir)
 /*
 ========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
