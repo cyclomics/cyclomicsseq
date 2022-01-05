@@ -34,10 +34,10 @@ jobs:
           echo "Building $(ls docker)"
           for i in $(ls docker); do
             echo $i
-            echo docker build docker/$i -t ghcr.io/cyclomics/$i:GITHUB_RUN_ID
-            docker build docker/$i -t ghcr.io/cyclomics/$i:GITHUB_RUN_ID
-            docker tag ghcr.io/cyclomics/$i:GITHUB_RUN_ID ghcr.io/cyclomics/$i:latest
-            docker push ghcr.io/cyclomics/$i:GITHUB_RUN_ID
+            echo docker build docker/$i -t ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
+            docker build docker/$i -t ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
+            docker tag ghcr.io/cyclomics/$i:$GITHUB_RUN_ID ghcr.io/cyclomics/$i:latest
+            docker push ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
             docker push ghcr.io/cyclomics/$i:latest
           done
 
