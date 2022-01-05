@@ -49,16 +49,16 @@ log.info """
 include {
     ReverseMapping
     TidehunterBackBoneQual
-} from "./subworkflows/consensus"
+} from "../subworkflows/consensus"
 
 include {
     Minimap2Align
-} from "./subworkflows/align"
+} from "../subworkflows/align"
 
 include {
     FreebayesSimple
     Mutect2
-} from "./subworkflows/variant_calling"
+} from "../subworkflows/variant_calling"
 
 /*
 ========================================================================================
