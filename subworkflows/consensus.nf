@@ -24,8 +24,9 @@ include {
 
 include{
     Tidehunter53QualTable
-    TideHunterQualTableToFastq
     TideHunterFilterTableStartpos
+    TideHunterQualTableToFastq
+    TideHunterQualTableToJson
 } from "../modules/tidehunter"
 
 workflow  ConsensusBasic{
@@ -80,6 +81,7 @@ workflow TidehunterBackBoneQual{
         Tidehunter53QualTable(read_fastq.combine(Extract5PrimeFasta.out).combine(Extract3PrimeFasta.out))
         TideHunterFilterTableStartpos(Tidehunter53QualTable.out)
         TideHunterQualTableToFastq(TideHunterFilterTableStartpos.out)
+        TideHunterQualTableToJson(TideHunterFilterTableStartpos.out)
 
         // BWaMemSorted(Cutadapt.out, reference_gen)
         // SambambaSortSam(BwaMemSorted.out)

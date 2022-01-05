@@ -136,3 +136,33 @@ process TideHunterQualTableToFastq{
             awk 'BEGIN { getline }{print "@"\$1"\\n"\$11"\\n+\\n"\$12}' $tidehuntertable > ${tidehuntertable.SimpleName}.fastq
         """
 }
+
+process TideHunterQualTableToJson{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'stedolan/jq'
+
+    input:
+        tuple val(X), path(tidehuntertable)
+
+    output:
+        tuple val(X), path("${X}.json")
+
+    script:
+        """
+        jq --raw-input --slurp \
+        'split("\n") | 
+        map(split("\t")) | 
+        .[0:-1] | 
+        map( { "id": .[0], 
+            "raw_length":.[3],  
+            "baseunit_copies": .[2], 
+            "baseunit_start_idx":.[4],  
+            "baseunit_end_idx":.[5],  
+            "baseunit_length":.[6],
+            "baseunit_certainty":.[7],
+            "baseunit_orientation":.[8],
+            "baseunit_idx":.[9],  
+        })' \
+        $tidehuntertable > ${X}.json
+        """
+}
