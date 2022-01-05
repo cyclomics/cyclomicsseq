@@ -3,7 +3,7 @@
 process MinimapAlign{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'staphb/minimap2:2.23'
-    cpus = 8
+    cpus = 2
     memory '16GB'
 
     input:
