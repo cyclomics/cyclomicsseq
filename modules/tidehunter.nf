@@ -80,7 +80,7 @@ process Tidehunter53QualTable{
     container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
 
 
-    cpus = 2
+    cpus = 4
 
     input:
         tuple path(fasta),  path(prime_3_fasta),  path(prime_5_fasta)
@@ -164,5 +164,22 @@ process TideHunterQualTableToJson{
             "baseunit_idx":.[9],  
         })' \
         $tidehuntertable > ${X}.json
+        """
+}
+
+process TideHunterQualJsonMerge{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'stedolan/jq'
+
+    input:
+        tuple val(X), path(tidehuntertable)
+
+    output:
+        tuple val(new_X), path("${new_X}.json")
+
+    script:
+        new_X = X.split('_')[0]
+        """
+        jq -s 'flatten' *.json > ${new_X}.json
         """
 }

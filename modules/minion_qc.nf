@@ -9,26 +9,27 @@ process MinionQc{
         path summary
 
     output:
-        path "*.html" , emit: html
-        path "*.json" , emit: json
+        path "${summary}/*.png" , emit: plots
+        path "${summary}/*.yaml" , emit: summary
 
     script:
         """
-        Rscript MinIONQC.R -i  $summary/sequencing_summary.txt
+        Rscript /minion_qc/MinIONQC.R -i  $summary/sequencing_summary*.txt
         """
 }
 
-process MinionQcToJson {
+process MinionQcToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'stedolan/jq'
+    container 'linuxserver/yq:2.13.0'
 
     input:
         path minionqc_yaml
 
     output:
-        tuple val(X), path("QC.json")
+        tuple val("${minionqc_yaml.BaseName}"), path("global.json")
 
     script:
         """
+        yq '.' $minionqc_yaml > global.json
         """
 }
