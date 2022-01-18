@@ -64,6 +64,10 @@ include {
     Mutect2
 } from "../subworkflows/variant_calling"
 
+include {
+    Report
+} from "../subworkflows/report"
+
 /*
 ========================================================================================
     Workflow
@@ -93,7 +97,7 @@ workflow {
 
     // ReverseMapping(read_fastq,backbone_fasta)
 
-    base_units = TidehunterBackBoneQual(read_fastq.flatten(), reference_genome_indexed,backbone_fasta,params.tidehunter.primer_length, params.backbone_name)
+    TidehunterBackBoneQual(read_fastq.flatten(), reference_genome_indexed,backbone_fasta,params.tidehunter.primer_length, params.backbone_name)
 
 /*
 ========================================================================================
@@ -104,7 +108,7 @@ workflow {
     // TODO: Annotate the info from the sequencing summary eg: AnnotateSequencingSummary(Minimap2Align.out, )
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
 
-    Minimap2Align(base_units, reference_genome_raw)
+    Minimap2Align(TidehunterBackBoneQual.out.fastq, reference_genome_raw)
 /*
 ========================================================================================
 03.    Variant calling
@@ -117,7 +121,6 @@ workflow {
 ========================================================================================
 03.    Reporting
 ========================================================================================
-*/
-
+*/  
+    Report(TidehunterBackBoneQual.out.json.mix(QC_MinionQc.out).collect().view())
 }
-
