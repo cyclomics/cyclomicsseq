@@ -1,10 +1,11 @@
-
+#!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
 process TrimFasta {
     // sed call to remove all info after first comma in every line.
     // used to reduce the length of the readname in fasta files
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     
     input:
@@ -23,6 +24,7 @@ process TrimFasta {
 process ConcatenateFasta {
     // Call `cat` on all files (eg fasta) that enter the process
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     
     input:
@@ -39,6 +41,7 @@ process ConcatenateFasta {
 
 process splitSequences {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path(fasta)
@@ -55,6 +58,7 @@ process splitSequences {
 process ConcatenateFastq {
     // Call `cat` on all files (eg fasta) that enter the process
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     
     input:
@@ -72,6 +76,7 @@ process ConcatenateFastq {
 process FilterBams{
     // given a tuple, filter on the fact that the second argument is bigger or equal to 1
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), val(filter_value), path(bam), path(bai)
@@ -91,6 +96,7 @@ process FilterBams{
 
 process ConcatBams{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(bam), path(bai)

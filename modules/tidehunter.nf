@@ -1,12 +1,12 @@
-
+#!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
-    
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
+
     input:
         path fasta
 
@@ -22,10 +22,8 @@ process Tidehunter{
 process TidehunterLongest{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter:1.5.1'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
-    
-    cpus = 1
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
 
     input:
         path fasta
@@ -41,6 +39,7 @@ process TidehunterLongest{
 
 process TideHunterTableToFasta{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path tidehuntertable
@@ -58,6 +57,7 @@ process TideHunterTrimmmer {
     // Plug tidehunter fasta into this
     // removes everyting after the first comma, since this messes with the bam spec
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path original_fasta
@@ -76,11 +76,9 @@ process TideHunterTrimmmer {
 
 process Tidehunter53QualTable{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter:1.5.3'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
 
-
-    cpus = 4
 
     input:
         tuple path(fasta),  path(prime_3_fasta),  path(prime_5_fasta)
@@ -107,6 +105,7 @@ process Tidehunter53QualTable{
 }
 process TideHunterFilterTableStartpos{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple( val(X), path(tidehuntertable))
@@ -122,6 +121,7 @@ process TideHunterFilterTableStartpos{
 
 process TideHunterQualTableToFastq{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(tidehuntertable)
@@ -140,6 +140,7 @@ process TideHunterQualTableToFastq{
 process TideHunterQualTableToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'stedolan/jq'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(tidehuntertable)
@@ -170,6 +171,7 @@ process TideHunterQualTableToJson{
 process TideHunterQualJsonMerge{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'stedolan/jq'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(tidehuntertable)

@@ -1,9 +1,10 @@
-
+#!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
 process MinionQc{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'evolbioinfo/minionqc:v1.4.1'
+    label 'many_cpu_medium'
 
     input:
         path summary
@@ -21,6 +22,7 @@ process MinionQc{
 process MinionQcToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'linuxserver/yq:2.13.0'
+    label 'many_cpu_medium'
 
     input:
         path minionqc_yaml
