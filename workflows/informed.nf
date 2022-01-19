@@ -47,18 +47,26 @@ log.info """
 ========================================================================================
 */
 include {
+    QC_MinionQc
+} from "../subworkflows/QC"
+
+include {
     ReverseMapping
     TidehunterBackBoneQual
-} from "./subworkflows/consensus"
+} from "../subworkflows/consensus"
 
 include {
     Minimap2Align
-} from "./subworkflows/align"
+} from "../subworkflows/align"
 
 include {
     FreebayesSimple
     Mutect2
-} from "./subworkflows/variant_calling"
+} from "../subworkflows/variant_calling"
+
+include {
+    Report
+} from "../subworkflows/report"
 
 /*
 ========================================================================================
@@ -79,6 +87,8 @@ workflow {
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
 
+
+    QC_MinionQc(params.input_read_dir)
 /*
 ========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
@@ -86,8 +96,12 @@ workflow {
 */
 
     // ReverseMapping(read_fastq,backbone_fasta)
-
-    base_units = TidehunterBackBoneQual(read_fastq.flatten(), reference_genome_indexed,backbone_fasta,params.tidehunter.primer_length, params.backbone_name)
+    TidehunterBackBoneQual(read_fastq.flatten(),
+        reference_genome_indexed,
+        backbone_fasta,
+        params.tidehunter.primer_length,
+        params.backbone_name
+    )
 
 /*
 ========================================================================================
@@ -98,20 +112,26 @@ workflow {
     // TODO: Annotate the info from the sequencing summary eg: AnnotateSequencingSummary(Minimap2Align.out, )
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
 
-    Minimap2Align(base_units, reference_genome_raw)
+    Minimap2Align(TidehunterBackBoneQual.out.fastq, reference_genome_raw)
 /*
 ========================================================================================
 03.    Variant calling
 ========================================================================================
 */
     FreebayesSimple(Minimap2Align.out, reference_genome_raw)
-    Mutect2(Minimap2Align.out, reference_genome_raw)
+    // Mutect2(Minimap2Align.out, reference_genome_raw)
 
 /*
 ========================================================================================
 03.    Reporting
 ========================================================================================
-*/
+*/  
+    // TidehunterBackBoneQual.out.json.collect().view()
+    TidehunterBackBoneQual.out.json.view()
 
+    // TidehunterBackBoneQual.out.json.mix(QC_MinionQc.out).collect().view()
+    Report(TidehunterBackBoneQual.out.json, 
+        QC_MinionQc.out, 
+        FreebayesSimple.out
+    )
 }
-

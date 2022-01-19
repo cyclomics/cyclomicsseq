@@ -1,12 +1,14 @@
-
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
 
 process FastqToFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'pegi3s/seqkit:2.1.0'
-    cpus 1
+    label 'many_cpu_medium'
 
     input:
         path(fastq)
+
     output:
         path("${fastq.SimpleName}.fa")
 
@@ -18,9 +20,9 @@ process FastqToFasta {
 
 process Extract5PrimeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-
     container "staphb/seqtk:1.3"
-    
+    label 'many_cpu_medium'
+
     input:
         path fasta
         val length
@@ -37,6 +39,7 @@ process Extract5PrimeFasta {
 process Extract3PrimeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "staphb/seqtk:1.3"
+    label 'many_cpu_medium'
 
     input:
         path fasta
@@ -55,6 +58,7 @@ process Extract3PrimeFasta {
 process ExtractSpecificRead{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'pegi3s/seqkit:2.1.0'
+    label 'many_cpu_medium'
 
     input:
         path fasta

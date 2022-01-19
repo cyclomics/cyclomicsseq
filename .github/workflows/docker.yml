@@ -6,9 +6,9 @@ name: docker building
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches: [ main , dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main , dev ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -30,26 +30,28 @@ jobs:
         
       - name: build_dockers
         run: |
-          echo $$GITHUB_SHA
+          echo $GITHUB_RUN_ID
           echo "Building $(ls docker)"
           for i in $(ls docker); do
             echo $i
-            echo docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            docker build docker/$i -t ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
-            docker tag ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA") ghcr.io/cyclomics/$i:latest
-            docker push ghcr.io/cyclomics/$i:${GITHUB_REF#refs/heads/}-$(git rev-parse --short "$GITHUB_SHA")
+            echo docker build docker/$i -t ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
+            docker build docker/$i -t ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
+            docker tag ghcr.io/cyclomics/$i:$GITHUB_RUN_ID ghcr.io/cyclomics/$i:latest
+            docker push ghcr.io/cyclomics/$i:$GITHUB_RUN_ID
             docker push ghcr.io/cyclomics/$i:latest
           done
 
-  test_pipeline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          
       - name: Run Nextflow pipeline
         run: |
-          nextflow run informed.nf \
-          --input_read_dir 'tests/informed'\
+          nextflow run workflows/informed.nf \
+          --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --backbone_name BB_fake \
+          --reference 'tests/informed/tp53.fasta' \
           --ci_run
