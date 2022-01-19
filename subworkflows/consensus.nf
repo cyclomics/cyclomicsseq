@@ -91,6 +91,6 @@ workflow TidehunterBackBoneQual{
 
     emit:
         fastq = TideHunterQualTableToFastq.out
-        json = TideHunterQualTableToJson.out
+        json = TideHunterQualJsonMerge.out
 
 }

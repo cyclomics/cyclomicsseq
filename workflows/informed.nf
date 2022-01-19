@@ -96,8 +96,12 @@ workflow {
 */
 
     // ReverseMapping(read_fastq,backbone_fasta)
-
-    TidehunterBackBoneQual(read_fastq.flatten(), reference_genome_indexed,backbone_fasta,params.tidehunter.primer_length, params.backbone_name)
+    TidehunterBackBoneQual(read_fastq.flatten(),
+        reference_genome_indexed,
+        backbone_fasta,
+        params.tidehunter.primer_length,
+        params.backbone_name
+    )
 
 /*
 ========================================================================================
@@ -115,12 +119,19 @@ workflow {
 ========================================================================================
 */
     FreebayesSimple(Minimap2Align.out, reference_genome_raw)
-    Mutect2(Minimap2Align.out, reference_genome_raw)
+    // Mutect2(Minimap2Align.out, reference_genome_raw)
 
 /*
 ========================================================================================
 03.    Reporting
 ========================================================================================
 */  
-    Report(TidehunterBackBoneQual.out.json.mix(QC_MinionQc.out).collect().view())
+    // TidehunterBackBoneQual.out.json.collect().view()
+    TidehunterBackBoneQual.out.json.view()
+
+    // TidehunterBackBoneQual.out.json.mix(QC_MinionQc.out).collect().view()
+    Report(TidehunterBackBoneQual.out.json, 
+        QC_MinionQc.out, 
+        FreebayesSimple.out
+    )
 }

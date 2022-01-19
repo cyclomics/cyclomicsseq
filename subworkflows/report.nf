@@ -9,9 +9,14 @@ include {
 
 workflow  Report{
     take:
-        jsons
+        json_reads
+        json_globals
+        vcf
+    main:
+        GenerateHtmlReport(json_reads,
+            json_globals,
+            vcf
+        )
     emit:
         GenerateHtmlReport.output
-    main:
-        GenerateHtmlReport(jsons)
 }
