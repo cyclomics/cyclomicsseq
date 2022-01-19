@@ -24,8 +24,10 @@ include {
 
 include{
     Tidehunter53QualTable
-    TideHunterQualTableToFastq
     TideHunterFilterTableStartpos
+    TideHunterQualTableToFastq
+    TideHunterQualTableToJson
+    TideHunterQualJsonMerge
 } from "../modules/tidehunter"
 
 workflow  ConsensusBasic{
@@ -80,12 +82,15 @@ workflow TidehunterBackBoneQual{
         Tidehunter53QualTable(read_fastq.combine(Extract5PrimeFasta.out).combine(Extract3PrimeFasta.out))
         TideHunterFilterTableStartpos(Tidehunter53QualTable.out)
         TideHunterQualTableToFastq(TideHunterFilterTableStartpos.out)
-
+        TideHunterQualTableToJson(TideHunterFilterTableStartpos.out)
+        TideHunterQualJsonMerge(TideHunterQualTableToJson.out.collect())
         // BWaMemSorted(Cutadapt.out, reference_gen)
         // SambambaSortSam(BwaMemSorted.out)
         // SamtoolsIndex(SambambaSortSam.out)
         // RotateByCigar(SamtoolsIndex.out)
 
     emit:
-     TideHunterQualTableToFastq.out
+        fastq = TideHunterQualTableToFastq.out
+        json = TideHunterQualJsonMerge.out
+
 }

@@ -1,12 +1,12 @@
-
+#!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
-    
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
+
     input:
         path fasta
 
@@ -22,10 +22,8 @@ process Tidehunter{
 process TidehunterLongest{
     // _tide_consensus.fasta in ConCall
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter:1.5.1'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
-    
-    cpus = 1
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
 
     input:
         path fasta
@@ -41,6 +39,7 @@ process TidehunterLongest{
 
 process TideHunterTableToFasta{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path tidehuntertable
@@ -58,6 +57,7 @@ process TideHunterTrimmmer {
     // Plug tidehunter fasta into this
     // removes everyting after the first comma, since this messes with the bam spec
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path original_fasta
@@ -76,11 +76,9 @@ process TideHunterTrimmmer {
 
 process Tidehunter53QualTable{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    // container 'tidehunter:1.5.3'
-    container (params.ci_run == true ? 'ghcr.io/cyclomics/tidehunter:latest' : 'tidehunter:1.5.3')
+    container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
+    label 'many_cpu_intensive'
 
-
-    cpus = 2
 
     input:
         tuple path(fasta),  path(prime_3_fasta),  path(prime_5_fasta)
@@ -107,6 +105,7 @@ process Tidehunter53QualTable{
 }
 process TideHunterFilterTableStartpos{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple( val(X), path(tidehuntertable))
@@ -122,6 +121,7 @@ process TideHunterFilterTableStartpos{
 
 process TideHunterQualTableToFastq{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(tidehuntertable)
@@ -134,5 +134,54 @@ process TideHunterQualTableToFastq{
         //  skip first line (header), go on to convert all lines to fastq entries
         """
             awk 'BEGIN { getline }{print "@"\$1"\\n"\$11"\\n+\\n"\$12}' $tidehuntertable > ${tidehuntertable.SimpleName}.fastq
+        """
+}
+
+process TideHunterQualTableToJson{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'stedolan/jq'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(tidehuntertable)
+
+    output:
+        tuple val(X), path("${X}.json")
+
+    script:
+        """
+        jq --raw-input --slurp \
+        'split("\n") | 
+        map(split("\t")) | 
+        .[0:-1] | 
+        map( { "id": .[0], 
+            "raw_length":.[3],  
+            "baseunit_copies": .[2], 
+            "baseunit_start_idx":.[4],  
+            "baseunit_end_idx":.[5],  
+            "baseunit_length":.[6],
+            "baseunit_certainty":.[7],
+            "baseunit_orientation":.[8],
+            "baseunit_idx":.[9],  
+        })' \
+        $tidehuntertable > ${X}.json
+        """
+}
+
+process TideHunterQualJsonMerge{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'stedolan/jq'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(tidehuntertable)
+
+    output:
+        tuple val(new_X), path("${new_X}.json")
+
+    script:
+        new_X = X.split('_')[0]
+        """
+        jq -s 'flatten' *.json > ${new_X}.json
         """
 }

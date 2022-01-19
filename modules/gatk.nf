@@ -1,8 +1,11 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl = 2
 
 process CreateRererenceDict {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
-    cpus 1
+    label 'many_cpu_intensive'
+
 
     input:
         path(reference)
@@ -19,7 +22,8 @@ process CreateRererenceDict {
 process GatkAddOrReplaceReadGroups {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
-    cpus 1
+    label 'many_cpu_intensive'
+
 
     input:
         tuple val(X), path(input_bam_file), path(input_bai_file)
@@ -45,7 +49,7 @@ process GatkAddOrReplaceReadGroups {
 process Mutect2TumorOnly {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
-    cpus 8
+    label 'few_cpu_intensive'
 
     input:
         tuple val(X), path(input_bam), path(input_bai), path(reference), path(reference_dict)
@@ -54,12 +58,12 @@ process Mutect2TumorOnly {
         tuple val(X), path("${X}.mutect2.vcf")
 
     script:
+        """
+        samtools faidx $reference
+        gatk Mutect2 \
+        --native-pair-hmm-threads ${task.cpus} \
+        -R $reference \
+        -I $input_bam \
+        -O ${X}.mutect2.vcf
     """
-    samtools faidx $reference
-    gatk Mutect2 \
-    --native-pair-hmm-threads ${task.cpus} \
-   -R $reference \
-   -I $input_bam \
-   -O ${X}.mutect2.vcf
-   """
 }

@@ -15,7 +15,6 @@ workflow FreebayesSimple{
         reference_genome
 
     main:
-        reads.combine(reference_genome).view()
         Freebayes(reads.combine(reference_genome))
     emit:
         Freebayes.out

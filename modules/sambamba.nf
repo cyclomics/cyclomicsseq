@@ -1,11 +1,10 @@
-
-
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
 
 process SambambaSortSam{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
-    
-    cpus = 3
+    label 'many_cpu_intensive'
 
     input:
         each path(sam)

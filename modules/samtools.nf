@@ -1,10 +1,11 @@
-
+#!/usr/bin/env nextflow
 nextflow.enable.dsl=2
-
 
 process SamtoolsIndex{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
+
 
     input:
         each path(bam)
@@ -16,7 +17,6 @@ process SamtoolsIndex{
         """
         samtools index $bam
         """
-
 }
 
 process SamtoolsSort{
@@ -24,6 +24,7 @@ process SamtoolsSort{
     // Does break when sam is not `propper` eg no @SQ tags
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
 
     input:
         path(input_sam)
@@ -35,14 +36,13 @@ process SamtoolsSort{
         """
         samtools sort $input_sam -O bam -o "${input_sam.SimpleName}_sorted.bam"
         """
-
 }
 
 process SamToBam{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
-    cpus 1
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(sam_file)
@@ -59,9 +59,9 @@ process SamToBam{
 
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
-
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
 
     input:
         path(input_sam)
@@ -74,12 +74,12 @@ process SamtoolsMerge{
         """
         samtools merge -O bam ${output_base}.bam $input_sam
         """
-
 }
 
-
 process SamtoolsQuickcheck{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
 
     input:
         path(input_sam)
@@ -94,7 +94,9 @@ process SamtoolsQuickcheck{
 }
 
 process SamtoolsFlagstats{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
 
     input:
         path(input_sam)
@@ -109,9 +111,9 @@ process SamtoolsFlagstats{
 }
 
 process SamtoolsFlagstatsMapPercentage{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
-
-    cpus 1
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -129,8 +131,10 @@ process SamtoolsFlagstatsMapPercentage{
 }
 
 process SamtoolsMergeTuple{
+    //  merge n number of bams into one
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(bam), path(bai)
