@@ -148,3 +148,41 @@ process SamtoolsMergeTuple{
     samtools index ${X}.merged.bam
     """
 }
+
+process RemoveUnmappedReads{
+    // Sort, convert and index 
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+
+    output:
+        tuple val(X), path("${X}.mapped.bam"), path("${X}.mapped.bam.bai")
+
+    script:
+        """
+        samtools view -b -F 4 $bam_in > ${X}.mapped.bam
+        samtools index ${X}.mapped.bam
+        """
+}
+
+process PrimaryMappedFilter{
+    // Sort, convert and index 
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+
+    output:
+        tuple val(X), path("${X}.primary_mapped.bam"), path("${X}.primary_mapped.bam.bai")
+
+    script:
+        """
+        samtools view -b -F 256 $bam_in > ${X}.primary_mapped.bam
+        samtools index ${X}.primary_mapped.bam
+        """
+}

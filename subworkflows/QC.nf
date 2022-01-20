@@ -3,12 +3,12 @@ nextflow.enable.dsl=2
 
 include {
     PYCOQC
-} from "../modules/pycoqc.nf"
+} from "./modules/pycoqc.nf"
 
 include {
     MinionQc
     MinionQcToJson
-} from "../modules/minion_qc.nf"
+} from "./modules/minion_qc.nf"
 
 
 workflow  QC_pycoqc{

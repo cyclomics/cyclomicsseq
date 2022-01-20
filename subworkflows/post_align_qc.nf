@@ -7,7 +7,7 @@ nextflow.enable.dsl = 2
 include {
     SamtoolsQuickcheck
     SamtoolsFlagstats
-} from "../modules/samtools"
+} from "./modules/samtools"
 
 
 workflow  PostAlignmentQC{

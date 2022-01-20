@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 
 include {DummyProcess as Filtering;
-} from "../modules/dummy.nf"
+} from "./modules/dummy.nf"
 
 workflow  FilteringBasic{
     take:

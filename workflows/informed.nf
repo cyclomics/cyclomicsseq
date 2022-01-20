@@ -53,6 +53,7 @@ include {
 include {
     ReverseMapping
     TidehunterBackBoneQual
+    ConsensusTroughAlignment
 } from "../subworkflows/consensus"
 
 include {
@@ -88,7 +89,7 @@ workflow {
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
 
 
-    QC_MinionQc(params.input_read_dir)
+    // QC_MinionQc(params.input_read_dir)
 /*
 ========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
@@ -96,7 +97,14 @@ workflow {
 */
 
     // ReverseMapping(read_fastq,backbone_fasta)
-    TidehunterBackBoneQual(read_fastq.flatten(),
+    // TidehunterBackBoneQual(read_fastq.flatten(),
+    //     reference_genome_indexed,
+    //     backbone_fasta,
+    //     params.tidehunter.primer_length,
+    //     params.backbone_name
+    // )
+    ConsensusTroughAlignment(
+        read_fastq,
         reference_genome_indexed,
         backbone_fasta,
         params.tidehunter.primer_length,
@@ -112,13 +120,13 @@ workflow {
     // TODO: Annotate the info from the sequencing summary eg: AnnotateSequencingSummary(Minimap2Align.out, )
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
 
-    Minimap2Align(TidehunterBackBoneQual.out.fastq, reference_genome_raw)
+    // Minimap2Align(TidehunterBackBoneQual.out.fastq, reference_genome_raw)
 /*
 ========================================================================================
 03.    Variant calling
 ========================================================================================
 */
-    FreebayesSimple(Minimap2Align.out, reference_genome_raw)
+    // FreebayesSimple(Minimap2Align.out, reference_genome_raw)
     // Mutect2(Minimap2Align.out, reference_genome_raw)
 
 /*
@@ -127,11 +135,11 @@ workflow {
 ========================================================================================
 */  
     // TidehunterBackBoneQual.out.json.collect().view()
-    TidehunterBackBoneQual.out.json.view()
+    // TidehunterBackBoneQual.out.json.view()
 
     // TidehunterBackBoneQual.out.json.mix(QC_MinionQc.out).collect().view()
-    Report(TidehunterBackBoneQual.out.json, 
-        QC_MinionQc.out, 
-        FreebayesSimple.out
-    )
+    // Report(TidehunterBackBoneQual.out.json, 
+    //     QC_MinionQc.out, 
+    //     FreebayesSimple.out
+    // )
 }

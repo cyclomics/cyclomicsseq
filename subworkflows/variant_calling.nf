@@ -1,12 +1,12 @@
 include {
     Freebayes
-} from "../modules/freebayes"
+} from "./modules/freebayes"
 
 include {
     CreateRererenceDict
     GatkAddOrReplaceReadGroups
     Mutect2TumorOnly
-} from "../modules/gatk"
+} from "./modules/gatk"
 
 
 workflow FreebayesSimple{
