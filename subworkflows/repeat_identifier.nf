@@ -6,38 +6,38 @@ include {
     BwaMem16c
     BwaMem
     BwaMem as BwaMemRealign
-} from "../modules/bwa"
+} from "./modules/bwa"
 
 include {
     RotateByCigar
-} from "../modules/rotate_reads"
+} from "./modules/rotate_reads"
 
 include {
     Extract5PrimeFasta
     Extract3PrimeFasta
-} from "../modules/primes"
+} from "./modules/seqkit"
 
 include {
     SamtoolsIndex
     SamtoolsSort
     SamtoolsMerge
-} from "../modules/samtools"
+} from "./modules/samtools"
 
 include {
     SambambaSortSam
-} from "../modules/sambamba"
+} from "./modules/sambamba"
 
 include {
     Tidehunter
     TidehunterLongest
     TideHunterTrimmmer
     TideHunterTableToFasta
-} from "../modules/tidehunter"
+} from "./modules/tidehunter"
 
 include {
     TrimFasta
     ConcatenateFasta
-} from "../modules/utils"
+} from "./modules/utils"
 
 
 workflow  TideHunterBasic{

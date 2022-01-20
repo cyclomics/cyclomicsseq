@@ -7,20 +7,23 @@ include {
     Extract5PrimeFasta
     Extract3PrimeFasta
     ExtractSpecificRead
-} from "../modules/seqkit"
+} from "./modules/seqkit"
 
 include {
     BwaIndex
     BwaMemReferenceNamedBam as BwaMemReverse
-} from "../modules/bwa"
+} from "./modules/bwa"
 
 include {
     SamtoolsFlagstatsMapPercentage
-} from "../modules/samtools"
+    RemoveUnmappedReads
+    PrimaryMappedFilter
+    SamToBam
+} from "./modules/samtools"
 
 include {
     FilterBams
-} from "../modules/utils"
+} from "./modules/utils"
 
 include{
     Tidehunter53QualTable
@@ -28,7 +31,12 @@ include{
     TideHunterQualTableToFastq
     TideHunterQualTableToJson
     TideHunterQualJsonMerge
-} from "../modules/tidehunter"
+} from "./modules/tidehunter"
+
+
+include {
+    MinimapAlignMany
+} from "./modules/minimap"
 
 workflow  ConsensusBasic{
     take:
@@ -93,4 +101,22 @@ workflow TidehunterBackBoneQual{
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
 
+}
+
+workflow ConsensusTroughAlignment{
+    take:
+        read_fastq
+        reference_genome
+        backbone_fasta
+        backbone_primer_len
+        backbone_name
+    main:
+        // create new reference
+        ExtractSpecificRead(backbone_fasta, backbone_name)
+        MinimapAlignMany(read_fastq, ExtractSpecificRead.out)
+        SamToBam(MinimapAlignMany.out)
+        PrimaryMappedFilter(SamToBam.out)
+
+    emit:
+        MinimapAlignMany.out
 }

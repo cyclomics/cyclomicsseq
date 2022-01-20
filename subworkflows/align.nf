@@ -4,11 +4,11 @@ nextflow.enable.dsl=2
 
 include {
     BwaMemSorted
-} from "../modules/bwa.nf"
+} from "./modules/bwa.nf"
 
 include {
     MinimapAlign
-} from "../modules/minimap.nf"
+} from "./modules/minimap.nf"
 
 include {
     LastCreateDB
@@ -19,18 +19,18 @@ include {
     LastSplit
     Maf2sam
     SamtoolsFixSam
-} from "../modules/last.nf"
+} from "./modules/last.nf"
 
 include{
     ConcatenateFasta
     ConcatenateFastq
-} from "../modules/utils.nf"
+} from "./modules/utils.nf"
 
 include {
     SamtoolsIndex
     SamToBam
     SamtoolsMergeTuple
-} from "../modules/samtools"
+} from "./modules/samtools"
 
 
 workflow AlignBWA{

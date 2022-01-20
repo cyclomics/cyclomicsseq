@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 
 include {
     GenerateHtmlReport
-} from '../modules/reporting'
+} from './modules/reporting'
 
 workflow  Report{
     take:

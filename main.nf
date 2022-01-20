@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-    Cyclomics/CycloSeq
+    Cyclomics/CycloSeq Informed pipeline
 ========================================================================================
     Github : https://github.com/cyclomics/cycloseq
     Website: https://cyclomics.com
@@ -16,135 +16,120 @@ nextflow.enable.dsl = 2
 ========================================================================================
 */
 // ### PARAMETERS
-params.input_read_dir             = "/home/dami/data/raw_data/MAR6228/"
+params.input_read_dir             = "$HOME/data/raw_data/MAR6252/"
 params.read_pattern               = "fastq_pass/**.{fq,fastq}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
+params.backbone_fasta             = "$HOME/data/backbones/backbones/backbones_db_valid.fasta"
+params.backbone_name              = "BB22"
 
-params.reference = "/home/dami/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
-// freference indexes are expected to be in reference folder
-params.output_dir = "data/out/$workflow.runName"
 
-params.qc                   = "simple" // simple or skip
-params.filtering            = "simple" // simple or skip
-params.repeat_splitting     = "simple" // simple, longest, tidehunterquality or skip
-params.consensus_calling    = "simple" // simple or skip
-params.final_alignment      = "BWA"  // BWA, Latal, Lastal-trained or skip
+params.reference = "$HOME/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
+// reference indexes are expected to be in reference folder
+params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
 // ### Printout for user
 log.info """
     ===================================================
-    Cyclomics/CycloSeq : Cyclomics consensus pipeline
+    Cyclomics/CycloSeq : Cyclomics informed pipeline
     ===================================================
         input_reads   : $params.input_read_dir
         read_pattern  : $params.read_pattern
         reference     : $params.reference
+        backbone_fasta: $params.backbone_fasta
+        backbone_name : $params.backbone_name
+
+        output folder : $params.output_dir
 """
 
 /*
 ========================================================================================
-    Loading
+    Include statements
 ========================================================================================
 */
-
 include {
-    QC_pycoqc;
+    QC_MinionQc
 } from "./subworkflows/QC"
 
 include {
-    FilteringBasic
-} from "./subworkflows/filtering"
+    ReverseMapping
+    TidehunterBackBoneQual
+    ConsensusTroughAlignment
+} from "./subworkflows/consensus"
 
 include {
-    TideHunterBasic
-    TideHunterKeepLongest
-} from "./subworkflows/repeat_identifier"
-
-include {
-    AlignBWA
+    Minimap2Align
 } from "./subworkflows/align"
 
 include {
-    PostAlignmentQC
-} from "./subworkflows/post_align_qc"
+    FreebayesSimple
+    Mutect2
+} from "./subworkflows/variant_calling"
 
+include {
+    Report
+} from "./subworkflows/report"
+
+/*
+========================================================================================
+    Workflow
+========================================================================================
+*/
 workflow {
     read_pattern = "${params.input_read_dir}${params.read_pattern}"
     sequencing_quality_summary_pattern = "${params.input_read_dir}/${params.sequencing_quality_summary}"
 
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
-    read_file_ch = Channel.fromPath(read_pattern, checkIfExists: true)
-
+    read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
+    // read_fastq.view()
     qc_seq_file_ch = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
+    backbone_fasta = Channel.fromPath(params.backbone_fasta, checkIfExists: true)
     
+    reference_genome_raw = Channel.fromPath(params.reference, checkIfExists: true)
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
-    // println reference_genome_indexed.view()
-    // TODO: check for .amb,.ann,.bwt,.pac,.sa
-    // TODO: index when no index files present
 
 
-    println "Starting workflow"
+    QC_MinionQc(params.input_read_dir)
+/*
+========================================================================================
+01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
+========================================================================================
+*/
 
-    /*
-    ========================================================================================
-    00.    Quality Control
-    ========================================================================================
-    */
+    // ReverseMapping(read_fastq,backbone_fasta)
+    TidehunterBackBoneQual(read_fastq.flatten(),
+        reference_genome_indexed,
+        backbone_fasta,
+        params.tidehunter.primer_length,
+        params.backbone_name
+    )
 
-    if( params.qc == "simple" )
-        qc_report = QC_pycoqc(qc_seq_file_ch)
+/*
+========================================================================================
+02.    Alignment
+========================================================================================
+*/
+    // TODO: Better naming of the merged bam (eg remove number extension)
+    // TODO: Annotate the info from the sequencing summary eg: AnnotateSequencingSummary(Minimap2Align.out, )
+    // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
 
-    else if( params.qc == 'skip' )
-        println "Skipping QC control"
+    Minimap2Align(TidehunterBackBoneQual.out.fastq, reference_genome_raw)
+/*
+========================================================================================
+03.    Variant calling
+========================================================================================
+*/
+    FreebayesSimple(Minimap2Align.out, reference_genome_raw)
+    // Mutect2(Minimap2Align.out, reference_genome_raw)
 
-    else
-        error "Invalid qc selector: ${params.qc}"
+/*
+========================================================================================
+03.    Reporting
+========================================================================================
+*/  
 
-    /*
-    ========================================================================================
-    01.    repeat splitting
-    ========================================================================================
-    */
-
-    if( params.repeat_splitting == "simple" )
-        repeats = TideHunterBasic(read_file_ch, reference_genome_indexed)
-    
-    else if( params.repeat_splitting == 'longest')
-        repeats = TideHunterKeepLongest(read_file_ch, reference_genome_indexed)
-    
-    else if( params.repeat_splitting == 'tidehunterquality')
-        repeats = TideHunterQuality(read_file_ch, reference_genome_indexed)
-
-    else if( params.repeat_splitting == 'skip' )
-        println "Skipping  Filtering"
-
-    else
-        error "Invalid repeat finder selector: ${params.repeat_splitting}"
-
-    /*
-    ========================================================================================
-    02.    Filtering
-    ========================================================================================
-    */ 
-    // if( params.filtering == "simple" )
-    //     reads_filtered = FilteringBasic(repeats.flatten())
-    // else if( params.filtering == 'skip' ) {
-    //     reads_filtered = repeats
-    //     println "Skipping  Filtering"
-    // }
-    // else
-    //     error "Invalid repeat finder selector: ${params.filtering}"
-    
-
-
-    /*
-    ========================================================================================
-    03.    Alignment
-    ========================================================================================
-    */ 
-
-    // dont call .out on assigned workflow outputs
-    AlignBWA(repeats,  reference_genome_indexed)
-
-    PostAlignmentQC(AlignBWA.out)
+    Report(TidehunterBackBoneQual.out.json, 
+        QC_MinionQc.out, 
+        FreebayesSimple.out
+    )
 }

@@ -13,7 +13,7 @@ process Freebayes {
         tuple val(X), path("${input_bam_file.SimpleName}.vcf")
 
     script:
-        println("WARN: out chr17 variant calling only!")
+        println("WARN: chr17 variant calling only!")
         ref = reference.first()
         """
         freebayes \
