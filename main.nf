@@ -22,6 +22,7 @@ params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/data/backbones/backbones/backbones_db_valid.fasta"
 params.backbone_name              = "BB22"
 
+params.control_vcf                = ""
 
 params.reference = "$HOME/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
 // reference indexes are expected to be in reference folder
@@ -126,10 +127,10 @@ workflow {
 ========================================================================================
 03.    Reporting
 ========================================================================================
-*/  
+*/
 
     Report(TidehunterBackBoneQual.out.json, 
-        QC_MinionQc.out, 
-        FreebayesSimple.out
+    QC_MinionQc.out, 
+    FreebayesSimple.out
     )
 }
