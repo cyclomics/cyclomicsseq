@@ -30,6 +30,8 @@ include {
     SamtoolsIndex
     SamToBam
     SamtoolsMergeTuple
+    SamtoolsDepth
+    SamtoolsDepthToJson
 } from "./modules/samtools"
 
 
@@ -52,8 +54,11 @@ workflow Minimap2Align{
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
         SamtoolsMergeTuple(SamToBam.out.collect())
+        SamtoolsDepth(SamtoolsMergeTuple.out)
+        SamtoolsDepthToJson(SamtoolsDepth.out)
     emit:
-        SamtoolsMergeTuple.out
+        bam = SamtoolsMergeTuple.out
+        depth = SamtoolsDepthToJson.out
 }
 
 workflow LastalAlignFasta{

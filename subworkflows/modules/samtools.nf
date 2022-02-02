@@ -38,6 +38,42 @@ process SamtoolsSort{
         """
 }
 
+process SamtoolsDepth{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'biocontainers/samtools:v1.7.0_cv4'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(input_bam), path(bai)
+
+    output:
+        path "${input_bam.SimpleName}.bed"
+
+    script:
+        """
+        samtools depth $input_bam > ${input_bam.SimpleName}.bed
+        """
+}
+
+process SamtoolsDepthToJson{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // the slim version of buster is missing ps, which is needed for nextflow
+    container 'python:3.9.10-buster'
+    label 'many_cpu_medium'
+
+    input:
+        path(input_bed)
+
+    output:
+        path "${input_bed.SimpleName}.json"
+
+    script:
+        """
+        bed_to_json.py --bed $input_bed
+        """
+}
+
+
 process SamToBam{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
