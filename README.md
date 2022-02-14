@@ -1,6 +1,6 @@
 # CycloSeq
 
-Pipeline to process Cyclomics data.
+Pipelines to process Cyclomics data.
 
 This pipeline uses prior information from the backbone to increase the effectiveness of consensus calling from the circular DNA protocol by Cyclomics.  
 

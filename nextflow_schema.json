@@ -78,7 +78,7 @@
                 },
                 "extra_variant_calling": {
                     "type": "string",
-                    "default": "freebayes"
+                    "default": "skip"
                 },
                 "extra_haplotyping": {
                     "type": "string",

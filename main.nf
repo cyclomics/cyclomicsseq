@@ -30,7 +30,7 @@ params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
 
 // method selection
-params.qc                   = "skip" // simple or skip
+params.qc                   = "simple" // simple or skip
 params.consensus_calling    = "tidehunter" // simple or skip
 params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.extra_variant_calling= "skip"
@@ -146,7 +146,7 @@ AA. Parameter processing
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
     }
-    else if(params.consensus_calling == "cta" ){
+    else if(params.consensus_calling == "cta" ) {
         base_unit_reads = ConsensusTroughAlignment(
             read_fastq.flatten(),
             reference_genome_indexed,
@@ -171,7 +171,8 @@ AA. Parameter processing
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
     if( params.alignment == "minimap" ) {
         Minimap2Align(base_unit_reads, reference_genome_raw)
-        aligned_reads = Minimap2Align.out
+        aligned_reads = Minimap2Align.out.bam
+        depth_info = Minimap2Align.out.depth
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
@@ -187,12 +188,14 @@ AA. Parameter processing
 */  
     if( params.extra_variant_calling == "freebayes" ) {
         FreebayesSimple(aligned_reads, reference_genome_raw)
+        vcf = FreebayesSimple.out
     }
     else if (params.extra_variant_calling == "mutect"){
         Mutect2(aligned_reads, reference_genome_raw)
+        vcf = Mutect2.out
     }
     else if( params.extra_variant_calling == "skip" ) {
-        println "Skipping extra_variant_calling control"
+        println "Skipping extra_variant_calling"
     }
     else {
         error "Invalid extra_variant_calling selector: ${params.extra_variant_calling}"
@@ -204,8 +207,10 @@ AA. Parameter processing
 ========================================================================================
 */
 
-    // Report(TidehunterBackBoneQual.out.json, 
-    // QC_MinionQc.out, 
-    // FreebayesSimple.out
-    // )
+
+    Report(TidehunterBackBoneQual.out.json, 
+    QC_MinionQc.out, 
+    vcf,
+    depth_info
+    )
 }
