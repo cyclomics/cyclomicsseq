@@ -144,8 +144,10 @@ process SamtoolsMergeTuple{
     
     script:
     """
-    samtools merge -O bam ${X}.merged.bam \$(ls *.bam)
+    ls
+    samtools merge -O bam ${X}.merged.bam \$(find . -name '*.bam')
     samtools index ${X}.merged.bam
+    exit 1
     """
 }
 

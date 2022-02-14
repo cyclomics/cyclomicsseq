@@ -51,6 +51,7 @@ workflow Minimap2Align{
     main:
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
+        // TODO fix here!
         SamtoolsMergeTuple(SamToBam.out.collect())
     emit:
         SamtoolsMergeTuple.out
