@@ -53,9 +53,8 @@ workflow Minimap2Align{
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
         // TODO fix here!
-        id = 'merge'
+        id = reads.first()map( it -> it[0])
         bams = SamToBam.out.map(it -> it[1]).collect()
-        bams.view()
         SamtoolsMergeBams(id, bams)
     emit:
         SamtoolsMergeBams.out
