@@ -30,6 +30,7 @@ include {
     SamtoolsIndex
     SamToBam
     SamtoolsMergeTuple
+    SamtoolsMergeBams
 } from "./modules/samtools"
 
 
@@ -52,9 +53,12 @@ workflow Minimap2Align{
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
         // TODO fix here!
-        SamtoolsMergeTuple(SamToBam.out.collect())
+        id = 'merge'
+        bams = SamToBam.out.map(it -> it[1]).collect()
+        bams.view()
+        SamtoolsMergeBams(id, bams)
     emit:
-        SamtoolsMergeTuple.out
+        SamtoolsMergeBams.out
 }
 
 workflow LastalAlignFasta{
