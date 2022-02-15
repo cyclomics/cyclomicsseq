@@ -93,7 +93,6 @@ workflow TidehunterBackBoneQual{
         TideHunterQualTableToJson(TideHunterFilterTableStartpos.out)
         id = TideHunterQualTableToJson.out.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        id.view()
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
         TideHunterQualJsonMerge(id, jsons)
         // BWaMemSorted(Cutadapt.out, reference_gen)

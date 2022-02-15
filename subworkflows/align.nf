@@ -55,7 +55,6 @@ workflow Minimap2Align{
         // TODO fix here!
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        id.view()
         bams = SamToBam.out.map(it -> it[1]).collect()
         SamtoolsMergeBams(id, bams)
     emit:
