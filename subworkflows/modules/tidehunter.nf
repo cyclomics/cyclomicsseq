@@ -174,7 +174,8 @@ process TideHunterQualJsonMerge{
     label 'many_cpu_medium'
 
     input:
-        tuple val(X), path(tidehuntertable)
+        val(X)
+        path(tidehuntertable)
 
     output:
         tuple val(new_X), path("${new_X}.json")
