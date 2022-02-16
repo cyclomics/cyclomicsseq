@@ -174,14 +174,16 @@ process TideHunterQualJsonMerge{
     label 'many_cpu_medium'
 
     input:
-        tuple val(X), path(tidehuntertable)
+        val(X)
+        path(tidehuntertable)
 
     output:
         tuple val(new_X), path("${new_X}.json")
 
     script:
         new_X = X.split('_')[0]
+        // remove all items containing the column names
         """
-        jq -s 'flatten' *.json > ${new_X}.json
+        jq  'flatten | .[] | select(.id=="readName" | not)' *.json | jq --slurp '.' > ${new_X}.json
         """
 }
