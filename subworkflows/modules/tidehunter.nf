@@ -182,7 +182,8 @@ process TideHunterQualJsonMerge{
 
     script:
         new_X = X.split('_')[0]
+        // remove all items containing the column names
         """
-        jq -s 'flatten' *.json > ${new_X}.json
+        jq  'flatten | .[] | select(.id=="readName" | not)' *.json | jq --slurp '.' > ${new_X}.json
         """
 }
