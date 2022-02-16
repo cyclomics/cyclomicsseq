@@ -16,11 +16,13 @@ This pipeline uses prior information from the backbone to increase the effective
 
 ## Usage
 
-### example
+If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create one [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
+an example whould be:
 
 ```bash
-nextflow run cyclomics/cycloseq --input_read_dir '/some/path' --read_pattern 'fastq_pass/*.fastq' --output_dir 'testing' -resume
+nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
 ```
+
 
 ### Flag descriptions
 
@@ -31,3 +33,11 @@ nextflow run cyclomics/cycloseq --input_read_dir '/some/path' --read_pattern 'fa
 |--sequencing_quality_summary   | Regex pattern for the summary file, default: "sequencing_summary*.txt".|
 |--backbone_fasta               | Path to the fasta file containing backbone sequences.|
 |--backbone_name                | Name of the sequence to extract from the backbone fasta excluding the starting ">", e.g.:"BB22". |
+|--reference | Path to the reference genome to use, will ingest all index files in the same directory.|
+|--output_dir | Directory path where the results, including intermediate files, are stored. |
+
+### Example
+
+```bash
+nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> -resume --input_read_dir '/some/path' --read_pattern 'fastq_pass/*.fastq' --output_dir 'testing'
+```

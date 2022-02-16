@@ -7,8 +7,8 @@ RUN wget https://github.com/yangao07/TideHunter/releases/download/v1.5.3/TideHun
 RUN tar -zxf TideHunter-v1.5.3.tar.gz 
 WORKDIR /TideHunter-v1.5.3
 RUN make
+RUN chmod -R 777 /TideHunter-v1.5.3
 # add all the spelling cases
 RUN ln -s /TideHunter-v1.5.3/bin/TideHunter /bin/tidehunter
 RUN ln -s /TideHunter-v1.5.3/bin/TideHunter /bin/Tidehunter
 RUN ln -s /TideHunter-v1.5.3/bin/TideHunter /bin/TideHunter
-
