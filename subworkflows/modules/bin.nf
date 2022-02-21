@@ -1,7 +1,9 @@
 
-process JqAddDepthToJson{
+
+
+process AddDepthToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'stedolan/jq'
+    container 'python:3.8'
     label 'many_cpu_medium'
 
     input:
@@ -13,7 +15,8 @@ process JqAddDepthToJson{
 
     script:
         """
-        jq --argjson text "\$(jq -c '' $depth_json )" \
-        '.depth=\$text' global.json > ${X}.depth.json
+       
+        add_depth_info_json.py --global_json $tidehuntertable --depth_json $depth_json --output ${X}.depth.json
+
         """
 }
