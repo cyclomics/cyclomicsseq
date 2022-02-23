@@ -34,9 +34,6 @@ workflow  Report{
         }
         else {
             println('Generating report without control vcf')
-            json_reads.view()
-            full_json.view()
-            
             report = GenerateHtmlReport(json_reads,
             full_json,
             vcf
