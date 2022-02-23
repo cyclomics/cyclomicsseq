@@ -186,20 +186,23 @@ AA. Parameter processing
 03.A   Variant calling
 ========================================================================================
 */  
-    if( params.extra_variant_calling == "freebayes" ) {
-        FreebayesSimple(aligned_reads, reference_genome_raw)
-        vcf = FreebayesSimple.out
-    }
-    else if (params.extra_variant_calling == "mutect"){
-        Mutect2(aligned_reads, reference_genome_raw)
-        vcf = Mutect2.out
-    }
-    else if( params.extra_variant_calling == "skip" ) {
-        println "Skipping extra_variant_calling"
-    }
-    else {
-        error "Invalid extra_variant_calling selector: ${params.extra_variant_calling}"
-    }
+    
+    // if( params.extra_variant_calling == "freebayes" ) {
+    FreebayesSimple(aligned_reads, reference_genome_raw)
+    vcf = FreebayesSimple.out
+    // }
+    // else if (params.extra_variant_calling == "mutect"){
+    //     Mutect2(aligned_reads, reference_genome_raw)
+    //     vcf = Mutect2.out
+    // }
+    // else if( params.extra_variant_calling == "skip" ) {
+    //     println "Skipping extra_variant_calling"
+    //     vcf = ""
+    // }
+    // else {
+    //     error "Invalid extra_variant_calling selector: ${params.extra_variant_calling}"
+    //     vcf = ""
+    // }
 
 /*
 ========================================================================================
@@ -214,3 +217,30 @@ AA. Parameter processing
     depth_info
     )
 }
+
+
+// TODO:
+
+// Error executing process > 'Report:JqAddDepthToJson'
+
+// Caused by:
+//   Process `Report:JqAddDepthToJson` terminated with an error exit status (1)
+
+// Command executed:
+
+//   jq --argjson text "$(jq -c '' AIG157_pass_dab2ad05_8.json )"         '.depth=$text' global.json > summary.depth.json
+
+// Command exit status:
+//   1
+
+// Command output:
+//   (empty)
+
+// Command error:
+//   .command.sh: line 2: /usr/local/bin/jq: Argument list too long
+
+// Work dir:
+//   /home/dami/Software/cycloseq/work/ae/1a914c75548f5ae3f5cb354f427295
+
+// Tip: when you have fixed the problem you can continue the execution adding the option `-resume` to the run command line
+
