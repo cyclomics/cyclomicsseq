@@ -41,3 +41,17 @@ nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
 ```bash
 nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> -resume --input_read_dir '/some/path' --read_pattern 'fastq_pass/*.fastq' --output_dir 'testing'
 ```
+
+### Running on the UMCU HPC
+
+login to the hpc using SSH. there start a sjob with:
+
+```bash
+srun --job-name "InteractiveJob" --cpus-per-task 16 --mem=32G --gres=tmpspace:450G --time 24:00:00 --pty bash
+```
+
+go to the right project folder
+
+``` bash
+cd /hpc/compgen/projects/cyclomics/cycloseq/pipelines/cycloseq/
+```
