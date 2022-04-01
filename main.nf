@@ -68,7 +68,7 @@ include {
 include {
     ReverseMapping
     TidehunterBackBoneQual
-    ConsensusTroughAlignment
+    CycasConsensus
 } from "./subworkflows/consensus"
 
 include {
@@ -137,7 +137,7 @@ AA. Parameter processing
 */
     // ReverseMapping(read_fastq,backbone_fasta)
     if( params.consensus_calling == "tidehunter" ) {
-        TidehunterBackBoneQual(read_fastq.flatten(),
+        base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
             reference_genome_indexed,
             backbone_fasta,
             params.tidehunter.primer_length,
@@ -146,16 +146,15 @@ AA. Parameter processing
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
     }
-    else if(params.consensus_calling == "cta" ) {
-        base_unit_reads = ConsensusTroughAlignment(
-            read_fastq.flatten(),
-            reference_genome_indexed,
+    else if (params.consensus_calling == "cycas"){
+        CycasConsensus( read_fastq.flatten(),
+            reference_genome_raw,
             backbone_fasta,
-            params.tidehunter.primer_length,
-            params.backbone_name
         )
+        base_unit_reads = CycasConsensus.out.fastq
+        read_info_json = CycasConsensus.out.json
     }
-    else if( params.consensus_calling == "skip" ) {
+    else if(params.consensus_calling == "skip" ) {
         println "Skipping consensus_calling"
     }
     else {
@@ -211,7 +210,7 @@ AA. Parameter processing
 */
 
 
-    Report(TidehunterBackBoneQual.out.json, 
+    Report(read_info_json, 
     QC_MinionQc.out, 
     vcf,
     depth_info

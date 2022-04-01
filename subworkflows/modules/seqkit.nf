@@ -36,6 +36,26 @@ process Extract5PrimeFasta {
         """
 }
 
+process MergeFasta {
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container "staphb/seqtk:1.3"
+    label 'many_cpu_medium'
+
+    input:
+        path fasta1
+        path fasta2
+    
+    output:
+        path "${fasta1.simpleName}_${fasta2.simpleName}.fasta"
+    
+    script:
+        """
+        cat $fasta1 > ${fasta1.simpleName}_${fasta2.simpleName}.fasta
+        cat $fasta2 >> ${fasta1.simpleName}_${fasta2.simpleName}.fasta
+        """
+
+}
+
 process Extract3PrimeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "staphb/seqtk:1.3"
