@@ -5,17 +5,17 @@ import sys
 import pysam
 
 header_to_tag = {
- 'channel' : "CH",
- 'mux' : "MU",
- 'channel_mux' : "CM",
- 'start_time' : "ST",
- 'duration' : "DU",
- 'adapter_duration' : "AD",
- 'sequence_length_template' : "SL",
- 'mean_qscore_template' : "MQ",
- 'median_template' : "MT",
- 'mad_template' : "MA",
- 'end_reason' : "ER",
+ 'channel' : "XC",
+ 'mux' : "XM",
+ 'channel_mux' : "Xc",
+ 'start_time' : "XT",
+ 'duration' : "XD",
+ 'adapter_duration' : "XA",
+ 'sequence_length_template' : "XL",
+ 'mean_qscore_template' : "XQ",
+ 'median_template' : "XT",
+ 'mad_template' : "XM",
+ 'end_reason' : "XE",
 }
 
 def load_seqsum(seqsum_path, readname_index=3):
