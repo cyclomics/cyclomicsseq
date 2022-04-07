@@ -8,6 +8,7 @@ process GenerateHtmlReport {
     container "damicyclomics/cyclomics_dash:0.2.1"
     label 'many_cpu_medium'
 
+
     input:
         tuple val(X), path(json_reads)
         tuple val(Y), path(json_globals)

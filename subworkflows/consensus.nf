@@ -4,6 +4,7 @@ nextflow.enable.dsl=2
 
 include {
     FastqToFasta
+    MergeFasta
     Extract5PrimeFasta
     Extract3PrimeFasta
     ExtractSpecificRead
@@ -35,8 +36,13 @@ include{
 
 
 include {
+    Minimap2Index
     MinimapAlignMany
 } from "./modules/minimap"
+
+include {
+    Cycas
+} from "./modules/cycas"
 
 workflow  ConsensusBasic{
     take:
@@ -91,6 +97,7 @@ workflow TidehunterBackBoneQual{
         TideHunterFilterTableStartpos(Tidehunter53QualTable.out)
         TideHunterQualTableToFastq(TideHunterFilterTableStartpos.out)
         TideHunterQualTableToJson(TideHunterFilterTableStartpos.out)
+
         id = TideHunterQualTableToJson.out.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
@@ -106,20 +113,26 @@ workflow TidehunterBackBoneQual{
 
 }
 
-workflow ConsensusTroughAlignment{
+workflow CycasConsensus{
     take:
         read_fastq
         reference_genome
         backbone_fasta
-        backbone_primer_len
-        backbone_name
     main:
-        // create new reference
-        ExtractSpecificRead(backbone_fasta, backbone_name)
-        MinimapAlignMany(read_fastq, ExtractSpecificRead.out)
+        MergeFasta(reference_genome, backbone_fasta)
+        Minimap2Index(MergeFasta.out)
+        MinimapAlignMany(read_fastq, Minimap2Index.out)
         SamToBam(MinimapAlignMany.out)
-        PrimaryMappedFilter(SamToBam.out)
+        Cycas(SamToBam.out)
 
     emit:
-        MinimapAlignMany.out
+        // tuple is shaped ID Fastq Json
+        fastq = Cycas.out.map( it -> it.take(2))
+        id = Cycas.out.first().map( it -> it[0])
+
+        json = id.combine(Cycas.out.map( it -> it[2]))
+        json.view()
+        reference = Minimap2Index.out
+
+        // json = TideHunterQualJsonMerge.out
 }
