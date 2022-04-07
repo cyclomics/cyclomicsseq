@@ -54,12 +54,10 @@ workflow Minimap2Align{
     main:
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
-
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
         bams = SamToBam.out.map(it -> it[1]).collect()
         SamtoolsMergeBams(id, bams)
-
         SamtoolsDepth(SamtoolsMergeBams.out)
         SamtoolsDepthToJson(SamtoolsDepth.out)
 
