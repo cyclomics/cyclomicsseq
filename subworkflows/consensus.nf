@@ -131,7 +131,6 @@ workflow CycasConsensus{
         id = Cycas.out.first().map( it -> it[0])
 
         json = id.combine(Cycas.out.map( it -> it[2]))
-        json.view()
         reference = Minimap2Index.out
 
         // json = TideHunterQualJsonMerge.out
