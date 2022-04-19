@@ -21,6 +21,6 @@ process Cycas{
 
     script:
         """
-        python /app/cycas.py --bam-file $bam --output ${bam.SimpleName}.consensus.fastq --create-metadata-json
+        python /app/cycas.py --bam-file $bam --output ${bam.SimpleName}.consensus.fastq --create-metadata-json --create-classification-detail-json
         """
     }
