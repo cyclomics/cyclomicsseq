@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process Cycas{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'damicyclomics/cycas:0.2.2-rc3'
+    container 'damicyclomics/cycas:0.2.2-rc4'
     // label 'many_low_cpu_low_mem'
     cpus = 1
     
