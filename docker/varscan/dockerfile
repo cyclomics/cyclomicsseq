@@ -1,0 +1,8 @@
+FROM ubuntu:21.04
+
+RUN apt update
+RUN apt install -y default-jre
+RUN apt install -y samtools
+RUN apt install -y bedtools
+RUN apt install -y bcftools
+RUN apt install -y varscan
