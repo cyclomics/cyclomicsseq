@@ -3,7 +3,7 @@ nextflow.enable.dsl = 2
 
 process VarscanFiltered {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'varscan:0.0.1'
+    container 'damicyclomics/varscan:0.0.2'
     label 'many_cpu_medium'
 
     input:
@@ -30,7 +30,7 @@ process VarscanFiltered {
         bedtools intersect -header -u -a ${X}_rev_indels.vcf -b ${X}_fwd_indels.vcf > ${X}_fwd_rev_support_indels.vcf
 
         # Call using forward and reverse
-        samtools mpileup -q ${params.varscan.min_mq} -Q ${params.varscan.min_bqual} -B -d ${params.varscan.max_depth} -A -f $reference $input_bam_file | varscan mpileup2cns --variants 1 --output-vcf 1 --min-coverage {params.min_coverge} --min-avg-qual {params.min_avg_qual} --min-var-freq {params.min_var_freq} --strand-filter 1 --min-reads2 {params.min_support_reads} > ${X}_both.vcf
+        samtools mpileup -q ${params.varscan.min_mq} -Q ${params.varscan.min_bqual} -B -d ${params.varscan.max_depth} -A -f $reference $input_bam_file | varscan mpileup2cns --variants 1 --output-vcf 1 --min-coverage ${params.varscan.min_coverge} --min-avg-qual ${params.varscan.min_avg_qual} --min-var-freq ${params.varscan.min_var_freq} --strand-filter 1 --min-reads2 ${params.varscan.min_support_reads} > ${X}_both.vcf
 
         # Keep only calls that were supported by both strands and remove indels that have a smaller AF than min_indel_freq
         bedtools intersect -header -u -a ${X}_both.vcf -b ${X}_fwd_rev_support_snps.vcf  > ${X}_filtered_snps.vcf
