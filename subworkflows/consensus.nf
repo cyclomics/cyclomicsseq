@@ -42,7 +42,12 @@ include {
 
 include {
     Cycas
+    CycasSplit
 } from "./modules/cycas"
+
+include {
+    MedakaSmolecule
+} from "./modules/medaka"
 
 workflow  ConsensusBasic{
     take:
@@ -129,8 +134,34 @@ workflow CycasConsensus{
         // tuple is shaped ID Fastq Json
         fastq = Cycas.out.map( it -> it.take(2))
         id = Cycas.out.first().map( it -> it[0])
-
         json = id.combine(Cycas.out.map( it -> it[2]))
+        reference = Minimap2Index.out
+}
+
+workflow CycasMedaka{
+    take:
+        read_fastq
+        reference_genome
+        backbone_fasta
+    main:
+        MergeFasta(reference_genome, backbone_fasta)
+        Minimap2Index(MergeFasta.out)
+        MinimapAlignMany(read_fastq, Minimap2Index.out)
+        SamToBam(MinimapAlignMany.out)
+        CycasSplit(SamToBam.out)
+
+        // fastqs =read_fastq.map(it -> it[0])
+        // fastqs.view()
+
+        MedakaSmolecule(CycasSplit.out.flatten())
+
+    emit:
+        
+        id = CycasSplit.out.first().map( it -> it[0])
+        
+        fastq = id.combine(MedakaSmolecule.out)
+        json = id.combine(CycasSplit.out.map( it -> it[2]))
+        
         reference = Minimap2Index.out
 
         // json = TideHunterQualJsonMerge.out

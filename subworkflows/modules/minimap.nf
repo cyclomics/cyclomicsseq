@@ -31,11 +31,11 @@ process MinimapAlignMany{
         path(reference_genome)
 
     output:
-        tuple val("${fasta.baseName}"), path("${fasta.baseName}.sam") 
+        tuple val("${fasta.simpleName}"), path("${fasta.simpleName}.sam") 
 
     script:
         """
-        minimap2 -ax map-ont -t ${task.cpus} $reference_genome $fasta > ${fasta.baseName}.sam
+        minimap2 -ax map-ont -t ${task.cpus} $reference_genome $fasta > ${fasta.simpleName}.sam
         """
 }
 
@@ -48,10 +48,10 @@ process Minimap2Index{
         path(reference_genome)
     
     output:
-        path("${reference_genome.baseName}.mmi")
+        path("${reference_genome.simpleName}.mmi")
 
     script:
         """
-        minimap2  -ax map-ont -t ${task.cpus} -d ${reference_genome.baseName}.mmi $reference_genome
+        minimap2  -ax map-ont -t ${task.cpus} -d ${reference_genome.simpleName}.mmi $reference_genome
         """
 }
