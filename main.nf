@@ -31,9 +31,9 @@ params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
 // method selection
 params.qc                   = "simple" // simple or skip
-params.consensus_calling    = "tidehunter" // simple or skip
+params.consensus_calling    = "medaka" // simple or skip
 params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
-params.variant_calling= "skip"
+params.variant_calling      = "skip"
 params.extra_haplotyping    = "skip"
 
 
@@ -70,6 +70,7 @@ include {
     ReverseMapping
     TidehunterBackBoneQual
     CycasConsensus
+    CycasMedaka
 } from "./subworkflows/consensus"
 
 include {
@@ -138,7 +139,7 @@ AA. Parameter processing
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
 ========================================================================================
 */
-    // ReverseMapping(read_fastq,backbone_fasta)
+    // ReverseMapping(read_fastq,backbone_fasta)h
     if( params.consensus_calling == "tidehunter" ) {
         base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
             reference_genome_indexed,
@@ -156,6 +157,14 @@ AA. Parameter processing
         )
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json
+    }
+    else if(params.consensus_calling == "medaka" ) {
+        CycasMedaka( read_fastq.flatten(),
+            reference_genome_raw,
+            backbone_fasta,
+        )
+        base_unit_reads = CycasMedaka.out.fastq
+        read_info_json = CycasMedaka.out.json
     }
     else if(params.consensus_calling == "skip" ) {
         println "Skipping consensus_calling"
@@ -220,3 +229,12 @@ AA. Parameter processing
     depth_info
     )
 }
+
+
+// TODO: give warning when user sets backbone and its not used
+// TODO: Make realtime option
+// TODO: improve reporting with vaf threshold plot
+// TODO: improve reporting with vcf table
+// TODO: add option for gene.txt
+
+

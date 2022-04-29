@@ -5,4 +5,5 @@ RUN apt install -y default-jre
 RUN apt install -y samtools
 RUN apt install -y bedtools
 RUN apt install -y bcftools
+RUN apt install -y tabix
 RUN apt install -y varscan
