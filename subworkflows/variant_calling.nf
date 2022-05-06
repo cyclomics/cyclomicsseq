@@ -8,6 +8,9 @@ include {
     Mutect2TumorOnly
 } from "./modules/gatk"
 
+include {
+    VarscanFiltered
+} from "./modules/varscan"
 
 workflow FreebayesSimple{
     take:
@@ -30,4 +33,14 @@ workflow Mutect2{
         Mutect2TumorOnly(GatkAddOrReplaceReadGroups.out.combine(reference_genome).combine(CreateRererenceDict.out))
     emit:
         Mutect2TumorOnly.out
+}
+
+workflow Varscan{
+    take:
+        reads
+        reference_genome
+    main:
+        VarscanFiltered(reads.combine(reference_genome))
+    emit:
+        VarscanFiltered.out
 }

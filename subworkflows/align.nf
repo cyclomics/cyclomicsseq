@@ -3,6 +3,11 @@ nextflow.enable.dsl=2
 
 
 include {
+    AnnotateBam
+    AnnotatePartialBam
+} from "./modules/bin.nf"
+
+include {
     BwaMemSorted
 } from "./modules/bwa.nf"
 
@@ -51,11 +56,14 @@ workflow Minimap2Align{
     take:
         reads
         reference_genome
+        sequencing_summary
+
     main:
         MinimapAlign(reads.combine(reference_genome))
         SamToBam(MinimapAlign.out)
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
+        // bams = AnnotatePartialBam.out.map(it -> it[1]).collect()
         bams = SamToBam.out.map(it -> it[1]).collect()
         SamtoolsMergeBams(id, bams)
         SamtoolsDepth(SamtoolsMergeBams.out)
@@ -153,4 +161,16 @@ workflow LastalAlignTrainedFastq{
 
     emit:
         SamtoolsIndex.out
+}
+
+workflow Annotate{
+    take:
+        reads
+        sequencing_summary
+
+    main:
+        AnnotateBam(reads, sequencing_summary)
+
+    emit:
+        AnnotateBam.out
 }

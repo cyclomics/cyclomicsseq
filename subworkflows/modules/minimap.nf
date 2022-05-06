@@ -2,7 +2,8 @@
 nextflow.enable.dsl = 2
 
 process MinimapAlign{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // Sams are large and should never be the final data point
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'staphb/minimap2:2.23'
     label 'few_memory_intensive'
 
@@ -20,7 +21,8 @@ process MinimapAlign{
 
 process MinimapAlignMany{
     // Same 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // Sams are large and should never be the final data point
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'staphb/minimap2:2.23'
     label 'minimap_large'
 
@@ -29,11 +31,11 @@ process MinimapAlignMany{
         path(reference_genome)
 
     output:
-        tuple val("${fasta.baseName}"), path("${fasta.baseName}.sam") 
+        tuple val("${fasta.simpleName}"), path("${fasta.simpleName}.sam") 
 
     script:
         """
-        minimap2 -ax map-ont -t ${task.cpus} $reference_genome $fasta > ${fasta.baseName}.sam
+        minimap2 -ax map-ont -t ${task.cpus} $reference_genome $fasta > ${fasta.simpleName}.sam
         """
 }
 
@@ -46,10 +48,10 @@ process Minimap2Index{
         path(reference_genome)
     
     output:
-        path("${reference_genome.baseName}.mmi")
+        path("${reference_genome.simpleName}.mmi")
 
     script:
         """
-        minimap2  -ax map-ont -t ${task.cpus} -d ${reference_genome.baseName}.mmi $reference_genome
+        minimap2  -ax map-ont -t ${task.cpus} -d ${reference_genome.simpleName}.mmi $reference_genome
         """
 }

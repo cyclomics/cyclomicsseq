@@ -55,3 +55,5 @@ go to the right project folder
 ``` bash
 cd /hpc/compgen/projects/cyclomics/cycloseq/pipelines/cycloseq/
 ```
+
+nextflow run /home/dami/Software/cycloseq/main.nf --input_read_dir /home/dami/data/ont/001_accuracy_testing/SS_220209_cyclomics/005/20220209_1609_X4_FAS04134_f0403d9c --output_dir /media/dami/cyclomics_003/ont/001_accuracy_testing/full_test/tidehunter_005 --consensus_calling tidehunter --read_pattern "fastq_pass/*.fastq.gz" --backbone_name BB22 --reference ~/data/references/Homo_sapiens/GRCh38/GRCh38_full_analysis_set_plus_decoy_hla.fa -resume
