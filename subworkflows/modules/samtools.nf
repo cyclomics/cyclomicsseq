@@ -208,27 +208,6 @@ process SamtoolsMergeBams{
     """
 }
 
-process SamtoolsMergeBams{
-    //  merge n number of bams into one
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
-    label 'many_cpu_medium'
-
-    input:
-        val(X)
-        file(bam_in)
-
-    output:
-        tuple val(X), path("${X}.merged.bam"), path("${X}.merged.bam.bai")
-    
-    script:
-    """
-    ls
-    samtools merge -O bam ${X}.merged.bam \$(find . -name '*.bam')
-    samtools index ${X}.merged.bam
-    """
-}
-
 process RemoveUnmappedReads{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
