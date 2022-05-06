@@ -6,51 +6,26 @@ process MedakaSmolecule {
     container 'ontresearch/medaka:v1.6.0'
     label 'many_low_cpu_tiny_mem'
 
+    // errorStrategy 'ignore' 
+
     input:
         path(input_tar)
 
     output:
-        path("${input_tar.simpleName}.consensus.fastq")
+        tuple val("${input_tar.simpleName}"), path("${input_tar.simpleName}.consensus.fastq")
 
     script:
+        //  We hide the for loop in a script so that we can catch exit code 1 cases if medaka fails to make consensus
         """
         tar xvf $input_tar
         mkdir /medaka_results
-
-        for i in \$(ls cycas_results); do
-            echo \$i
-            medaka smolecule --depth 1 --model r104_e81_sup_g5015 --chunk_len 100 --chunk_ovlp 50 --method spoa --length 50 --threads 1 --qualities --batch_size 1000 /medaka_results/ cycas_results/\$i
-            mv /medaka_results/consensus.fastq \${i}.consensus.fastq
-        done
-
+        bash medakasmolecule.sh ${params.medaka.depth} ${params.medaka.model} ${params.medaka.chunk_len} ${params.medaka.chunk_ovlp} ${params.medaka.method} ${params.medaka.length} ${task.cpus}  ${params.medaka.batch_size} ${input_tar.simpleName}.consensus.fastq
+        echo "done with medaka loop"
+        cat /medaka_results/*/consensus.fastq > ${input_tar.simpleName}.consensus.fastq
         """
-            // medaka smolecule \
-            //     --depth ${params.medaka.depth} \
-            //     --model ${params.medaka.model} \
-            //     --chunk_len ${params.medaka.chunk_len} \
-            //     --chunk_ovlp ${params.medaka.chunk_ovlp} \
-            //     --method ${params.medaka.method} \
-            //     --length ${params.medaka.length} \
-            //     --threads ${task.cpus} \
-            //     --qualities \
-            //     --batch_size ${params.medaka.batch_size} \
-            //     /medaka_results/ \
-            //     cycas_results/$i
-            // mv /medaka_results/consensus.fastq $i.consensus.fastq
-
-    // for fq in $(ls cycas_results); do
-    //         echo $fq
-    //         medaka smolecule \
-    //         --depth 1 \
-    //         --model r104_e81_sup_g5015 \
-    //         --chunk_len 100 \
-    //         --chunk_ovlp 50 \
-    //         --method spoa \
-    //         --length 50 \
-    //         --threads 1 \
-    //         --qualities \
-    //         --batch_size 1000 \ 
-    //         /medaka_results/ \
-    //         cycas_results/$fq
-
+        // for i in \$(ls cycas_results); do
+        //     echo \$i
+        //     medaka smolecule --depth 1 --model r104_e81_sup_g5015 --chunk_len 100 --chunk_ovlp 50 --method spoa --length 50 --threads 1 --qualities --batch_size 1000 /medaka_results/ cycas_results/\$i
+        //     mv /medaka_results/consensus.fastq \${i}.consensus.fastq
+        // done
 }

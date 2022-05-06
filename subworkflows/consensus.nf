@@ -159,7 +159,8 @@ workflow CycasMedaka{
         
         id = CycasSplit.out.first().map( it -> it[0])
         
-        fastq = id.combine(MedakaSmolecule.out)
+        fastq = MedakaSmolecule.out
+
         json = id.combine(CycasSplit.out.map( it -> it[2]))
         
         reference = Minimap2Index.out

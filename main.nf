@@ -16,15 +16,15 @@ nextflow.enable.dsl = 2
 ========================================================================================
 */
 // ### PARAMETERS
-params.input_read_dir             = "$HOME/data/raw_data/MAR6252/"
+params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
 params.read_pattern               = "fastq_pass/**.{fq,fastq}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
-params.backbone_fasta             = "$HOME/data/backbones/backbones/backbones_db_valid.fasta"
+params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current.fasta"
 params.backbone_name              = "BB22"
 
 params.control_vcf                = ""
 
-params.reference = "$HOME/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
+params.reference = "$HOME/Data/references/Homo_sapiens/GRCh38/GRCh38_full_analysis_set_plus_decoy_hla.fa"
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
@@ -33,8 +33,9 @@ params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 params.qc                   = "simple" // simple or skip
 params.consensus_calling    = "medaka" // simple or skip
 params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
-params.variant_calling      = "skip"
+params.variant_calling      = "varscan"
 params.extra_haplotyping    = "skip"
+params.report               = "yes"
 
 
 // ### Printout for user
@@ -55,6 +56,7 @@ log.info """
         Consensus       : $params.consensus_calling
         Alignment       : $params.alignment
         variant_calling : $params.variant_calling
+        report          : $params.report
 """
 
 /*
@@ -222,12 +224,18 @@ AA. Parameter processing
 ========================================================================================
 04.    Reporting
 ========================================================================================
-*/
-    Report(read_info_json, 
-    QC_MinionQc.out, 
-    vcf,
-    depth_info
-    )
+*/ 
+    if( params.report == "yes" ) {
+        Report(read_info_json, 
+        QC_MinionQc.out, 
+        vcf,
+        depth_info
+        )
+    }
+    else{
+        println "Skipping report generation"
+    }
+    
 }
 
 
