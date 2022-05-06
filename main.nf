@@ -31,7 +31,7 @@ params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
 // method selection
 params.qc                   = "simple" // simple or skip
-params.consensus_calling    = "medaka" // simple or skip
+params.consensus_calling    = "cycas" // simple or skip
 params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "varscan"
 params.extra_haplotyping    = "skip"
