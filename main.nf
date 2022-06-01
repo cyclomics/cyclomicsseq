@@ -17,14 +17,14 @@ nextflow.enable.dsl = 2
 */
 // ### PARAMETERS
 params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
-params.read_pattern               = "fastq_pass/**.{fq,fastq}"
+params.read_pattern               = "fastq_pass/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
-params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current.fasta"
+params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
 params.backbone_name              = "BB22"
 
 params.control_vcf                = ""
 
-params.reference = "$HOME/Data/references/Homo_sapiens/GRCh38/GRCh38_full_analysis_set_plus_decoy_hla.fa"
+params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa.gz"
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
@@ -66,6 +66,7 @@ log.info """
 */
 include {
     QC_MinionQc
+    PostQC
 } from "./subworkflows/QC"
 
 include {
@@ -78,6 +79,7 @@ include {
 include {
     Minimap2Align
     Annotate
+    PerpareGenome
 } from "./subworkflows/align"
 
 include {
@@ -117,9 +119,12 @@ AA. Parameter processing
     seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
     backbone_fasta = Channel.fromPath(params.backbone_fasta, checkIfExists: true)
     
-    reference_genome_raw = Channel.fromPath(params.reference, checkIfExists: true)
+    reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
+    read_info_json = ""
+
+    PerpareGenome(reference_genome, params.reference, backbone_fasta)
 
 /*
 ========================================================================================
@@ -154,7 +159,7 @@ AA. Parameter processing
     }
     else if (params.consensus_calling == "cycas"){
         CycasConsensus( read_fastq.flatten(),
-            reference_genome_raw,
+            PerpareGenome.out.mmi_combi,
             backbone_fasta,
         )
         base_unit_reads = CycasConsensus.out.fastq
@@ -162,11 +167,12 @@ AA. Parameter processing
     }
     else if(params.consensus_calling == "medaka" ) {
         CycasMedaka( read_fastq.flatten(),
-            reference_genome_raw,
+            PerpareGenome.out.mmi_combi,
             backbone_fasta,
         )
         base_unit_reads = CycasMedaka.out.fastq
         read_info_json = CycasMedaka.out.json
+        // reference_genome_raw = 
     }
     else if(params.consensus_calling == "skip" ) {
         println "Skipping consensus_calling"
@@ -182,7 +188,7 @@ AA. Parameter processing
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
     
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, reference_genome_raw, seq_summary)
+        Minimap2Align(base_unit_reads, PerpareGenome.out.mmi_combi, seq_summary)
         reads_aligned = Minimap2Align.out.bam
         depth_info = Minimap2Align.out.depth
     }
@@ -203,11 +209,11 @@ AA. Parameter processing
 */  
     
     if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned, reference_genome_raw)
+        FreebayesSimple(reads_aligned, PerpareGenome.out.mmi_combi)
         vcf = FreebayesSimple.out
     }
     else if (params.variant_calling == "varscan"){
-        Varscan(reads_aligned, reference_genome_raw)
+        Varscan(reads_aligned, PerpareGenome.out.fasta_combi)
         vcf = Varscan.out
     }
     else {
@@ -231,12 +237,24 @@ AA. Parameter processing
         vcf,
         depth_info
         )
+        PostQC(read_info_json)
     }
     else{
         println "Skipping report generation"
     }
     
 }
+/*
+========================================================================================
+04.    QC stuff
+========================================================================================
+*/  
+
+    // Count reads in input fastqs
+
+    // Count classifications
+    
+
 
 
 // TODO: give warning when user sets backbone and its not used
@@ -245,4 +263,5 @@ AA. Parameter processing
 // TODO: improve reporting with vcf table
 // TODO: add option for gene.txt
 
-
+// TODO:add classes
+// TODO:add read counts (seqkit stats *[1,2]1_0.fastq.gz |  awk '!x[$1 FS $4]++')

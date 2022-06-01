@@ -20,6 +20,7 @@ include {
     RemoveUnmappedReads
     PrimaryMappedFilter
     SamToBam
+    SamtoolsIndexWithID
 } from "./modules/samtools"
 
 include {
@@ -38,6 +39,8 @@ include{
 include {
     Minimap2Index
     MinimapAlignMany
+    Minimap2AlignAdaptive
+    Minimap2AlignAdaptiveParameterized
 } from "./modules/minimap"
 
 include {
@@ -124,18 +127,15 @@ workflow CycasConsensus{
         reference_genome
         backbone_fasta
     main:
-        MergeFasta(reference_genome, backbone_fasta)
-        Minimap2Index(MergeFasta.out)
-        MinimapAlignMany(read_fastq, Minimap2Index.out)
-        SamToBam(MinimapAlignMany.out)
-        Cycas(SamToBam.out)
+
+        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
+        SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
+        Cycas(SamtoolsIndexWithID.out)
 
     emit:
-        // tuple is shaped ID Fastq Json
         fastq = Cycas.out.map( it -> it.take(2))
         id = Cycas.out.first().map( it -> it[0])
         json = id.combine(Cycas.out.map( it -> it[2]))
-        reference = Minimap2Index.out
 }
 
 workflow CycasMedaka{
@@ -144,26 +144,15 @@ workflow CycasMedaka{
         reference_genome
         backbone_fasta
     main:
-        MergeFasta(reference_genome, backbone_fasta)
-        Minimap2Index(MergeFasta.out)
-        MinimapAlignMany(read_fastq, Minimap2Index.out)
+
+        MinimapAlignMany(read_fastq, reference_genome)
         SamToBam(MinimapAlignMany.out)
         CycasSplit(SamToBam.out)
-
-        // fastqs =read_fastq.map(it -> it[0])
-        // fastqs.view()
-
         MedakaSmolecule(CycasSplit.out.flatten())
 
     emit:
-        
-        id = CycasSplit.out.first().map( it -> it[0])
-        
+        id = CycasSplit.out.first().map( it -> it[0])       
         fastq = MedakaSmolecule.out
-
         json = id.combine(CycasSplit.out.map( it -> it[2]))
-        
-        reference = Minimap2Index.out
 
-        // json = TideHunterQualJsonMerge.out
 }

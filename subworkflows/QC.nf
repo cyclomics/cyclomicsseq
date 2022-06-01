@@ -10,6 +10,9 @@ include {
     MinionQcToJson
 } from "./modules/minion_qc.nf"
 
+include {
+    CollectClassificationTypes
+} from "./modules/utils"
 
 workflow  QC_pycoqc{
     take:
@@ -28,4 +31,14 @@ workflow QC_MinionQc {
         MinionQcToJson(MinionQc.out.summary)
     emit:
         MinionQcToJson.output
+}
+
+
+workflow PostQC {
+    take:
+        read_info
+    main:
+        CollectClassificationTypes(read_info.collect())
+        // CountReadsRaw()
+        // CountReadsConsensus()
 }

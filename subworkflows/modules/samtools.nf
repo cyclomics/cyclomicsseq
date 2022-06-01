@@ -19,6 +19,21 @@ process SamtoolsIndex{
         """
 }
 
+process SamtoolsIndexWithID{
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(x), path(input_bam) 
+
+    output:
+       tuple val(x), path(input_bam), path("*.bai")
+
+    script:
+        """
+        samtools index $input_bam
+        """
+}
+
 process SamtoolsSort{
     // Given a sam or bam file, make a sorted bam
     // Does break when sam is not `propper` eg no @SQ tags
@@ -59,7 +74,7 @@ process SamtoolsDepthToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // the slim version of buster is missing ps, which is needed for nextflow
     container 'python:3.9.10-buster'
-    label 'many_cpu_medium'
+    label 'many_cpu_intensive'
 
     input:
         path(input_bed)

@@ -92,3 +92,38 @@ process ExtractSpecificRead{
         seqkit grep -p $readname  $fasta  > ${fasta.simpleName}_${readname}.fasta
         """
 }
+
+
+// process CountFastqReads{
+//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+//     container 'pegi3s/seqkit:2.1.0'
+//     label 'many_cpu_medium'
+
+//     input:
+//         path fasta
+
+//     output:
+//         stdout
+
+//     script:
+//         """
+//         seqkit stats -T *.fastq | tr -d \, | awk 'BEGIN{fs = "\t"} { sum+=$4} END{print sum}'
+//         """
+// }
+
+// process CountFastqBases{
+//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+//     container 'pegi3s/seqkit:2.1.0'
+//     label 'many_cpu_medium'
+
+//     input:
+//         path fasta
+
+//     output:
+//         stdout
+
+//     script:
+//         """
+//         seqkit stats -T *.fastq | tr -d \, | awk 'BEGIN{fs = "\t"} { sum+=$5} END{print sum}'
+//         """
+// }

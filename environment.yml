@@ -1,0 +1,39 @@
+name: cyclomics-nf-cyclomicseq
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=4.5=1_gnu
+  - bzip2=1.0.8=h7b6447c_0
+  - c-ares=1.18.1=h7f8727e_0
+  - ca-certificates=2022.4.26=h06a4308_0
+  - certifi=2021.10.8=py38h06a4308_2
+  - curl=7.82.0=h7f8727e_0
+  - k8=0.2.5=h9a82719_1
+  - krb5=1.19.2=hac12032_0
+  - ld_impl_linux-64=2.38=h1181459_0
+  - libcurl=7.82.0=h0b77cf5_0
+  - libedit=3.1.20210910=h7f8727e_0
+  - libev=4.33=h7f8727e_1
+  - libffi=3.3=he6710b0_2
+  - libgcc-ng=9.3.0=h5101ec6_17
+  - libgomp=9.3.0=h5101ec6_17
+  - libnghttp2=1.46.0=hce63b2e_0
+  - libssh2=1.10.0=h8f2d780_0
+  - libstdcxx-ng=9.3.0=hd4cf53a_17
+  - minimap2=2.17=h5bf99c6_4
+  - ncurses=6.3=h7f8727e_2
+  - openssl=1.1.1o=h7f8727e_0
+  - pip=21.2.4=py38h06a4308_0
+  - python=3.8.13=h12debd9_0
+  - readline=8.1.2=h7f8727e_1
+  - sambamba=0.6.6=2
+  - samtools=1.6=hb116620_7
+  - setuptools=61.2.0=py38h06a4308_0
+  - sqlite=3.38.3=hc218d9a_0
+  - tk=8.6.11=h1ccaba5_1
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - xz=5.2.5=h7f8727e_1
+  - zlib=1.2.12=h7f8727e_2
+prefix: /home/dami/anaconda3/envs/cyclomics-nf-cycloseq-ruo

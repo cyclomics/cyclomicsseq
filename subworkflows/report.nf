@@ -21,8 +21,9 @@ workflow  Report{
         depth_json
     main:
         // main has a if statement as workaround for conditional input parameters
-        full_json = AddDepthToJson(json_globals, depth_json)
-
+        // full_json = AddDepthToJson(json_globals, depth_json)
+        full_json = json_globals
+        
         if (params.control_vcf){
             println('Generating report with control vcf')
             control = Channel.fromPath(params.control_vcf, checkIfExists: true)

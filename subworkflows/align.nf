@@ -13,6 +13,9 @@ include {
 
 include {
     MinimapAlign
+    Minimap2AlignAdaptive
+    Minimap2Index as IndexReference
+    Minimap2Index as IndexCombined
 } from "./modules/minimap.nf"
 
 include {
@@ -40,6 +43,33 @@ include {
     SamtoolsMergeBams
 } from "./modules/samtools"
 
+include {
+    MergeFasta
+} from "./modules/seqkit"
+
+workflow PerpareGenome {
+    take:
+        reference_genome
+        reference_genome_name
+        backbones_fasta
+    main:
+        if (reference_genome_name.endsWith('.txt')) {
+            println("txt reference, not implemented")
+            genome = "missing"
+            exit(1)
+        }
+        else {
+            genome = reference_genome
+        }
+        MergeFasta(genome, backbones_fasta)
+        IndexCombined(MergeFasta.out)
+        IndexReference(genome)
+    emit:
+        mmi_combi = IndexCombined.out
+        mmi_ref = IndexReference.out
+        fasta_combi = MergeFasta.out
+        fasta_ref = reference_genome
+}
 
 workflow AlignBWA{
     take:
@@ -59,12 +89,12 @@ workflow Minimap2Align{
         sequencing_summary
 
     main:
-        MinimapAlign(reads.combine(reference_genome))
-        SamToBam(MinimapAlign.out)
+
+        Minimap2AlignAdaptive(reads.map(it -> it[1]), reference_genome)
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        // bams = AnnotatePartialBam.out.map(it -> it[1]).collect()
-        bams = SamToBam.out.map(it -> it[1]).collect()
+        bams = Minimap2AlignAdaptive.out.map(it -> it[1]).collect()
+        
         SamtoolsMergeBams(id, bams)
         SamtoolsDepth(SamtoolsMergeBams.out)
         SamtoolsDepthToJson(SamtoolsDepth.out)
