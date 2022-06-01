@@ -115,10 +115,10 @@ process CollectClassificationTypes{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple path(json)
+        path(metadata_json)
 
     output:
-        tuple val(X), path("classification_count.txt")
+        path("classification_count.txt")
 
     
     script:

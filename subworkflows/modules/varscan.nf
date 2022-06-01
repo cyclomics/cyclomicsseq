@@ -3,7 +3,6 @@ nextflow.enable.dsl = 2
 
 process VarscanFiltered {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'damicyclomics/varscan:0.0.2'
     label 'many_cpu_medium'
 
     input:
