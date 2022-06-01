@@ -115,7 +115,7 @@ process CollectClassificationTypes{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple val(X), path(bam), path(bai)
+        tuple path(json)
 
     output:
         tuple val(X), path("classification_count.txt")
@@ -123,6 +123,6 @@ process CollectClassificationTypes{
     
     script:
         """
-        for i in \$(ls *.metadata.json); do jq .[].classification /$i; done | sort | uniq -c | sort -k 2 > classification_count.txt
+        for i in \$(ls *.metadata.json); do jq .[].classification \$i; done | sort | uniq -c | sort -k 2 > classification_count.txt
         """
 }

@@ -4,7 +4,6 @@ nextflow.enable.dsl = 2
 process MinimapAlign{
     // Sams are large and should never be the final data point
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/minimap2:2.23'
     label 'minimap_large'
 
     input:
@@ -23,7 +22,6 @@ process MinimapAlignMany{
     // Same 
     // Sams are large and should never be the final data point
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/minimap2:2.23'
     label 'minimap_large'
 
     input:
@@ -43,7 +41,7 @@ process Minimap2AlignAdaptive{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     //  apply at least 1 Gb of memory to the process, otherwise we apply two-four times the size of the reference genome mmi
-    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (13 + task.attempt * task.attempt )} B"}
+    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt )} B"}
     // small jobs get 4 cores, big ones 8
     cpus   {reference_genome.size() < 500_000_000 ? 4 : 8 }
 
@@ -59,8 +57,6 @@ process Minimap2AlignAdaptive{
         tuple val("${fasta.simpleName}"), path("${fasta.simpleName}.bam") 
 
     script:
-        println(reference_genome.size())
-        println(reference_genome.size() * (14 + task.attempt))
         """
         minimap2 -ax map-ont -t ${task.cpus} $reference_genome $fasta > tmp.sam 
         samtools sort -o ${fasta.simpleName}.bam tmp.sam
@@ -72,7 +68,7 @@ process Minimap2AlignAdaptiveParameterized{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     //  apply at least 1 Gb of memory to the process, otherwise we apply two-four times the size of the reference genome mmi
-    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt)} B"}
+    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt)} B"}
     // small jobs get 4 cores, big ones 8
     cpus   {reference_genome.size() < 500_000_000 ? 4 : 8 }
 
@@ -97,7 +93,6 @@ process Minimap2AlignAdaptiveParameterized{
 
 process Minimap2Index{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/minimap2:2.23'
     label 'few_memory_intensive'
 
      input:

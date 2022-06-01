@@ -3,7 +3,6 @@ nextflow.enable.dsl=2
 
 process FastqToFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'pegi3s/seqkit:2.1.0'
     label 'many_cpu_medium'
 
     input:
@@ -20,7 +19,6 @@ process FastqToFasta {
 
 process Extract5PrimeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container "staphb/seqtk:1.3"
     label 'many_cpu_medium'
 
     input:
@@ -38,7 +36,6 @@ process Extract5PrimeFasta {
 
 process MergeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container "staphb/seqtk:1.3"
     label 'many_cpu_medium'
 
     input:
@@ -58,7 +55,6 @@ process MergeFasta {
 
 process Extract3PrimeFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container "staphb/seqtk:1.3"
     label 'many_cpu_medium'
 
     input:
@@ -77,7 +73,6 @@ process Extract3PrimeFasta {
 
 process ExtractSpecificRead{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'pegi3s/seqkit:2.1.0'
     label 'many_cpu_medium'
 
     input:
@@ -93,37 +88,21 @@ process ExtractSpecificRead{
         """
 }
 
+process CountFastqInfo{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
-// process CountFastqReads{
-//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-//     container 'pegi3s/seqkit:2.1.0'
-//     label 'many_cpu_medium'
+    input:
+        path(fastq)
 
-//     input:
-//         path fasta
+    output:
+        path ("read_count.txt")
+        path ("base_count.txt")
+        path ("overview.txt")
 
-//     output:
-//         stdout
-
-//     script:
-//         """
-//         seqkit stats -T *.fastq | tr -d \, | awk 'BEGIN{fs = "\t"} { sum+=$4} END{print sum}'
-//         """
-// }
-
-// process CountFastqBases{
-//     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-//     container 'pegi3s/seqkit:2.1.0'
-//     label 'many_cpu_medium'
-
-//     input:
-//         path fasta
-
-//     output:
-//         stdout
-
-//     script:
-//         """
-//         seqkit stats -T *.fastq | tr -d \, | awk 'BEGIN{fs = "\t"} { sum+=$5} END{print sum}'
-//         """
-// }
+    
+    script:
+        """
+        seqkit stats -T $fastq | tee overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > read_count.txt
+        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > base_count.txt
+        """
+}
