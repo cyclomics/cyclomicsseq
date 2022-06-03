@@ -24,7 +24,7 @@ params.backbone_name              = "BB22"
 
 params.control_vcf                = ""
 
-params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa.gz"
+params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
 
@@ -79,7 +79,7 @@ include {
 include {
     Minimap2Align
     Annotate
-    PerpareGenome
+    PrepareGenome
 } from "./subworkflows/align"
 
 include {
@@ -124,7 +124,7 @@ AA. Parameter processing
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     read_info_json = ""
 
-    PerpareGenome(reference_genome, params.reference, backbone_fasta)
+    PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
 /*
 ========================================================================================
@@ -159,7 +159,7 @@ AA. Parameter processing
     }
     else if (params.consensus_calling == "cycas"){
         CycasConsensus( read_fastq.flatten(),
-            PerpareGenome.out.mmi_combi,
+            PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
         base_unit_reads = CycasConsensus.out.fastq
@@ -167,7 +167,7 @@ AA. Parameter processing
     }
     else if(params.consensus_calling == "medaka" ) {
         CycasMedaka( read_fastq.flatten(),
-            PerpareGenome.out.mmi_combi,
+            PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
         base_unit_reads = CycasMedaka.out.fastq
@@ -188,7 +188,7 @@ AA. Parameter processing
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
     
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PerpareGenome.out.mmi_combi, seq_summary)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, seq_summary)
         reads_aligned = Minimap2Align.out.bam
         depth_info = Minimap2Align.out.depth
     }
@@ -209,11 +209,11 @@ AA. Parameter processing
 */  
     
     if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned, PerpareGenome.out.mmi_combi)
+        FreebayesSimple(reads_aligned, PrepareGenome.out.mmi_combi)
         vcf = FreebayesSimple.out
     }
     else if (params.variant_calling == "varscan"){
-        Varscan(reads_aligned, PerpareGenome.out.fasta_combi)
+        Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
         vcf = Varscan.out
     }
     else {

@@ -12,7 +12,7 @@ include {
 
 include {
     CollectClassificationTypes
-} from "./modules/utils"
+} from "./modules/bin"
 
 include {
     CountFastqInfo as FastqInfoRaw

@@ -41,7 +41,8 @@ process Minimap2AlignAdaptive{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     //  apply at least 1 Gb of memory to the process, otherwise we apply two-four times the size of the reference genome mmi
-    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt )} B"}
+    memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt)} B"}
+    // memory "32 GB"
     // small jobs get 4 cores, big ones 8
     cpus   {reference_genome.size() < 500_000_000 ? 4 : 8 }
 
@@ -69,6 +70,7 @@ process Minimap2AlignAdaptiveParameterized{
 
     //  apply at least 1 Gb of memory to the process, otherwise we apply two-four times the size of the reference genome mmi
     memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt)} B"}
+    // memory "32 GB"
     // small jobs get 4 cores, big ones 8
     cpus   {reference_genome.size() < 500_000_000 ? 4 : 8 }
 

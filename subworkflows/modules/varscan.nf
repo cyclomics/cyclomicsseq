@@ -12,6 +12,7 @@ process VarscanFiltered {
         tuple val(X), path("${input_bam_file.SimpleName}.vcf")
 
     script:
+    // TODO: filter on depth and make empty vcf if depth not reached with warning to stdout
     """
         # -r can be used to limit the variant calling in mpileup
         # Call using only reverse reads

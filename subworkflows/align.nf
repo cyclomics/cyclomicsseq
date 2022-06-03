@@ -3,8 +3,7 @@ nextflow.enable.dsl=2
 
 
 include {
-    AnnotateBam
-    AnnotatePartialBam
+    AnnotateBamXTags
 } from "./modules/bin.nf"
 
 include {
@@ -47,14 +46,19 @@ include {
     MergeFasta
 } from "./modules/seqkit"
 
-workflow PerpareGenome {
+workflow PrepareGenome {
     take:
         reference_genome
         reference_genome_name
         backbones_fasta
     main:
         if (reference_genome_name.endsWith('.txt')) {
-            println("txt reference, not implemented")
+            println("txt reference, not implemented. Exiting...")
+            genome = "missing"
+            exit(1)
+        }
+        else if (reference_genome_name.endsWith('.gz')) {
+            println("gzipped reference, not implemented. Exiting...")
             genome = "missing"
             exit(1)
         }
@@ -197,10 +201,8 @@ workflow Annotate{
     take:
         reads
         sequencing_summary
-
     main:
-        AnnotateBam(reads, sequencing_summary)
-
+        AnnotateBamXTags(reads, sequencing_summary)
     emit:
-        AnnotateBam.out
+        AnnotateBamXTags.out
 }

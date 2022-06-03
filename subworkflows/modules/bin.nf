@@ -21,7 +21,7 @@ process AddDepthToJson{
         """
 }
 
-process AnnotateBam{
+process AnnotateBamXTags{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/pysam:0.19.0--py39h5030a8b_0'
     label 'many_cpu_intensive'
@@ -35,24 +35,38 @@ process AnnotateBam{
 
     script:
         """
-        annotate_bam.py $sequencing_summary $bam ${X}.tag_annotated
+        annotate_bam_x.py $sequencing_summary $bam ${X}.tag_annotated
         """
 }
 
-process AnnotatePartialBam{
+process AnnotateBamYTags{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'quay.io/biocontainers/pysam:0.19.0--py39h5030a8b_0'
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple val(X), path(bam), path(bai), path(sequencing_summary)
+        tuple val(X), path(bam), path(bai), path(json)
         
 
     output:
-        tuple val(X), path("${X}.tag_annotated.sort.bam"), path("${X}.tag_annotated.sort.bam.bai")
+        tuple val(X), path("${X}.y_tagged.sort.bam"), path("${X}.y_tagged.sort.bam.bai")
 
     script:
         """
-        annotate_bam.py $sequencing_summary $bam ${X}.tag_annotated
+        annotate_bam_y.py $json $bam ${X}.y_tagged
+        """
+}
+
+process CollectClassificationTypes{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        path(metadata_json)
+
+    output:
+        path("classification_count.txt")
+    
+    script:
+        """
+        gather_readtpyes.py "*.metadata.json" classification_count.txt
         """
 }
