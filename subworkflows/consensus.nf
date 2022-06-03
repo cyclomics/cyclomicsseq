@@ -21,6 +21,7 @@ include {
     PrimaryMappedFilter
     SamToBam
     SamtoolsIndexWithID
+    MapqAndNMFilter
 } from "./modules/samtools"
 
 include {
@@ -130,7 +131,9 @@ workflow CycasConsensus{
 
         Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
-        Cycas(SamtoolsIndexWithID.out)
+        PrimaryMappedFilter(SamtoolsIndexWithID.out)
+        MapqAndNMFilter(PrimaryMappedFilter.out)
+        Cycas(MapqAndNMFilter.out)
 
     emit:
         fastq = Cycas.out.map( it -> it.take(2))
