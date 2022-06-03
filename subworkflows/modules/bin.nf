@@ -67,6 +67,6 @@ process CollectClassificationTypes{
     
     script:
         """
-        gather_readtpyes.py "*.metadata.json" classification_count.txt
+        gather_readtypes.py "*.metadata.json" classification_count.txt
         """
 }
