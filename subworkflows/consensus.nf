@@ -4,9 +4,11 @@ nextflow.enable.dsl=2
 
 include {
     FastqToFasta
+    MergeFasta
     Extract5PrimeFasta
     Extract3PrimeFasta
     ExtractSpecificRead
+    FilterShortReads
 } from "./modules/seqkit"
 
 include {
@@ -19,6 +21,8 @@ include {
     RemoveUnmappedReads
     PrimaryMappedFilter
     SamToBam
+    SamtoolsIndexWithID
+    MapqAndNMFilter
 } from "./modules/samtools"
 
 include {
@@ -35,8 +39,20 @@ include{
 
 
 include {
+    Minimap2Index
     MinimapAlignMany
+    Minimap2AlignAdaptive
+    Minimap2AlignAdaptiveParameterized
 } from "./modules/minimap"
+
+include {
+    Cycas
+    CycasSplit
+} from "./modules/cycas"
+
+include {
+    MedakaSmolecule
+} from "./modules/medaka"
 
 workflow  ConsensusBasic{
     take:
@@ -91,6 +107,7 @@ workflow TidehunterBackBoneQual{
         TideHunterFilterTableStartpos(Tidehunter53QualTable.out)
         TideHunterQualTableToFastq(TideHunterFilterTableStartpos.out)
         TideHunterQualTableToJson(TideHunterFilterTableStartpos.out)
+
         id = TideHunterQualTableToJson.out.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
@@ -106,20 +123,40 @@ workflow TidehunterBackBoneQual{
 
 }
 
-workflow ConsensusTroughAlignment{
+workflow CycasConsensus{
     take:
         read_fastq
         reference_genome
         backbone_fasta
-        backbone_primer_len
-        backbone_name
     main:
-        // create new reference
-        ExtractSpecificRead(backbone_fasta, backbone_name)
-        MinimapAlignMany(read_fastq, ExtractSpecificRead.out)
-        SamToBam(MinimapAlignMany.out)
-        PrimaryMappedFilter(SamToBam.out)
+        FilterShortReads(read_fastq)
+        Minimap2AlignAdaptiveParameterized(FilterShortReads.out, reference_genome)
+        SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
+        PrimaryMappedFilter(SamtoolsIndexWithID.out)
+        MapqAndNMFilter(PrimaryMappedFilter.out)
+        Cycas(MapqAndNMFilter.out)
 
     emit:
-        MinimapAlignMany.out
+        fastq = Cycas.out.map( it -> it.take(2))
+        id = Cycas.out.first().map( it -> it[0])
+        json = id.combine(Cycas.out.map( it -> it[2]))
+}
+
+workflow CycasMedaka{
+    take:
+        read_fastq
+        reference_genome
+        backbone_fasta
+    main:
+
+        MinimapAlignMany(read_fastq, reference_genome)
+        SamToBam(MinimapAlignMany.out)
+        CycasSplit(SamToBam.out)
+        MedakaSmolecule(CycasSplit.out.flatten())
+
+    emit:
+        id = CycasSplit.out.first().map( it -> it[0])       
+        fastq = MedakaSmolecule.out
+        json = id.combine(CycasSplit.out.map( it -> it[2]))
+
 }

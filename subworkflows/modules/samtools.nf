@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process SamtoolsIndex{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
 
@@ -19,11 +19,26 @@ process SamtoolsIndex{
         """
 }
 
+process SamtoolsIndexWithID{
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(x), path(input_bam) 
+
+    output:
+       tuple val(x), path(input_bam), path("*.bai")
+
+    script:
+        """
+        samtools index $input_bam
+        """
+}
+
 process SamtoolsSort{
     // Given a sam or bam file, make a sorted bam
     // Does break when sam is not `propper` eg no @SQ tags
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -38,10 +53,46 @@ process SamtoolsSort{
         """
 }
 
+process SamtoolsDepth{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'staphb/samtools:1.15'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(input_bam), path(bai)
+
+    output:
+        path "${input_bam.SimpleName}.bed"
+
+    script:
+        """
+        samtools depth $input_bam > ${input_bam.SimpleName}.bed
+        """
+}
+
+process SamtoolsDepthToJson{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // the slim version of buster is missing ps, which is needed for nextflow
+    container 'python:3.9.10-buster'
+    label 'many_cpu_intensive'
+
+    input:
+        path(input_bed)
+
+    output:
+        path "${input_bed.SimpleName}.json"
+
+    script:
+        """
+        bed_to_json.py --bed $input_bed
+        """
+}
+
+
 process SamToBam{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -60,7 +111,7 @@ process SamToBam{
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -78,7 +129,7 @@ process SamtoolsMerge{
 
 process SamtoolsQuickcheck{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -95,7 +146,7 @@ process SamtoolsQuickcheck{
 
 process SamtoolsFlagstats{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -112,7 +163,7 @@ process SamtoolsFlagstats{
 
 process SamtoolsFlagstatsMapPercentage{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -133,7 +184,7 @@ process SamtoolsFlagstatsMapPercentage{
 process SamtoolsMergeTuple{
     //  merge n number of bams into one
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -143,6 +194,8 @@ process SamtoolsMergeTuple{
         tuple val(X), path("${X}.merged.bam"), path("${X}.merged.bam.bai")
     
     script:
+    // contains bug, remove in future release
+    println('Warning Depreciated')
     """
     samtools merge -O bam ${X}.merged.bam \$(find . -name '*.bam')
     samtools index ${X}.merged.bam
@@ -152,7 +205,7 @@ process SamtoolsMergeTuple{
 process SamtoolsMergeBams{
     //  merge n number of bams into one
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -173,7 +226,7 @@ process SamtoolsMergeBams{
 process RemoveUnmappedReads{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -192,7 +245,7 @@ process RemoveUnmappedReads{
 process PrimaryMappedFilter{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
+    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -205,5 +258,23 @@ process PrimaryMappedFilter{
         """
         samtools view -b -F 256 $bam_in > ${X}.primary_mapped.bam
         samtools index ${X}.primary_mapped.bam
+        """
+}
+
+process MapqAndNMFilter{
+    // Sort, convert and index 
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    container 'staphb/samtools:1.15'
+    
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+
+    output:
+        tuple val(X), path("${X}.NM_50_mapq_20.bam"), path("${X}.NM_50_mapq_20.bam.bai")
+
+    script:
+        """
+        samtools view -b -o ${X}.NM_50_mapq_20.bam $bam_in --input-fmt-option 'filter=[NM]<50 && mapq >20'
+        samtools index ${X}.NM_50_mapq_20.bam
         """
 }

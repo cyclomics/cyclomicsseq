@@ -3,11 +3,18 @@ nextflow.enable.dsl=2
 
 
 include {
+    AnnotateBamXTags
+} from "./modules/bin.nf"
+
+include {
     BwaMemSorted
 } from "./modules/bwa.nf"
 
 include {
     MinimapAlign
+    Minimap2AlignAdaptive
+    Minimap2Index as IndexReference
+    Minimap2Index as IndexCombined
 } from "./modules/minimap.nf"
 
 include {
@@ -30,9 +37,43 @@ include {
     SamtoolsIndex
     SamToBam
     SamtoolsMergeTuple
+    SamtoolsDepth
+    SamtoolsDepthToJson
     SamtoolsMergeBams
 } from "./modules/samtools"
 
+include {
+    MergeFasta
+} from "./modules/seqkit"
+
+workflow PrepareGenome {
+    take:
+        reference_genome
+        reference_genome_name
+        backbones_fasta
+    main:
+        if (reference_genome_name.endsWith('.txt')) {
+            println("txt reference, not implemented. Exiting...")
+            genome = "missing"
+            exit(1)
+        }
+        else if (reference_genome_name.endsWith('.gz')) {
+            println("gzipped reference, not implemented. Exiting...")
+            genome = "missing"
+            exit(1)
+        }
+        else {
+            genome = reference_genome
+        }
+        MergeFasta(genome, backbones_fasta)
+        IndexCombined(MergeFasta.out)
+        IndexReference(genome)
+    emit:
+        mmi_combi = IndexCombined.out
+        mmi_ref = IndexReference.out
+        fasta_combi = MergeFasta.out
+        fasta_ref = reference_genome
+}
 
 workflow AlignBWA{
     take:
@@ -49,16 +90,22 @@ workflow Minimap2Align{
     take:
         reads
         reference_genome
+        sequencing_summary
+
     main:
-        MinimapAlign(reads.combine(reference_genome))
-        SamToBam(MinimapAlign.out)
-        // TODO fix here!
+
+        Minimap2AlignAdaptive(reads.map(it -> it[1]), reference_genome)
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        bams = SamToBam.out.map(it -> it[1]).collect()
+        bams = Minimap2AlignAdaptive.out.map(it -> it[1]).collect()
+        
         SamtoolsMergeBams(id, bams)
+        SamtoolsDepth(SamtoolsMergeBams.out)
+        SamtoolsDepthToJson(SamtoolsDepth.out)
+
     emit:
-        SamtoolsMergeBams.out
+        bam = SamtoolsMergeBams.out
+        depth = SamtoolsDepthToJson.out
 }
 
 workflow LastalAlignFasta{
@@ -148,4 +195,14 @@ workflow LastalAlignTrainedFastq{
 
     emit:
         SamtoolsIndex.out
+}
+
+workflow Annotate{
+    take:
+        reads
+        sequencing_summary
+    main:
+        AnnotateBamXTags(reads, sequencing_summary)
+    emit:
+        AnnotateBamXTags.out
 }

@@ -1,0 +1,101 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/CycloSeq/master/nextflow_schema.json",
+    "title": "CycloSeq pipeline parameters",
+    "description": "Collection of pipelines to process Cyclomics CyclomicSeq data.",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "properties": {
+                "input_read_dir": {
+                    "type": "string",
+                    "default": "$HOME/data/raw_data/MAR6252/"
+                },
+                "read_pattern": {
+                    "type": "string",
+                    "default": "fastq_pass/**.{fq,fastq}"
+                },
+                "sequencing_quality_summary": {
+                    "type": "string",
+                    "default": "sequencing_summary*.txt"
+                },
+                "output_dir": {
+                    "type": "string",
+                    "default": "$HOME/data/cyclomics"
+                },
+                "control_vcf": {
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        },
+        "reference_genome_options": {
+            "title": "Reference genome options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Reference genome related files and options required for the workflow.",
+            "properties": {
+                "backbone_fasta": {
+                    "type": "string",
+                    "default": "$HOME/data/backbones/backbones/backbones_db_valid.fasta"
+                },
+                "backbone_name": {
+                    "type": "string",
+                    "default": "BB22"
+                },
+                "reference": {
+                    "type": "string",
+                    "default": "$HOME/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
+                }
+            }
+        },
+        "institutional_config_options": {
+            "title": "Institutional config options",
+            "type": "object",
+            "fa_icon": "fas fa-university",
+            "description": "Parameters used to describe centralised config profiles. These should not be edited.",
+            "help_text": "The centralised nf-core configuration profiles use a handful of pipeline parameters to describe themselves. This information is then printed to the Nextflow log when you run a pipeline. You should not need to change these values when you run a pipeline.",
+            "properties": {
+                "qc": {
+                    "type": "string",
+                    "default": "skip"
+                },
+                "consensus_calling": {
+                    "type": "string",
+                    "default": "tidehunter"
+                },
+                "alignment": {
+                    "type": "string",
+                    "default": "minimap"
+                },
+                "ci_run": {
+                    "type": "string",
+                    "default": null
+                },
+                "extra_variant_calling": {
+                    "type": "string",
+                    "default": "skip"
+                },
+                "extra_haplotyping": {
+                    "type": "string",
+                    "default": "skip"
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/reference_genome_options"
+        },
+        {
+            "$ref": "#/definitions/institutional_config_options"
+        }
+    ]
+}
