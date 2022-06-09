@@ -8,6 +8,7 @@ include {
     Extract5PrimeFasta
     Extract3PrimeFasta
     ExtractSpecificRead
+    FilterShortReads
 } from "./modules/seqkit"
 
 include {
@@ -128,8 +129,8 @@ workflow CycasConsensus{
         reference_genome
         backbone_fasta
     main:
-
-        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
+        FilterShortReads(read_fastq)
+        Minimap2AlignAdaptiveParameterized(FilterShortReads.out, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)

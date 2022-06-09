@@ -106,3 +106,19 @@ process CountFastqInfo{
         cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > base_count.txt
         """
 }
+
+
+process FilterShortReads{
+    label 'many_cpu_medium'
+
+    input:
+        path(fastq)
+
+    output:
+        path ("${fastq.simpleName}_filtered.fastq")
+
+    script:
+        """
+        seqkit seq -m ${params.filtering.minimun_raw_length} $fastq > "${fastq.simpleName}_filtered.fastq"
+        """
+}
