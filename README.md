@@ -23,6 +23,17 @@ an example whould be:
 nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
 ```
 
+## changelog
+
+### 0.3.1
+- Updated cycas version
+- disable reporting due to to metadata incompatibility
+
+### 0.3.0
+- Added Cycas as the main consensus caller
+- Added filtering
+- Changed to Varscan variant calling
+
 
 ### Flag descriptions
 

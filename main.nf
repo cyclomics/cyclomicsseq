@@ -231,21 +231,21 @@ AA. Parameter processing
 04.    Reporting
 ========================================================================================
 */ 
-    if( params.report == "yes" ) {
-        Report(read_info_json, 
-        QC_MinionQc.out, 
-        vcf,
-        depth_info
-        )
+    // if( params.report == "yes" ) {
+    //     Report(read_info_json, 
+    //     QC_MinionQc.out, 
+    //     vcf,
+    //     depth_info
+    //     )
 
-        PostQC(read_info_json,
-            read_fastq,
-            base_unit_reads
-        )
-    }
-    else{
-        println "Skipping report generation"
-    }
+    //     // PostQC(read_info_json,
+    //     //     read_fastq,
+    //     //     base_unit_reads
+    //     // )
+    // }
+    // else{
+    //     println "Skipping report generation"
+    // }
     
 }
 /*
