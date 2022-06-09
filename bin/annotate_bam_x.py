@@ -60,7 +60,7 @@ def read_getter_bam_f5(seqsum_path, in_bam_path, out_bam_path, split_queryname=T
                 (header_to_tag['mad_template'], float(readsum[seqsum_indexes['mad_template']])),  
                 (header_to_tag['end_reason'], readsum[seqsum_indexes['end_reason']]),  
             ]
-            out_bam_file.write(aln)
+        out_bam_file.write(aln)
         # exit()
 
     in_bam_file.close()
