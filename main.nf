@@ -52,11 +52,11 @@ log.info """
     Output:  
         output folder   : $params.output_dir
     Method:  
-        QC              : $params.qc
-        Consensus       : $params.consensus_calling
-        Alignment       : $params.alignment
-        variant_calling : $params.variant_calling
-        report          : $params.report
+        QC               : $params.qc
+        consensus_calling: $params.consensus_calling
+        Alignment        : $params.alignment
+        variant_calling  : $params.variant_calling
+        report           : $params.report
 """
 
 /*
@@ -132,7 +132,9 @@ AA. Parameter processing
 ========================================================================================
 */
     if( params.qc == "simple" ) {
-        QC_MinionQc(params.input_read_dir)
+        println(seq_summary)
+
+        QC_MinionQc(seq_summary)
     }
     else if( params.qc == "skip" ) {
         println "Skipping QC control"
@@ -188,7 +190,7 @@ AA. Parameter processing
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
     
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, seq_summary)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi)
         reads_aligned = Minimap2Align.out.bam
         depth_info = Minimap2Align.out.depth
     }
@@ -238,10 +240,10 @@ AA. Parameter processing
     //     depth_info
     //     )
 
-    //     // PostQC(read_info_json,
-    //     //     read_fastq,
-    //     //     base_unit_reads
-    //     // )
+    PostQC(read_info_json,
+        read_fastq,
+        base_unit_reads
+    )
     // }
     // else{
     //     println "Skipping report generation"
@@ -257,15 +259,3 @@ AA. Parameter processing
     // Count reads in input fastqs
 
     // Count classifications
-    
-
-
-
-// TODO: give warning when user sets backbone and its not used
-// TODO: Make realtime option
-// TODO: improve reporting with vaf threshold plot
-// TODO: improve reporting with vcf table
-// TODO: add option for gene.txt
-
-// TODO:add classes
-// TODO:add read counts (seqkit stats *[1,2]1_0.fastq.gz |  awk '!x[$1 FS $4]++')

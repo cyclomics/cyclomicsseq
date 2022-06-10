@@ -22,6 +22,21 @@ an example whould be:
 ```bash
 nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
 ```
+## Roadmap / Todo:
+ ### Functionality:
+ 1. Add Post_Qc jobs with plots and tables
+ 1. Add variant validation as option 
+ 
+ ### Usability:
+ 1. Implement warning when the backbone is not present in the data
+ 1. Improve output folder structure
+ 1. Remove unused flags
+ 1. give warning when user sets backbone and its not used
+ 1. Make the read discovery smarter
+
+### Improvements:
+1. Change minimum vaf based on data available
+
 
 ## changelog
 
