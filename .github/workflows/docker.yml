@@ -21,6 +21,9 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
+      - name: checkout repo content
+            uses: actions/checkout@v2 # checkout the repository content to github runner.
+
       - name: Install Nextflow
         run: |
           wget -qO- get.nextflow.io | bash
@@ -28,6 +31,7 @@ jobs:
           
       - name: Run Nextflow pipeline
         run: |
+          ls &&
           nextflow run main.nf \
           --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
