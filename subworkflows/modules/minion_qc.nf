@@ -5,9 +5,8 @@ process MinionQc{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'evolbioinfo/minionqc:v1.4.1'
    
-    memory { 8.GB * task.attempt }
-    time { 1.hour * task.attempt }
-
+    memory (params.ci_run == true ? { 8.GB * task.attempt } : 2.GB) 
+    
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3
 
