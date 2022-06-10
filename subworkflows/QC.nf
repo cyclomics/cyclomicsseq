@@ -46,7 +46,7 @@ workflow PostQC {
         fastq_consensus
     main:
         // dont add the ID to the process
-        CollectClassificationTypes(read_info.map(it -> it[1]).collect())
+        // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
         FastqInfoRaw(fastq_raw.collect())
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
 }

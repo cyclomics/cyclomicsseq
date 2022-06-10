@@ -31,10 +31,9 @@ jobs:
           
       - name: Run Nextflow pipeline
         run: |
-          ls &&
           nextflow run main.nf \
           --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
-          --ci_run
+          --ci_run 

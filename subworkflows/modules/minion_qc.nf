@@ -5,21 +5,21 @@ process MinionQc{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'evolbioinfo/minionqc:v1.4.1'
    
-    memory (params.ci_run == true ? { 8.GB * task.attempt } : 2.GB) 
-    
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries 3
+    // memory (params.ci_run == true ? 2.GB : {8.GB * task.attempt })
+
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    // maxRetries 3
 
     input:
         path summary
 
     output:
-        path "${summary}/*.png" , emit: plots
-        path "${summary}/*.yaml" , emit: summary
+        path "*.png" , emit: plots
+        path "*.yaml" , emit: summary
 
     script:
         """
-        Rscript /minion_qc/MinIONQC.R -i  $summary/sequencing_summary*.txt
+        Rscript /minion_qc/MinIONQC.R -i  $summary
         """
 }
 
