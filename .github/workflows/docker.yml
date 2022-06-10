@@ -37,3 +37,19 @@ jobs:
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
           --ci_run 
+
+  RunUnitTests:
+    runs-on: ubuntu-latest
+      steps:
+        - name: checkout repo content
+          uses: actions/checkout@v2
+        - name: create conda env
+          uses: conda-incubator/setup-miniconda@v2
+          with:
+            activate-environment: cyclomics-nf-cyclomicseq
+            environment-file: environment.yml
+            python-version: 3.8
+            auto-activate-base: false
+
+        - name: Run tests with pytest
+          run: python -m unittest 
