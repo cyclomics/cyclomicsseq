@@ -90,7 +90,6 @@ workflow Minimap2Align{
     take:
         reads
         reference_genome
-        sequencing_summary
 
     main:
 
