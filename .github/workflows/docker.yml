@@ -17,7 +17,7 @@ on:
 jobs:
 
   # This workflow contains a single job called "build"
-  build:
+  RunPipeline:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +28,7 @@ jobs:
           
       - name: Run Nextflow pipeline
         run: |
-          nextflow run workflows/informed.nf \
+          nextflow run main.nf \
           --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
