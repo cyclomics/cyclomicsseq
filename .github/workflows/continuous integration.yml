@@ -49,7 +49,6 @@ jobs:
           activate-environment: cyclomics-nf-cyclomicseq
           environment-file: environment.yml
           python-version: 3.8
-          auto-activate-base: false
 
       - name: Run tests with pytest
-        run: python -m unittest 
+        run: conda activate cyclomics-nf-cyclomicseq && python -m unittest 
