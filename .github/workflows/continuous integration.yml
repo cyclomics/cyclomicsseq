@@ -61,7 +61,7 @@ jobs:
         shell: bash -l {0}
         run: python -m unittest
 
- PythonCodeQuality:
+  PythonCodeQuality:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo content
