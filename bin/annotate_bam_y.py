@@ -30,29 +30,52 @@ def add_y_tags(seqsum_path, in_bam_path, out_bam_path, split_queryname=True):
     for aln in in_bam_file.fetch():
         query_name = aln.query_name
         if split_queryname:
-            query_name = query_name.split('_')[0]
+            query_name = query_name.split("_")[0]
         if query_name in seqsum:
             readsum = seqsum[query_name]
             # TODO: make this extenable
             aln.tags = aln.tags + [
-                (header_to_tag['channel'], int(readsum[seqsum_indexes['channel']])),
-                (header_to_tag['mux'], int(readsum[seqsum_indexes['mux']])),  
-                (header_to_tag['channel_mux'], readsum[seqsum_indexes['channel']] + "." + readsum[seqsum_indexes['mux']]),  
-                (header_to_tag['start_time'], float(readsum[seqsum_indexes['start_time']])),  
-                (header_to_tag['duration'], float(readsum[seqsum_indexes['duration']])),  
-                (header_to_tag['adapter_duration'], float(readsum[seqsum_indexes['duration']]) - float(readsum[seqsum_indexes['start_time']])),  
-                (header_to_tag['sequence_length_template'], int(readsum[seqsum_indexes['sequence_length_template']])),  
-                (header_to_tag['mean_qscore_template'], float(readsum[seqsum_indexes['mean_qscore_template']])),  
-                (header_to_tag['median_template'], float(readsum[seqsum_indexes['median_template']])),  
-                (header_to_tag['mad_template'], float(readsum[seqsum_indexes['mad_template']])),  
-                (header_to_tag['end_reason'], readsum[seqsum_indexes['end_reason']]),  
+                (header_to_tag["channel"], int(readsum[seqsum_indexes["channel"]])),
+                (header_to_tag["mux"], int(readsum[seqsum_indexes["mux"]])),
+                (
+                    header_to_tag["channel_mux"],
+                    readsum[seqsum_indexes["channel"]]
+                    + "."
+                    + readsum[seqsum_indexes["mux"]],
+                ),
+                (
+                    header_to_tag["start_time"],
+                    float(readsum[seqsum_indexes["start_time"]]),
+                ),
+                (header_to_tag["duration"], float(readsum[seqsum_indexes["duration"]])),
+                (
+                    header_to_tag["adapter_duration"],
+                    float(readsum[seqsum_indexes["duration"]])
+                    - float(readsum[seqsum_indexes["start_time"]]),
+                ),
+                (
+                    header_to_tag["sequence_length_template"],
+                    int(readsum[seqsum_indexes["sequence_length_template"]]),
+                ),
+                (
+                    header_to_tag["mean_qscore_template"],
+                    float(readsum[seqsum_indexes["mean_qscore_template"]]),
+                ),
+                (
+                    header_to_tag["median_template"],
+                    float(readsum[seqsum_indexes["median_template"]]),
+                ),
+                (
+                    header_to_tag["mad_template"],
+                    float(readsum[seqsum_indexes["mad_template"]]),
+                ),
+                (header_to_tag["end_reason"], readsum[seqsum_indexes["end_reason"]]),
             ]
             out_bam_file.write(aln)
         # exit()
 
     in_bam_file.close()
     out_bam_file.close()
-
 
 
 file_json = sys.argv[1]

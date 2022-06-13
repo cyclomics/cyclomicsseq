@@ -1,3 +1,0 @@
-FROM python:3.9.7
-
-COPY ./split_clusters.py /split_clusters.py 
