@@ -43,10 +43,16 @@ jobs:
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2
+
       - name: Install dependencies
-        run: |
-          # $CONDA is an environment variable pointing to the root of the miniconda directory
-          $CONDA/bin/conda env update --file environment.yml --name base
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: test
+          environment-file: environment.yml
+          python-version: 3.8
+          auto-activate-base: false
         
-      - name: Run tests with pytest
-        run: python -m unittest
+      - shell: bash -l {0}
+        run: |
+          conda info
+          conda list
