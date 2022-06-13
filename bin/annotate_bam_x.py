@@ -105,31 +105,31 @@ def main(seqsum_path, in_bam_path, out_bam_path, split_queryname=True):
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(
-    #     description="Process the information in the sequencing summary and add it to the bam."
-    # )
+    parser = argparse.ArgumentParser(
+        description="Process the information in the sequencing summary and add it to the bam."
+    )
 
-    # parser.add_argument("file_seqsum", type=Path)
-    # parser.add_argument("file_bam", type=Path)
-    # parser.add_argument("file_out", type=Path)
-    # args = parser.parse_args()
-    # logging.info(args)
+    parser.add_argument("file_seqsum", type=Path)
+    parser.add_argument("file_bam", type=Path)
+    parser.add_argument("file_out", type=Path)
+    args = parser.parse_args()
+    logging.info(args)
 
-    # intermediate_bam = args.file_bam.with_suffix(".unsorted.bam")
-    # logging.info(intermediate_bam)
+    intermediate_bam = args.file_bam.with_suffix(".unsorted.bam")
+    logging.info(intermediate_bam)
 
-    # pore_time_aln = main(args.file_seqsum, args.file_bam, intermediate_bam)
+    pore_time_aln = main(args.file_seqsum, args.file_bam, intermediate_bam)
 
-    # # pysam requires pure strings
-    # pysam.sort("-o", str(args.file_out), str(intermediate_bam))
-    # pysam.index(str(args.file_out))
+    # pysam requires pure strings
+    pysam.sort("-o", str(args.file_out), str(intermediate_bam))
+    pysam.index(str(args.file_out))
 
 
-    file_seqsum = Path('/media/dami/cyclomics_003/ont/001_accuracy_testing/SS_220209_cyclomics/002/20220209_1609_X5_FAS04073_a6645565/sequencing_summary_FAS04073_77432eb4.txt')
-    file_bam = Path('/media/dami/cyclomics_003/tmp/annotationtest/Minimap2Align/SamToBam/FAS04073_pass_77432eb4_140.fastq.bam')
-    file_out = Path('testing.bam')
-    intermediate_bam = file_out.with_suffix(".unsorted.bam")
+    # file_seqsum = Path('/media/dami/cyclomics_003/ont/001_accuracy_testing/SS_220209_cyclomics/002/20220209_1609_X5_FAS04073_a6645565/sequencing_summary_FAS04073_77432eb4.txt')
+    # file_bam = Path('/media/dami/cyclomics_003/tmp/annotationtest/Minimap2Align/SamToBam/FAS04073_pass_77432eb4_140.fastq.bam')
+    # file_out = Path('testing.bam')
+    # intermediate_bam = file_out.with_suffix(".unsorted.bam")
 
-    pore_time_aln = main(file_seqsum, file_bam, intermediate_bam)
+    # pore_time_aln = main(file_seqsum, file_bam, intermediate_bam)
 
   
