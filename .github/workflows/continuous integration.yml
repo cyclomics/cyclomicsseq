@@ -67,6 +67,9 @@ jobs:
       - name: checkout repo content
         uses: actions/checkout@v2
 
+      - name: Install Python dependencies
+        run: pip install black
+
       - name: Run Black linter
         uses: wearerequired/lint-action@v2
         with:
