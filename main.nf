@@ -132,7 +132,6 @@ AA. Parameter processing
 ========================================================================================
 */
     if( params.qc == "simple" ) {
-        println(seq_summary)
 
         QC_MinionQc(seq_summary)
     }
