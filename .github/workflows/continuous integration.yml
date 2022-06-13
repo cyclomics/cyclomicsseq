@@ -38,7 +38,7 @@ jobs:
           --reference 'tests/informed/tp53.fasta' \
           --ci_run 
 
-  RunUnitTests:
+  RunPythonUnitTests:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo content
@@ -60,3 +60,14 @@ jobs:
       - name: Run tests with pytest
         shell: bash -l {0}
         run: python -m unittest
+
+ PythonCodeQuality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v2
+
+      - name: Run Black linter
+        uses: wearerequired/lint-action@v2
+        with:
+          black: true
