@@ -46,7 +46,9 @@ class TestAnnotateBamX(unittest.TestCase):
             self.assertTrue(len(tags[h]) == 2)
 
         # also test that we dont get a keyerror
-        self.assertEqual(tags['somethingthatwillneveroccurinanormalsequencingsummaryacbdef'], -1)
+        self.assertEqual(
+            tags["somethingthatwillneveroccurinanormalsequencingsummaryacbdef"], -1
+        )
 
     def test_load_seqsum(self):
         expected_readnames = [
@@ -98,20 +100,27 @@ class TestAnnotateBamX(unittest.TestCase):
             """
             # define testing inputs
             test_read_name = "readname123"
-            fake_seqsum = {test_read_name: [12, "3m 12s", "we dont need this", "good_test"]}
-            fake_seqsum_indexes = defaultdict(lambda: -1) 
-            
+            fake_seqsum = {
+                test_read_name: [12, "3m 12s", "we dont need this", "good_test"]
+            }
+            fake_seqsum_indexes = defaultdict(lambda: -1)
+
             fake_seqsum_indexes_entries = {"channel": 0, "duration": 1, "end_reason": 3}
-            for k,v in fake_seqsum_indexes_entries.items():
+            for k, v in fake_seqsum_indexes_entries.items():
                 fake_seqsum_indexes[k] = v
 
             test_items = list(fake_seqsum_indexes.keys())
-        
-            #  expected output 
-            expected_tags = [('already_occuring_tag', 'something usefull'), ("XC", 12), ("XD", "3m 12s"), ("XE","good_test") ]
+
+            #  expected output
+            expected_tags = [
+                ("already_occuring_tag", "something usefull"),
+                ("XC", 12),
+                ("XD", "3m 12s"),
+                ("XE", "good_test"),
+            ]
             # create mocked alignmet object
             mock_aln = Mock()
-            mock_aln.tags = [('already_occuring_tag', 'something usefull')]
+            mock_aln.tags = [("already_occuring_tag", "something usefull")]
 
             target.tag_aln(
                 aln=mock_aln,
@@ -130,25 +139,30 @@ class TestAnnotateBamX(unittest.TestCase):
         # define testing inputs
         test_read_name = "readname123"
         fake_seqsum = {test_read_name: [12, "3m 12s", "we dont need this", "good_test"]}
-        fake_seqsum_indexes = defaultdict(lambda: -1) 
-        
+        fake_seqsum_indexes = defaultdict(lambda: -1)
+
         fake_seqsum_indexes_entries = {"channel": 0, "duration": 1, "end_reason": 3}
-        for k,v in fake_seqsum_indexes_entries.items():
+        for k, v in fake_seqsum_indexes_entries.items():
             fake_seqsum_indexes[k] = v
 
         test_items = list(fake_seqsum_indexes.keys())
-        
-        # add a column we dont tag
-        test_items.append('something_we_dont_have_a_tag_for')
-        # add a tag that is missing
-        target.HEADER_TO_TAG['test_column'] = 'test'
-        test_items.append('test_column')
 
-        #  expected output 
-        expected_tags = [('already_occuring_tag', 'something usefull'), ("XC", 12), ("XD", "3m 12s"), ("XE","good_test") ]
+        # add a column we dont tag
+        test_items.append("something_we_dont_have_a_tag_for")
+        # add a tag that is missing
+        target.HEADER_TO_TAG["test_column"] = "test"
+        test_items.append("test_column")
+
+        #  expected output
+        expected_tags = [
+            ("already_occuring_tag", "something usefull"),
+            ("XC", 12),
+            ("XD", "3m 12s"),
+            ("XE", "good_test"),
+        ]
         # create mocked alignmet object
         mock_aln = Mock()
-        mock_aln.tags = [('already_occuring_tag', 'something usefull')]
+        mock_aln.tags = [("already_occuring_tag", "something usefull")]
 
         target.tag_aln(
             aln=mock_aln,
@@ -160,32 +174,29 @@ class TestAnnotateBamX(unittest.TestCase):
         # Test if we only get the colums that we expect: initial plus the three that where both in seqsum and columns
         self.assertCountEqual(expected_tags, mock_aln.tags)
 
-
     def test_process_query_name(self):
         """
         Test query name splitting
         """
-        input = 'abc_def'
-        expected_output = 'abc'
+        input = "abc_def"
+        expected_output = "abc"
 
         output = target.process_query_name(input)
 
         self.assertEqual(expected_output, output)
 
-        input_2 = 'abc_def'
+        input_2 = "abc_def"
         output2 = target.process_query_name(input_2, split_queryname=False)
         self.assertEqual(input_2, output2)
 
-        input_3 = 'abc_def'
-        output3 = target.process_query_name(input_3, splitter='-')
+        input_3 = "abc_def"
+        output3 = target.process_query_name(input_3, splitter="-")
         self.assertEqual(input_3, output3)
 
-        input_4 = 'abc-def-ghi'
-        expected_output4 = 'abc'
-        output4 = target.process_query_name(input_4, splitter='-')
+        input_4 = "abc-def-ghi"
+        expected_output4 = "abc"
+        output4 = target.process_query_name(input_4, splitter="-")
         self.assertEqual(expected_output4, output4)
-
-
 
 
 if __name__ == "__main__":

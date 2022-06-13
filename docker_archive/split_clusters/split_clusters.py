@@ -3,19 +3,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import argparse
 
+
 @dataclass
 class Cluster:
     name: str
     read_names: list[str] = field(default_factory=list)
-    reads: dict[str,str] = field(default_factory=dict)
+    reads: dict[str, str] = field(default_factory=dict)
 
     def __repr__(self):
         return self.name
-    
+
     def __hash__(self) -> int:
         return hash(self.name)
 
-    
+
 def parse_fasta(fasta_file):
     d = {}
     _id = False
@@ -36,12 +37,13 @@ def parse_fasta(fasta_file):
         d.update({_id: seq})
     return d
 
-if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='Split clusters into seperate fastas')
-    parser.add_argument('-i','--input_fasta', type=str)
-    parser.add_argument('-s','--sample', type=str)
-    parser.add_argument('-m','--min_reads', type=int, default = 10)
-    parser.add_argument('-r','--read_ratio', type=float, default = 0.25)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Split clusters into seperate fastas")
+    parser.add_argument("-i", "--input_fasta", type=str)
+    parser.add_argument("-s", "--sample", type=str)
+    parser.add_argument("-m", "--min_reads", type=int, default=10)
+    parser.add_argument("-r", "--read_ratio", type=float, default=0.25)
 
     args = parser.parse_args()
 
@@ -50,14 +52,14 @@ if __name__=="__main__":
     fa_file = args.input_fasta
     clstr_file = f"{sample}.clstr"
     min_reads_cluster = args.min_reads
-    read_ratio =    args.read_ratio
+    read_ratio = args.read_ratio
 
     print(sample)
     print(fa_file)
     print(clstr_file)
 
     with open(clstr_file, "r") as f:
-    # initialize the first cluster
+        # initialize the first cluster
         cur_clstr = Cluster(next(f).strip())
         for line in f.readlines():
             if line.startswith(">"):
@@ -85,7 +87,9 @@ if __name__=="__main__":
     filtered_clusters = [x for x in clusters if len(x.read_names) > min_reads_cluster]
     print(f"found clusters: {len(filtered_clusters)}")
     print([x.name for x in filtered_clusters])
-    min_th_clusters = [x for x in clusters if len(x.read_names) > total_reads * read_ratio]
+    min_th_clusters = [
+        x for x in clusters if len(x.read_names) > total_reads * read_ratio
+    ]
     print(f"found clusters th: {len(min_th_clusters)}")
     print([x.name for x in min_th_clusters])
 
@@ -93,7 +97,6 @@ if __name__=="__main__":
     clusters_rejected = set(clusters).difference(clusters_accepted)
     print(f"accepted clusters: {len(clusters_accepted)}")
     print(f"rejected clusters: {len(clusters_rejected)}")
-
 
     for cluster in clusters_accepted:
         file = Path(fa_file).with_suffix(f".C_{str(cluster).split(' ')[-1]}.fa")
