@@ -70,21 +70,20 @@ process SamtoolsDepth{
         """
 }
 
-process SamtoolsDepthToJson{
+process SamtoolsDepthToTSV{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // the slim version of buster is missing ps, which is needed for nextflow
-    container 'python:3.9.10-buster'
     label 'many_cpu_intensive'
 
     input:
         path(input_bed)
 
     output:
-        path "${input_bed.SimpleName}.json"
+        path "${bam_in.simpleName}.depth.tsv"
 
     script:
         """
-        bed_to_json.py --bed $input_bed
+        cat $input_bed | sort -r -n -k3 | awk '!x[\$1]++' > ${input_bed.SimpleName}.depth.tsv
         """
 }
 

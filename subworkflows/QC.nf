@@ -19,6 +19,10 @@ include {
     CountFastqInfo as FastqInfoConsensus
 } from "./modules/seqkit"
 
+include {
+    FindRegionOfInterest
+} from "./modules/mosdepth"
+
 workflow  QC_pycoqc{
     take:
         read_directory
@@ -44,9 +48,12 @@ workflow PostQC {
         read_info
         fastq_raw
         fastq_consensus
+        consensus_bam
     main:
         // dont add the ID to the process
         // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
         FastqInfoRaw(fastq_raw.collect())
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
+
+        FindRegionOfInterest(consensus_bam)
 }
