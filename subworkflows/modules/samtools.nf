@@ -126,14 +126,14 @@ process SamtoolsQuickcheck{
     label 'many_cpu_medium'
 
     input:
-        path(input_sam)
+        tuple val(X), path(bam_in), path(bai_in)
 
     output:
         stdout
 
     script:
         """
-        samtools quickcheck $input_sam && echo 'Samtools quickcheck ok' || echo 'Samtools quickcheck fail!'
+        samtools quickcheck $bam_in && echo 'Samtools quickcheck ok' || echo 'Samtools quickcheck fail!'
         """
 }
 
@@ -142,14 +142,14 @@ process SamtoolsFlagstats{
     label 'many_cpu_medium'
 
     input:
-        path(input_sam)
+        tuple val(X), path(bam_in), path(bai_in)
     
     output:
         stdout
 
     script:
         """
-        samtools flagstat $input_sam
+        samtools flagstat $bam_in
         """
 }
 

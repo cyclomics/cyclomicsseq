@@ -20,6 +20,11 @@ include {
 } from "./modules/seqkit"
 
 include {
+    SamtoolsQuickcheck
+    SamtoolsFlagstats
+} from "./modules/samtools"
+
+include {
     FindRegionOfInterest
 } from "./modules/mosdepth"
 
@@ -55,5 +60,10 @@ workflow PostQC {
         FastqInfoRaw(fastq_raw.collect())
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
 
+        SamtoolsQuickcheck(consensus_bam)
+        SamtoolsQuickcheck.out.view()
+        SamtoolsFlagstats(consensus_bam)
+        SamtoolsFlagstats.out.view()
+        
         FindRegionOfInterest(consensus_bam)
 }
