@@ -9,3 +9,5 @@ testing*
 
 nextflow.config
 tidehunter_exec_test
+notebooks/*
+plots/*
