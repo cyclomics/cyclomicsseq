@@ -191,7 +191,6 @@ AA. Parameter processing
     if( params.alignment == "minimap" ) {
         Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi)
         reads_aligned = Minimap2Align.out.bam
-        depth_info = Minimap2Align.out.depth
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
@@ -232,22 +231,12 @@ AA. Parameter processing
 04.    Reporting
 ========================================================================================
 */ 
-    // if( params.report == "yes" ) {
-    //     Report(read_info_json, 
-    //     QC_MinionQc.out, 
-    //     vcf,
-    //     depth_info
-    //     )
-
-    PostQC(read_info_json,
+    PostQC(
+        read_info_json,
         read_fastq,
-        base_unit_reads
+        base_unit_reads,
+        reads_aligned_annotated,
     )
-    // }
-    // else{
-    //     println "Skipping report generation"
-    // }
-    
 }
 /*
 ========================================================================================
