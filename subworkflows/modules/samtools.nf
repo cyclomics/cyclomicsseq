@@ -3,7 +3,6 @@ nextflow.enable.dsl=2
 
 process SamtoolsIndex{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
 
@@ -38,7 +37,6 @@ process SamtoolsSort{
     // Given a sam or bam file, make a sorted bam
     // Does break when sam is not `propper` eg no @SQ tags
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -55,7 +53,6 @@ process SamtoolsSort{
 
 process SamtoolsDepth{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -91,7 +88,6 @@ process SamtoolsDepthToTSV{
 process SamToBam{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -110,7 +106,6 @@ process SamToBam{
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -128,7 +123,6 @@ process SamtoolsMerge{
 
 process SamtoolsQuickcheck{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -145,7 +139,6 @@ process SamtoolsQuickcheck{
 
 process SamtoolsFlagstats{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -162,7 +155,6 @@ process SamtoolsFlagstats{
 
 process SamtoolsFlagstatsMapPercentage{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -183,7 +175,6 @@ process SamtoolsFlagstatsMapPercentage{
 process SamtoolsMergeTuple{
     //  merge n number of bams into one
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -204,7 +195,6 @@ process SamtoolsMergeTuple{
 process SamtoolsMergeBams{
     //  merge n number of bams into one
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -225,7 +215,6 @@ process SamtoolsMergeBams{
 process RemoveUnmappedReads{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -244,7 +233,6 @@ process RemoveUnmappedReads{
 process PrimaryMappedFilter{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     label 'many_cpu_medium'
 
     input:
@@ -263,7 +251,6 @@ process PrimaryMappedFilter{
 process MapqAndNMFilter{
     // Sort, convert and index 
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'staphb/samtools:1.15'
     
     input:
         tuple val(X), path(bam_in), path(bai_in)
