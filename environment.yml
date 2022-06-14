@@ -42,6 +42,7 @@ dependencies:
   - libzlib=1.2.12=h166bdaf_0
   - lz4-c=1.9.3=h9c3ff4c_1
   - minimap2=2.24=h7132678_1
+  - mosdepth=0.3.3=h37c5b7d_2
   - ncurses=6.3=h27087fc_1
   - oniguruma=6.9.8=h166bdaf_0
   - openjdk=8.0.312=h7f98852_0
