@@ -45,10 +45,8 @@ jobs:
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2
-
-      - name: Run tests with pytest
-        shell: bash -l {0}
-        run: python -m unittest
+        run: |
+          python -m unittest
 
   PythonCodeQuality:
     runs-on: ubuntu-latest
