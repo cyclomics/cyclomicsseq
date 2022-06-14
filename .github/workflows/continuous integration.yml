@@ -26,7 +26,7 @@ jobs:
 
       - name: Install Nextflow
         run: |
-          wget -qO- get.nextflow.io | bash
+          wget -qO- get.nextflow.io | bash > /dev/null
           sudo mv nextflow /usr/local/bin/
           
       - name: Run Nextflow pipeline in Docker
@@ -40,22 +40,11 @@ jobs:
 
   RunPythonUnitTests:
     runs-on: ubuntu-latest
+    container:
+      image: docker://damicyclomics/cycloseq:latest
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2
-
-      - name: Install dependencies
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: test
-          environment-file: environment.yml
-          python-version: 3.8
-          auto-activate-base: false
-        
-      - shell: bash -l {0}
-        run: |
-          conda info
-          conda list
 
       - name: Run tests with pytest
         shell: bash -l {0}
