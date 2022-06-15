@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from collections import Counter
 from pathlib import Path
 import pysam
@@ -75,7 +77,7 @@ def extract_nucleotide_count(
         )
 
 
-def initialize_output_vcf(vcf_path):
+def initialize_output_vcf(vcf_path, contigs):
 
     # Create a VCF header
     vcfh = pysam.VariantHeader()
@@ -87,8 +89,8 @@ def initialize_output_vcf(vcf_path):
         items=[("ID", "RF"), ("Description", "Variant failed filter due to low RF")],
     )
     # Add a contig (chromosome 1) to our VCF header
-    vcfh.add_meta("contig", items=[("ID", 1)])
-    vcfh.add_meta("contig", items=[("ID", "chr17")])
+    for contig in contigs:
+        vcfh.add_meta("contig", items=[("ID", contig)])
 
     # Add GT to FORMAT in our VCF header
     vcfh.add_meta(
@@ -117,11 +119,11 @@ def initialize_output_vcf(vcf_path):
     return vcf
 
 
-def main(bam: Path, variants: Path, pileup_depth=1_000_000):
+def main(bam: Path, variants: Path,output_path, pileup_depth=1_000_000):
     logging.debug("started main")
     bam_af = pysam.AlignmentFile(bam, "rb")
 
-    vcf = initialize_output_vcf("example.vcf")
+    vcf = initialize_output_vcf(output_path, bam_af.references)
 
     for assembly, pos in create_bed_positions(variants):
         print(f"{assembly}:{pos}")
@@ -139,6 +141,7 @@ def main(bam: Path, variants: Path, pileup_depth=1_000_000):
         r.samples["Sample1"]["VAF"] = f"{result[3]*100:.3f}%"
 
         vcf.write(r)
+    vcf.close()
 
 
 if __name__ == "__main__":
@@ -156,13 +159,9 @@ if __name__ == "__main__":
         args = parser.parse_args()
         logging.info(args)
 
-        main(args.bam, args.variants)
+        main(args.bam, args.variant_bed, args.file_out)
 
     if dev:
-        perc_1_vars = [7675937, 7675939, 7675945, 7675984]
-        perc_05_vars = [7675934, 7675948, 7675950, 7675977]
-        perc_02_vars = [7675943, 7675954, 7675975, 7675986]
-
         # bed = Path("dilution_series_expected_mutations.bed")
         bed = Path("dilution_series_full_amplicon.bed")
 

@@ -12,6 +12,14 @@ include {
     VarscanFiltered
 } from "./modules/varscan"
 
+include {
+    VcfToBed
+} from "./modules/bedops"
+
+include {
+    VariantValidate
+} from "./modules/bin"
+
 workflow FreebayesSimple{
     take:
         reads
@@ -43,4 +51,21 @@ workflow Varscan{
         VarscanFiltered(reads.combine(reference_genome))
     emit:
         VarscanFiltered.out
+}
+workflow ValidatePosibleVariantLocations{
+    // Allow to determine VAF for given genomic positions in both bed and vcf format
+    take:
+        reads_aligned
+        variant_file
+        variant_file_name
+        reference
+
+    main:
+        if( variant_file_name.endsWith('.vcf') ) {
+            positions = VcfToBed(variant_file)
+        }
+        else {
+            positions = variant_file
+        }
+        VariantValidate(reads_aligned,positions)
 }
