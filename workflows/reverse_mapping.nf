@@ -27,7 +27,6 @@ log.info """
 
 process FastqToFasta {
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'pegi3s/seqkit:2.1.0'
     cpus 1
 
     input:
