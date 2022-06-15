@@ -49,6 +49,7 @@ log.info """
         reference       : $params.reference
         backbone_fasta  : $params.backbone_fasta
         backbone_name   : $params.backbone_name
+        validation_file : $params.control_vcf 
     Output:  
         output folder   : $params.output_dir
     Method:  
@@ -86,6 +87,7 @@ include {
     FreebayesSimple
     Mutect2
     Varscan
+    ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
 
 include {
@@ -123,6 +125,8 @@ AA. Parameter processing
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     read_info_json = ""
+
+    variant_file = Channel.fromPath(params.control_vcf, checkIfExists: true)
 
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
@@ -215,6 +219,14 @@ AA. Parameter processing
     else if (params.variant_calling == "varscan"){
         Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
         vcf = Varscan.out
+    }
+    else if (params.variant_calling == "validate"){
+        ValidatePosibleVariantLocations(
+            reads_aligned,
+            variant_file,
+            params.control_vcf,
+            PrepareGenome.out.fasta_combi
+        )
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
