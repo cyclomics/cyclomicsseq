@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+import logging
 from collections import Counter
 from pathlib import Path
-import pysam
 
-import logging
+import pysam
 
 
 def is_intable(value):
@@ -58,7 +58,7 @@ def extract_nucleotide_count(
             alleles = (counts.most_common()[0][0], counts.most_common()[1][0])
         else:
             # perfect positions
-            alleles = (counts.most_common()[0][0],".")
+            alleles = (counts.most_common()[0][0], ".")
         print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
         print(f"found positions {counted_nucs}")
         print(f"raw counts: {counts}")
@@ -119,7 +119,7 @@ def initialize_output_vcf(vcf_path, contigs):
     return vcf
 
 
-def main(bam: Path, variants: Path,output_path, pileup_depth=1_000_000):
+def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
     logging.debug("started main")
     bam_af = pysam.AlignmentFile(bam, "rb")
 

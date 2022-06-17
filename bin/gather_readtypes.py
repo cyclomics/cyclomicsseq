@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import json
+import sys
 from collections import Counter
 from glob import glob
-import sys
 
 processed_reads = {}
 

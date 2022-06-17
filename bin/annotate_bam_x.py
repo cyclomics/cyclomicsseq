@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
+import argparse
+import logging
 from collections import defaultdict
 from email.policy import default
-from typing import Dict, Tuple
-import argparse
 from pathlib import Path
+from typing import Dict, Tuple
 
 import pysam
-import logging
-
 
 HEADER_TO_TAG = defaultdict(lambda: -1)
 
