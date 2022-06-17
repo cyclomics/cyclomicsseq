@@ -204,7 +204,7 @@ AA. Parameter processing
     }
     
     // We only get the sequencing summary once we've obtained all the fastq's
-    reads_aligned_annotated = Annotate(reads_aligned, seq_summary)
+    reads_aligned = Annotate(reads_aligned, seq_summary)
 
 /*
 ========================================================================================
@@ -247,7 +247,7 @@ AA. Parameter processing
         read_info_json,
         read_fastq,
         base_unit_reads,
-        reads_aligned_annotated,
+        reads_aligned,
     )
 }
 /*

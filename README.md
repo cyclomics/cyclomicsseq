@@ -8,7 +8,7 @@ This pipeline uses prior information from the backbone to increase the effective
 
 - Nextflow
 - Docker
-- Access to the damicyclomics dockerhub repo
+- Acces to the Github repo and a valid PAT token 
 
 ### data requirements
 
@@ -16,12 +16,21 @@ This pipeline uses prior information from the backbone to increase the effective
 
 ## Usage
 
-If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create one [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
+We assume that you have docker and nextflow installed on your system, if so running the pipeline is easy. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
+
+If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create a [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
 an example whould be:
 
 ```bash
 nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
 ```
+
+### singularity
+
+If docker is not an option, singularity(or Apptainer as it is called since Q2 2022) is a good alternative that does not require root access and therefor used in shared compute environments.
+
+
+
 ## Roadmap / Todo:
  ### Functionality:
  1. Add Post_Qc jobs with plots and tables
