@@ -229,7 +229,6 @@ AA. Parameter processing
     else if (params.variant_calling == "validate"){
         ValidatePosibleVariantLocations(
             reads_aligned,
-            variant_file,
             params.validation_location_file,
             PrepareGenome.out.fasta_combi
         )
