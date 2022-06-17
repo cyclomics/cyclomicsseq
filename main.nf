@@ -22,7 +22,7 @@ params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
 params.backbone_name              = "BB22"
 
-params.control_vcf                = ""
+params.validation_location_file   = ""
 
 params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
 // reference indexes are expected to be in reference folder
@@ -36,7 +36,13 @@ params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "varscan"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
+params.quick_results        = false
 
+if (params.validation_location_file != ""){
+    log.warn "Overwriting variant_calling strategy due to the presence of a --validation_location_file"
+    params.variant_calling = "validate"
+    log.info "--variant_calling set to $params.variant_calling"
+}
 
 // ### Printout for user
 log.info """
@@ -44,20 +50,22 @@ log.info """
     Cyclomics/CycloSeq : Cyclomics informed pipeline
     ===================================================
     Inputs:
-        input_reads     : $params.input_read_dir
-        read_pattern    : $params.read_pattern
-        reference       : $params.reference
-        backbone_fasta  : $params.backbone_fasta
-        backbone_name   : $params.backbone_name
-        validation_file : $params.control_vcf 
-    Output:  
-        output folder   : $params.output_dir
+        input_reads              : $params.input_read_dir
+        read_pattern             : $params.read_pattern
+        reference                : $params.reference
+        backbone_fasta           : $params.backbone_fasta
+        backbone_name            : $params.backbone_name
+        validation_location_file : $params.validation_location_file  
+        output folder            : $params.output_dir
     Method:  
-        QC               : $params.qc
-        consensus_calling: $params.consensus_calling
-        Alignment        : $params.alignment
-        variant_calling  : $params.variant_calling
-        report           : $params.report
+        QC                       : $params.qc
+        consensus_calling        : $params.consensus_calling
+        Alignment                : $params.alignment
+        variant_calling          : $params.variant_calling
+        report                   : $params.report
+
+    Other:
+        quick_results            : $params.quick_results
 """
 
 /*
@@ -125,9 +133,7 @@ AA. Parameter processing
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     read_info_json = ""
-
-    variant_file = Channel.fromPath(params.control_vcf, checkIfExists: true)
-
+    
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
 /*
@@ -224,7 +230,7 @@ AA. Parameter processing
         ValidatePosibleVariantLocations(
             reads_aligned,
             variant_file,
-            params.control_vcf,
+            params.validation_location_file,
             PrepareGenome.out.fasta_combi
         )
     }
@@ -248,6 +254,7 @@ AA. Parameter processing
         read_fastq,
         base_unit_reads,
         reads_aligned,
+        params.quick_results,
     )
 }
 /*

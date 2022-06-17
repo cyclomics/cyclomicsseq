@@ -56,11 +56,12 @@ workflow ValidatePosibleVariantLocations{
     // Allow to determine VAF for given genomic positions in both bed and vcf format
     take:
         reads_aligned
-        variant_file
         variant_file_name
         reference
 
     main:
+        variant_file = Channel.fromPath(params.validation_location_file, checkIfExists: false)
+
         if( variant_file_name.endsWith('.vcf') ) {
             positions = VcfToBed(variant_file)
         }
