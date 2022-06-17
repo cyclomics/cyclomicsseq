@@ -25,7 +25,6 @@ process MinionQc{
 
 process MinionQcToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'linuxserver/yq:2.13.0'
     label 'many_cpu_medium'
 
     input:

@@ -1,8 +1,7 @@
+import unittest
 from collections import defaultdict
 from math import exp
-from unittest.mock import Mock, MagicMock
-
-import unittest
+from unittest.mock import MagicMock, Mock
 
 from bin import annotate_bam_x as target
 

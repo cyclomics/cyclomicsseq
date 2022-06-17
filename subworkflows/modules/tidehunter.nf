@@ -139,7 +139,6 @@ process TideHunterQualTableToFastq{
 
 process TideHunterQualTableToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'stedolan/jq'
     label 'many_cpu_medium'
 
     input:
@@ -170,7 +169,6 @@ process TideHunterQualTableToJson{
 
 process TideHunterQualJsonMerge{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'stedolan/jq'
     label 'many_cpu_medium'
 
     input:

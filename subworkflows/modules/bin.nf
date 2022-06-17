@@ -3,7 +3,6 @@
 
 process AddDepthToJson{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'python:3.8'
     label 'many_cpu_medium'
 
     input:
@@ -23,7 +22,6 @@ process AddDepthToJson{
 
 process AnnotateBamXTags{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'quay.io/biocontainers/pysam:0.19.0--py39h5030a8b_0'
     label 'many_cpu_intensive'
 
     input:
@@ -68,5 +66,22 @@ process CollectClassificationTypes{
     script:
         """
         gather_readtypes.py "*.metadata.json" classification_count.txt
+        """
+}
+
+process VariantValidate{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple val(X), path(bam), path(bai)
+        path(validation_bed)
+
+
+    output:
+        path("${bam.simpleName}_validated.vcf")
+    
+    script:
+        """
+        determine_vaf.py $validation_bed $bam ${bam.simpleName}_validated.vcf
         """
 }

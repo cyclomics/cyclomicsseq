@@ -54,6 +54,8 @@ workflow PostQC {
         fastq_raw
         fastq_consensus
         consensus_bam
+        quick_results
+
     main:
         // dont add the ID to the process
         // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
@@ -61,9 +63,11 @@ workflow PostQC {
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
 
         SamtoolsQuickcheck(consensus_bam)
-        SamtoolsQuickcheck.out.view()
         SamtoolsFlagstats(consensus_bam)
-        SamtoolsFlagstats.out.view()
-        
         FindRegionOfInterest(consensus_bam)
+
+        if (quick_results == true) {
+            SamtoolsQuickcheck.out.view()
+            SamtoolsFlagstats.out.view()
+        }
 }

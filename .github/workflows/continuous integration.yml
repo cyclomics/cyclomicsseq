@@ -29,14 +29,26 @@ jobs:
           wget -qO- get.nextflow.io | bash > /dev/null
           sudo mv nextflow /usr/local/bin/
           
-      - name: Run Nextflow pipeline in Docker
+      - name: Run Nextflow pipeline in Docker with altered varscan params
         run: |
           nextflow run main.nf \
           --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
+          --varscan.min_support_reads 1 --varscan.min_var_freq 0.2 --varscan.min_coverge 1 \
           --ci_run 
+      
+      - name: Run Nextflow pipeline in Docker in validation mode
+        run: |
+          nextflow run main.nf \
+          --input_read_dir 'tests/informed' \
+          --read_pattern '/fastq_pass/*.fastq' \
+          --backbone_fasta 'tests/informed/backbone_test.fa' \
+          --reference 'tests/informed/tp53.fasta' \
+          --control_vcf tests/informed/informed_variant.vcf --variant_calling validate \
+          --ci_run 
+      
 
   RunPythonUnitTests:
     runs-on: ubuntu-latest

@@ -139,7 +139,6 @@ process SamtoolsFixSam{
     // Lastal maf-convert does not add @SQ tags to the sam, this is fixed by using samtools view -T here
     // also sorts and converts to bam
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/samtools:v1.7.0_cv4'
 
     input:
         path input_sam
