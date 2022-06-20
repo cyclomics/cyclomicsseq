@@ -3,7 +3,6 @@ nextflow.enable.dsl=2
 
 process MinionQc{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'evolbioinfo/minionqc:v1.4.1'
    
     // memory (params.ci_run == true ? 2.GB : {8.GB * task.attempt })
 
@@ -19,7 +18,7 @@ process MinionQc{
 
     script:
         """
-        Rscript /minion_qc/MinIONQC.R -i  $summary
+        $params.minionqc_location -i  $summary
         """
 }
 
