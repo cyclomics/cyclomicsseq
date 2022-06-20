@@ -16,8 +16,8 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   strategy:
-      matrix:
-        nf_profile: [docker, singularity, conda]
+    matrix:
+      nf_profile: [docker, singularity, conda]
   # This workflow contains a single job called "build"
   RunPipelineVariantCall:
     # The type of runner that the job will run on
