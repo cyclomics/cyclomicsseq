@@ -15,7 +15,9 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-
+  strategy:
+      matrix:
+        nf_profile: [docker, singularity, conda]
   # This workflow contains a single job called "build"
   RunPipelineVariantCall:
     # The type of runner that the job will run on
@@ -37,7 +39,7 @@ jobs:
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
           --varscan.min_support_reads 1 --varscan.min_var_freq 0.2 --varscan.min_coverge 1 \
-          --ci_run 
+          --ci_run -profile $ {{ matrix.nf_profile }}
 
   RunPipelineVariantValidation:
     # The type of runner that the job will run on
@@ -59,7 +61,7 @@ jobs:
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
           --control_vcf tests/informed/informed_variant.vcf \
-          --ci_run 
+          --ci_run -profile $ {{ matrix.nf_profile }}
       
 
   RunPythonUnitTests:
