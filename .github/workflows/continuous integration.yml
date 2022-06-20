@@ -19,7 +19,7 @@ jobs:
   RunPipelineVariantCall:
     strategy:
       matrix:
-        nf_profile: [docker, singularity, conda]
+        nf_profile: [docker, conda]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
@@ -33,9 +33,6 @@ jobs:
         run: |
           wget -qO- get.nextflow.io | bash > /dev/null
           sudo mv nextflow /usr/local/bin/
-          
-      - name: Enable apptainer/singularity
-        uses: eWaterCycle/setup-singularity@v7
 
       - name: Run Nextflow pipeline in Docker with altered varscan params
         run: |
