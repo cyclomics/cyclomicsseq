@@ -47,7 +47,7 @@ jobs:
   RunPipelineVariantValidation:
     strategy:
       matrix:
-        nf_profile: [docker, singularity, conda]
+        nf_profile: [docker, conda]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
