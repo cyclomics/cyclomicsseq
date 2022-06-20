@@ -24,7 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo content
-        uses: actions/checkout@v2 # checkout the repository content to github runner.
+        uses: actions/checkout@v2 
+
+      - name: Enable apptainer/singularity
+        uses: eWaterCycle/setup-singularity@v7
+        with:
+          singularity-version: 3.8.3
+
+      - name: Set up bioconda and other custom channels
+        uses: yangwu91/bioconda@1.0
 
       - name: Install Nextflow
         run: |
