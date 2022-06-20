@@ -44,7 +44,7 @@ process Minimap2AlignAdaptive{
     memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt)} B"}
     // memory "32 GB"
     // small jobs get 4 cores, big ones 8
-    cpus (params.ci_run == true ? 2 :{reference_genome.size() < 500_000_000 ? 4 : 8 })
+    cpus (params.economy_mode == true ? 2 :{reference_genome.size() < 500_000_000 ? 4 : 8 })
     
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3
@@ -72,7 +72,7 @@ process Minimap2AlignAdaptiveParameterized{
     memory {reference_genome.size() < 500_000_000 ? "1.5GB" : "${reference_genome.size() * (1 + task.attempt * task.attempt)} B"}
     // memory "32 GB"
     // small jobs get 4 cores, big ones 8
-    cpus (params.ci_run == true ? 2 :{reference_genome.size() < 500_000_000 ? 4 : 8 })
+    cpus (params.economy_mode == true ? 2 :{reference_genome.size() < 500_000_000 ? 4 : 8 })
 
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3

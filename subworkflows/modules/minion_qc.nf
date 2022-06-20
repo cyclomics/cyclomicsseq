@@ -4,11 +4,6 @@ nextflow.enable.dsl=2
 process MinionQc{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
    
-    // memory (params.ci_run == true ? 2.GB : {8.GB * task.attempt })
-
-    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    // maxRetries 3
-
     input:
         path summary
 
