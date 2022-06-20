@@ -42,7 +42,7 @@ jobs:
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
           --varscan.min_support_reads 1 --varscan.min_var_freq 0.2 --varscan.min_coverge 1 \
-          --ci_run -profile ${{ matrix.nf_profile }},economy_mode
+          --ci_run -profile ${{ matrix.nf_profile }}
 
   RunPipelineVariantValidation:
     strategy:
