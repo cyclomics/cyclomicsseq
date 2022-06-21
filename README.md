@@ -34,7 +34,6 @@ If docker is not an option, singularity(or Apptainer as it is called since Q2 20
 ## Roadmap / Todo:
  ### Functionality:
  1. Add Post_Qc jobs with plots and tables
- 1. Add variant validation as option 
  
  ### Usability:
  1. Implement warning when the backbone is not present in the data
@@ -48,6 +47,12 @@ If docker is not an option, singularity(or Apptainer as it is called since Q2 20
 
 
 ## changelog
+
+### 0.4.0
+- Updated Cycas to prevent runtime error with BB41
+- Added variant validation optionality.
+- Added quick_results flag for a glance of the results in the terminal. 
+- Added profiles for conda and singularity support.
 
 ### 0.3.1
 - Updated cycas version
@@ -90,4 +95,23 @@ go to the right project folder
 
 ``` bash
 cd /hpc/compgen/projects/cyclomics/cycloseq/pipelines/cycloseq/
+```
+
+
+## Developer notes
+
+### Cycas addition to the repo
+
+Cycas was added as a subtree using code from: https://gist.github.com/SKempin/b7857a6ff6bddb05717cc17a44091202.
+This was done instead of submodule to make pulling of the repo easier for endusers and to stay compatible with nextflow run <remote> functionallity.
+
+
+more specifically:
+``` bash
+git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
+```
+
+To update run
+``` bash
+git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag>
 ```
