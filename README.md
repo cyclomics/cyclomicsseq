@@ -22,7 +22,7 @@ If you want to run the pipeline directly from github you need to use a Personal 
 an example whould be:
 
 ```bash
-nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
+nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> -profile docker ...
 ```
 
 ### singularity
