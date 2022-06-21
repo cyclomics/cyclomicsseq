@@ -20,13 +20,13 @@ params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
 params.read_pattern               = "fastq_pass/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
-params.backbone_name              = "BB22"
+params.backbone_name              = ""
 
 params.validation_location_file   = ""
 
 params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
 // reference indexes are expected to be in reference folder
-params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
+params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
@@ -38,11 +38,7 @@ params.extra_haplotyping    = "skip"
 params.report               = "yes"
 params.quick_results        = false
 
-if (params.validation_location_file != ""){
-    log.warn "Overwriting variant_calling strategy due to the presence of a --validation_location_file"
-    params.variant_calling = "validate"
-    log.info "--variant_calling set to $params.variant_calling"
-}
+
 
 // ### Printout for user
 log.info """
@@ -65,6 +61,7 @@ log.info """
         report                   : $params.report
 
     Other:
+        profile                  : $params.profile_selected
         quick_results            : $params.quick_results
 """
 
@@ -109,10 +106,26 @@ include {
 */
 workflow {
     /*
-========================================================================================
-AA. Parameter processing 
-========================================================================================
-*/
+    ========================================================================================
+    AA. Parameter processing 
+    ========================================================================================
+    */
+    // check environments
+    if (params.validation_location_file != ""){
+        log.warn "Overwriting variant_calling strategy due to the presence of a --validation_location_file"
+        params.variant_calling = "validate"
+        log.info "--variant_calling set to $params.variant_calling"
+    }
+    if (params.profile_selected == 'none') {
+        log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
+        log.warn "exiting..."
+        exit(1)
+    }
+    if (params.profile_selected == 'local') {
+        log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
+    }
+
+    // Process inputs:
     // add the trailing slash if its missing 
     if (params.input_read_dir.endsWith("/")){
         read_pattern = "${params.input_read_dir}${params.read_pattern}"
