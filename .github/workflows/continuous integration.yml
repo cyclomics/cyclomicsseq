@@ -26,6 +26,10 @@ jobs:
       - name: checkout repo content
         uses: actions/checkout@v2 
 
+      - name: Open std workdir
+        run: |
+        ls -la
+
       - name: Set up conda
         uses: s-weigand/setup-conda@v1
 
@@ -53,6 +57,13 @@ jobs:
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2 # checkout the repository content to github runner.
+      
+      - name: Open std workdir
+        run: |
+        ls -la
+
+      - name: Set up conda
+        uses: s-weigand/setup-conda@v1
 
       - name: Install Nextflow
         run: |
