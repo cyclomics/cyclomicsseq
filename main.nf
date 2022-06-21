@@ -17,7 +17,7 @@ nextflow.enable.dsl = 2
 */
 // ### PARAMETERS
 params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
-params.read_pattern               = "fastq_pass/**.{fq,fastq,fq.gz,fastq.gz}"
+params.read_pattern               = "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
 params.backbone_name              = ""
