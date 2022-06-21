@@ -3,7 +3,6 @@ nextflow.enable.dsl=2
 
 process Cycas{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'damicyclomics/cycas:0.4.2'
     cpus = 1
     
     memory { 2.GB * task.attempt }
@@ -19,9 +18,10 @@ process Cycas{
         tuple val(X), path("${bam.SimpleName}.consensus.fastq"), path("${bam.SimpleName}.metadata.json"), path ("plots/*")
 
     script:
+        
         """
         mkdir plots
-        python /app/cycas.py consensus --bam-file $bam --output ${bam.SimpleName}.consensus.fastq --metadata-json  ${bam.SimpleName}.metadata.json --plot-readtypes
+        python $params.cycas_location consensus --bam-file $bam --output ${bam.SimpleName}.consensus.fastq --metadata-json  ${bam.SimpleName}.metadata.json --plot-readtypes
         """
     }
 
