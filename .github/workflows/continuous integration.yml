@@ -28,7 +28,7 @@ jobs:
 
       - name: Open std workdir
         run: |
-        ls -la
+          ls -la
 
       - name: Set up conda
         uses: s-weigand/setup-conda@v1
@@ -60,7 +60,7 @@ jobs:
       
       - name: Open std workdir
         run: |
-        ls -la
+          ls -la
 
       - name: Set up conda
         uses: s-weigand/setup-conda@v1
