@@ -1,0 +1,5 @@
+plots/*
+images/*
+example_*
+development_notebooks/*
+.vscode/*
