@@ -19,6 +19,15 @@ include {
     CountFastqInfo as FastqInfoConsensus
 } from "./modules/seqkit"
 
+include {
+    SamtoolsQuickcheck
+    SamtoolsFlagstats
+} from "./modules/samtools"
+
+include {
+    FindRegionOfInterest
+} from "./modules/mosdepth"
+
 workflow  QC_pycoqc{
     take:
         read_directory
@@ -44,9 +53,21 @@ workflow PostQC {
         read_info
         fastq_raw
         fastq_consensus
+        consensus_bam
+        quick_results
+
     main:
         // dont add the ID to the process
-        CollectClassificationTypes(read_info.map(it -> it[1]).collect())
+        // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
         FastqInfoRaw(fastq_raw.collect())
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
+
+        SamtoolsQuickcheck(consensus_bam)
+        SamtoolsFlagstats(consensus_bam)
+        FindRegionOfInterest(consensus_bam)
+
+        if (quick_results == true) {
+            SamtoolsQuickcheck.out.view()
+            SamtoolsFlagstats.out.view()
+        }
 }

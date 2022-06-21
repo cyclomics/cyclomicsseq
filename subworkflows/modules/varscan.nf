@@ -10,6 +10,7 @@ process VarscanFiltered {
 
     output:
         tuple val(X), path("${input_bam_file.SimpleName}.vcf")
+        // tuple val(X), path("${input_bam_file.SimpleName}.vcf"), path("${X}_both.vcf"), path("${X}_fwd_rev_support_snps.vcf"), path("${X}_rev_snps.vcf"), path("${X}_fwd_snps.vcf")
 
     script:
     // TODO: filter on depth and make empty vcf if depth not reached with warning to stdout

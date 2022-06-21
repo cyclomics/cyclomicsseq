@@ -1,7 +1,6 @@
 
 nextflow.enable.dsl=2
 
-
 include {
     AnnotateBamXTags
 } from "./modules/bin.nf"
@@ -38,13 +37,14 @@ include {
     SamToBam
     SamtoolsMergeTuple
     SamtoolsDepth
-    SamtoolsDepthToJson
+    SamtoolsDepthToTSV
     SamtoolsMergeBams
 } from "./modules/samtools"
 
 include {
     MergeFasta
 } from "./modules/seqkit"
+
 
 workflow PrepareGenome {
     take:
@@ -90,7 +90,6 @@ workflow Minimap2Align{
     take:
         reads
         reference_genome
-        sequencing_summary
 
     main:
 
@@ -100,12 +99,9 @@ workflow Minimap2Align{
         bams = Minimap2AlignAdaptive.out.map(it -> it[1]).collect()
         
         SamtoolsMergeBams(id, bams)
-        SamtoolsDepth(SamtoolsMergeBams.out)
-        SamtoolsDepthToJson(SamtoolsDepth.out)
 
     emit:
         bam = SamtoolsMergeBams.out
-        depth = SamtoolsDepthToJson.out
 }
 
 workflow LastalAlignFasta{

@@ -20,13 +20,13 @@ params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
 params.read_pattern               = "fastq_pass/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
-params.backbone_name              = "BB22"
+params.backbone_name              = ""
 
-params.control_vcf                = ""
+params.validation_location_file   = ""
 
 params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
 // reference indexes are expected to be in reference folder
-params.output_dir = "$HOME/data/nextflow/Cyclomics_informed"
+params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
@@ -36,6 +36,8 @@ params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "varscan"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
+params.quick_results        = false
+
 
 
 // ### Printout for user
@@ -44,19 +46,23 @@ log.info """
     Cyclomics/CycloSeq : Cyclomics informed pipeline
     ===================================================
     Inputs:
-        input_reads     : $params.input_read_dir
-        read_pattern    : $params.read_pattern
-        reference       : $params.reference
-        backbone_fasta  : $params.backbone_fasta
-        backbone_name   : $params.backbone_name
-    Output:  
-        output folder   : $params.output_dir
+        input_reads              : $params.input_read_dir
+        read_pattern             : $params.read_pattern
+        reference                : $params.reference
+        backbone_fasta           : $params.backbone_fasta
+        backbone_name            : $params.backbone_name
+        validation_location_file : $params.validation_location_file  
+        output folder            : $params.output_dir
     Method:  
-        QC              : $params.qc
-        Consensus       : $params.consensus_calling
-        Alignment       : $params.alignment
-        variant_calling : $params.variant_calling
-        report          : $params.report
+        QC                       : $params.qc
+        consensus_calling        : $params.consensus_calling
+        Alignment                : $params.alignment
+        variant_calling          : $params.variant_calling
+        report                   : $params.report
+
+    Other:
+        profile                  : $params.profile_selected
+        quick_results            : $params.quick_results
 """
 
 /*
@@ -86,6 +92,7 @@ include {
     FreebayesSimple
     Mutect2
     Varscan
+    ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
 
 include {
@@ -99,10 +106,26 @@ include {
 */
 workflow {
     /*
-========================================================================================
-AA. Parameter processing 
-========================================================================================
-*/
+    ========================================================================================
+    AA. Parameter processing 
+    ========================================================================================
+    */
+    // check environments
+    if (params.validation_location_file != ""){
+        log.warn "Overwriting variant_calling strategy due to the presence of a --validation_location_file"
+        params.variant_calling = "validate"
+        log.info "--variant_calling set to $params.variant_calling"
+    }
+    if (params.profile_selected == 'none') {
+        log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
+        log.warn "exiting..."
+        exit(1)
+    }
+    if (params.profile_selected == 'local') {
+        log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
+    }
+
+    // Process inputs:
     // add the trailing slash if its missing 
     if (params.input_read_dir.endsWith("/")){
         read_pattern = "${params.input_read_dir}${params.read_pattern}"
@@ -123,7 +146,7 @@ AA. Parameter processing
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     read_info_json = ""
-
+    
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
 /*
@@ -132,7 +155,8 @@ AA. Parameter processing
 ========================================================================================
 */
     if( params.qc == "simple" ) {
-        QC_MinionQc(params.input_read_dir)
+
+        QC_MinionQc(seq_summary)
     }
     else if( params.qc == "skip" ) {
         println "Skipping QC control"
@@ -188,9 +212,8 @@ AA. Parameter processing
     // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
     
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, seq_summary)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi)
         reads_aligned = Minimap2Align.out.bam
-        depth_info = Minimap2Align.out.depth
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
@@ -200,7 +223,7 @@ AA. Parameter processing
     }
     
     // We only get the sequencing summary once we've obtained all the fastq's
-    reads_aligned_annotated = Annotate(reads_aligned, seq_summary)
+    reads_aligned = Annotate(reads_aligned, seq_summary)
 
 /*
 ========================================================================================
@@ -215,6 +238,13 @@ AA. Parameter processing
     else if (params.variant_calling == "varscan"){
         Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
         vcf = Varscan.out
+    }
+    else if (params.variant_calling == "validate"){
+        ValidatePosibleVariantLocations(
+            reads_aligned,
+            params.validation_location_file,
+            PrepareGenome.out.fasta_combi
+        )
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
@@ -231,22 +261,13 @@ AA. Parameter processing
 04.    Reporting
 ========================================================================================
 */ 
-    // if( params.report == "yes" ) {
-    //     Report(read_info_json, 
-    //     QC_MinionQc.out, 
-    //     vcf,
-    //     depth_info
-    //     )
-
-    //     // PostQC(read_info_json,
-    //     //     read_fastq,
-    //     //     base_unit_reads
-    //     // )
-    // }
-    // else{
-    //     println "Skipping report generation"
-    // }
-    
+    PostQC(
+        read_info_json,
+        read_fastq,
+        base_unit_reads,
+        reads_aligned,
+        params.quick_results,
+    )
 }
 /*
 ========================================================================================
@@ -257,15 +278,3 @@ AA. Parameter processing
     // Count reads in input fastqs
 
     // Count classifications
-    
-
-
-
-// TODO: give warning when user sets backbone and its not used
-// TODO: Make realtime option
-// TODO: improve reporting with vaf threshold plot
-// TODO: improve reporting with vcf table
-// TODO: add option for gene.txt
-
-// TODO:add classes
-// TODO:add read counts (seqkit stats *[1,2]1_0.fastq.gz |  awk '!x[$1 FS $4]++')

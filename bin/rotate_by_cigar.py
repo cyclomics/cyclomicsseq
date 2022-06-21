@@ -129,10 +129,7 @@ class BamToFastqRotator:
                 read_qual = read.qual
                 if read.is_unmapped:
                     fastq_read = SeqRecord(
-                        Seq(read_seq),
-                        id="",
-                        name=read.qname,
-                        description="",
+                        Seq(read_seq), id="", name=read.qname, description=""
                     )
                     rotated_qual = [ord(x) - 33 for x in read_qual]
                     fastq_read.letter_annotations["phred_quality"] = rotated_qual

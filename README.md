@@ -8,7 +8,7 @@ This pipeline uses prior information from the backbone to increase the effective
 
 - Nextflow
 - Docker
-- Access to the damicyclomics dockerhub repo
+- Acces to the Github repo and a valid PAT token 
 
 ### data requirements
 
@@ -16,14 +16,43 @@ This pipeline uses prior information from the backbone to increase the effective
 
 ## Usage
 
-If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create one [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
+We assume that you have docker and nextflow installed on your system, if so running the pipeline is easy. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
+
+If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create a [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
 an example whould be:
 
 ```bash
-nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> ...
+nextflow run cyclomics/cycloseq -user <github_username> -r <current_version> -profile docker ...
 ```
 
+### singularity
+
+If docker is not an option, singularity(or Apptainer as it is called since Q2 2022) is a good alternative that does not require root access and therefor used in shared compute environments.
+
+
+
+## Roadmap / Todo:
+ ### Functionality:
+ 1. Add Post_Qc jobs with plots and tables
+ 
+ ### Usability:
+ 1. Implement warning when the backbone is not present in the data
+ 1. Improve output folder structure
+ 1. Remove unused flags
+ 1. give warning when user sets backbone and its not used
+ 1. Make the read discovery smarter
+
+### Improvements:
+1. Change minimum vaf based on data available
+
+
 ## changelog
+
+### 0.4.0
+- Updated Cycas to prevent runtime error with BB41
+- Added variant validation optionality.
+- Added quick_results flag for a glance of the results in the terminal. 
+- Added profiles for conda and singularity support.
 
 ### 0.3.1
 - Updated cycas version
@@ -66,4 +95,23 @@ go to the right project folder
 
 ``` bash
 cd /hpc/compgen/projects/cyclomics/cycloseq/pipelines/cycloseq/
+```
+
+
+## Developer notes
+
+### Cycas addition to the repo
+
+Cycas was added as a subtree using code from: https://gist.github.com/SKempin/b7857a6ff6bddb05717cc17a44091202.
+This was done instead of submodule to make pulling of the repo easier for endusers and to stay compatible with nextflow run <remote> functionallity.
+
+
+more specifically:
+``` bash
+git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
+```
+
+To update run
+``` bash
+git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag>
 ```
