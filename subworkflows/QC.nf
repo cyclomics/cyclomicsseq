@@ -12,6 +12,7 @@ include {
 
 include {
     CollectClassificationTypes
+    PlotReadStructure
 } from "./modules/bin"
 
 include {
@@ -27,6 +28,10 @@ include {
 include {
     FindRegionOfInterest
 } from "./modules/mosdepth"
+
+include {
+    SamtoolsMergeBams
+} from "./modules/samtools"
 
 workflow  QC_pycoqc{
     take:
@@ -55,12 +60,16 @@ workflow PostQC {
         fastq_consensus
         consensus_bam
         quick_results
+        split_bam
 
     main:
         // dont add the ID to the process
         // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
         FastqInfoRaw(fastq_raw.collect())
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
+        
+        SamtoolsMergeBams('splibams_merged', split_bam)
+        PlotReadStructure(SamtoolsMergeBams.out)
 
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsFlagstats(consensus_bam)

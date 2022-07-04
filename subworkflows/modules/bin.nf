@@ -85,3 +85,20 @@ process VariantValidate{
         determine_vaf.py $validation_bed $bam ${bam.simpleName}_validated.vcf
         """
 }
+
+process PlotReadStructure{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple val(X), path(bam), path(bai)
+
+    output:
+        path("${bam.simpleName}_aligned_segmets.html")
+        path("${bam.simpleName}_read_structure.html")
+
+    
+    script:
+        """
+        plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segmets.html ${bam.simpleName}_read_structure.html
+        """
+}

@@ -140,6 +140,7 @@ workflow CycasConsensus{
         fastq = Cycas.out.map( it -> it.take(2))
         id = Cycas.out.first().map( it -> it[0])
         json = id.combine(Cycas.out.map( it -> it[2]))
+        split_bam = Minimap2AlignAdaptiveParameterized.out
 }
 
 workflow CycasMedaka{
