@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import imp
 from subprocess import check_output
 from collections import Counter
