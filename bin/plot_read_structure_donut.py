@@ -51,7 +51,6 @@ def _bam_to_df(bam, chr=None, start=None, stop=None):
     )
 
 
-
 def create_split_bam_table(bam_path):
     """
     Create a dataframe and set the properties correctly.
@@ -171,7 +170,9 @@ def create_assembly_count_plot(split_table, output_file_name, my_title):
     save(p)
 
 
-def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_file, plot_title):
+def create_readtype_donuts(
+    concat_type_stats, concat_type_stats_by_bases, plot_file, plot_title
+):
     """
     Create a donut plot for the read structures.
     """
@@ -197,14 +198,13 @@ def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_f
 
         return _df1
 
-
     def _plot_donut(
         data,
         donut_plot_height,
         donut_plot_width,
         donut_plot_x_range,
         donut_plot_y_range,
-        subtitle
+        subtitle,
     ):
         # data = ColumnDataSource(data)
 
@@ -240,7 +240,6 @@ def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_f
         donut_plot.grid.grid_line_color = None
         return donut_plot
 
-
     output_file(filename=plot_file, title=plot_title)
     _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
     _df2 = _calculate_angle_and_color(concat_type_stats_by_bases, concat_type_colors)
@@ -255,7 +254,7 @@ def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_f
         donut_plot_width,
         donut_plot_x_range,
         donut_plot_y_range,
-        "per read"
+        "per read",
     )
     p2 = _plot_donut(
         _df2,
@@ -263,7 +262,7 @@ def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_f
         donut_plot_width,
         donut_plot_x_range,
         donut_plot_y_range,
-        "per base"
+        "per base",
     )
 
     donut_row = row(p1, p2)
@@ -271,8 +270,9 @@ def create_readtype_donuts(concat_type_stats, concat_type_stats_by_bases, plot_f
     save(donut_plot)
 
 
-
-def main(bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title):
+def main(
+    bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
+):
     """
     Extract data from bam and plot it using two functions that further select data
     """
@@ -285,15 +285,12 @@ def main(bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_pl
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Create plots for a split read bam."
-    )
+    parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
 
     parser.add_argument("bam_file")
     parser.add_argument("assembly_plot")
     parser.add_argument("donut_plot_readstructure")
     args = parser.parse_args()
-
 
     # split_bam = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics/000014/CycasConsensus/Minimap2AlignAdaptiveParameterized/FAT55621_pass_61af019d_23_filtered.bam"
     # output_file_name = "tmp.html"
@@ -301,4 +298,10 @@ if __name__ == "__main__":
     # assert os.path.exists(split_bam)
     # main(split_bam, "assem.html", 'assem count', "Donuts.html", 'Donut plot 123')
 
-    main(args.bam_file, args.assembly_plot, "Segment count per assembly in reference", args.donut_plot_readstructure, "Read structure by both read and base count")
+    main(
+        args.bam_file,
+        args.assembly_plot,
+        "Segment count per assembly in reference",
+        args.donut_plot_readstructure,
+        "Read structure by both read and base count",
+    )
