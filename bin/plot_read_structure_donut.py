@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-import imp
-from subprocess import check_output
 from collections import Counter
-import os
 from math import pi
 
 import pandas as pd
@@ -13,11 +10,11 @@ import pysam
 # import plotly.graph_objects as go
 # import plotly.express as px
 
-from bokeh.io import show, save, output_file
+from bokeh.io import save, output_file
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
 from bokeh.layouts import row, column
-from bokeh.models import Title, Div, ColumnDataSource
+from bokeh.models import Div, ColumnDataSource
 
 
 def _bam_to_df(bam, chr=None, start=None, stop=None):
