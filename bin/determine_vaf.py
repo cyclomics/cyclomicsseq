@@ -30,12 +30,7 @@ def create_bed_positions(bed_file):
 
 
 def extract_nucleotide_count(
-    bam,
-    assembly,
-    pos,
-    pileup_depth,
-    minimum_base_quality=10,
-    add_dels=False,
+    bam, assembly, pos, pileup_depth, minimum_base_quality=10, add_dels=False
 ):
     tags = [
         "DP",
@@ -50,7 +45,7 @@ def extract_nucleotide_count(
         "TOTR",
         "SAME",
     ]
-    Variant = namedtuple('Variant', tags)
+    Variant = namedtuple("Variant", tags)
 
     data_present = 0
     alt_base_fwd = None
@@ -105,12 +100,12 @@ def extract_nucleotide_count(
         counted_nucs_rev = sum([x[1] for x in counts_rev.most_common()])
 
         total = pileupcolumn.n
-        
+
         # empty position:
-        if counted_nucs ==0:
+        if counted_nucs == 0:
             continue
 
-        else:   
+        else:
             if total > 0 and len(counts.most_common()) > 0:
                 data_present = counts.most_common()[0][1] / total
             else:
@@ -138,7 +133,6 @@ def extract_nucleotide_count(
                 fwd_count = 0
                 alt_base_ratio_fwd = 0
 
-
             if len(counts_rev.most_common()) > 1:
                 alt_base_rev = counts_rev.most_common()[1][0]
                 rev_count = counts_rev.most_common()[1][1]
@@ -148,13 +142,24 @@ def extract_nucleotide_count(
                 rev_count = 0
                 alt_base_ratio_rev = 0
 
-
             base = None
             if alt_base_fwd == alt_base_rev and alt_base_fwd:
                 base = alt_base_fwd
 
         # create an object to store all gathered data
-    var = Variant(DP=total, DPQ=counted_nucs, FREQ= data_present , VAF= non_ref_ratio_filtered, FWDC= fwd_count, FWDR= alt_base_ratio_fwd, REVC= rev_count, REVR= alt_base_ratio_rev, TOTC= '', TOTR= '', SAME = (1 if base else 0)) 
+    var = Variant(
+        DP=total,
+        DPQ=counted_nucs,
+        FREQ=data_present,
+        VAF=non_ref_ratio_filtered,
+        FWDC=fwd_count,
+        FWDR=alt_base_ratio_fwd,
+        REVC=rev_count,
+        REVR=alt_base_ratio_rev,
+        TOTC="",
+        TOTR="",
+        SAME=(1 if base else 0),
+    )
     # print(var)
     # print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
     # print(f"found positions {counted_nucs}")
@@ -168,11 +173,7 @@ def extract_nucleotide_count(
     # )
 
     # print(var)
-    return (
-        assembly,
-        alleles,
-        var
-    )
+    return (assembly, alleles, var)
 
 
 def initialize_output_vcf(vcf_path, contigs):
@@ -197,7 +198,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "DP"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Depth at position",),
+            ("Description", "Depth at position"),
         ],
     )
     vcfh.add_meta(
@@ -206,7 +207,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "DPQ"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Depth at position above Q threshold",),
+            ("Description", "Depth at position above Q threshold"),
         ],
     )
     vcfh.add_meta(
@@ -236,7 +237,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "FWDC"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Forward count after Q filtering",),
+            ("Description", "Forward count after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -245,7 +246,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "FWDR"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Forward ratio after Q filtering",),
+            ("Description", "Forward ratio after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -254,7 +255,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "REVC"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Reverse count after Q filtering",),
+            ("Description", "Reverse count after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -263,7 +264,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "REVR"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Reverse ratio after Q filtering",),
+            ("Description", "Reverse ratio after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -272,7 +273,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "TOTC"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Total count after Q filtering",),
+            ("Description", "Total count after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -281,7 +282,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "TOTR"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Total ratio after Q filtering",),
+            ("Description", "Total ratio after Q filtering"),
         ],
     )
     vcfh.add_meta(
@@ -290,7 +291,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "SAME"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Same base found forward and reverse",),
+            ("Description", "Same base found forward and reverse"),
         ],
     )
 
@@ -318,14 +319,14 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
         for fld in result[2]._fields:
             fld_value = getattr(result[2], fld)
             if type(fld_value) == float:
-                fld_entry =  str(f"{getattr(result[2], fld):.4f}")
+                fld_entry = str(f"{getattr(result[2], fld):.4f}")
             elif type(fld_value) == int:
-                fld_entry =  str(f"{getattr(result[2], fld)}")
+                fld_entry = str(f"{getattr(result[2], fld)}")
             else:
                 fld_entry = str(fld_value)
 
             r.samples["Sample1"][fld] = fld_entry
-        
+
         vcf.write(r)
     vcf.close()
 
