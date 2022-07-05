@@ -264,3 +264,35 @@ process MapqAndNMFilter{
         samtools index ${X}.NM_50_mapq_20.bam
         """
 }
+
+process FindRegionOfInterest{
+     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+
+    output:
+        tuple val(X), path("${X}_roi.bed")
+
+    script:
+        """
+        samtools depth $bam_in | awk '\$3>100' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d 25 -i /dev/stdin > ${X}_roi.bed
+        """
+}
+
+process MPileup{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    
+    input:
+        tuple val(X), path(bam_in), path(bai_in), path(reference)
+        tuple val(X), path(bed)
+
+    output:
+        //  use simplename as X and the bed are not unique
+        path ("${bam_in.simpleName}.pileup")
+
+    script:
+        """
+        samtools mpileup $bam_in -l $bed -f $reference --reverse-del --output-QNAME --output-MQ --max-depth 0 > ${bam_in.simpleName}.pileup
+        """
+}

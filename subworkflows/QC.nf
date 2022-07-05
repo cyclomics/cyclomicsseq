@@ -26,11 +26,10 @@ include {
 include {
     SamtoolsQuickcheck
     SamtoolsFlagstats
-} from "./modules/samtools"
-
-include {
     FindRegionOfInterest
-} from "./modules/mosdepth"
+    MPileup as MPileupSplit
+    MPileup as MPileupConsensus
+} from "./modules/samtools"
 
 include {
     SamtoolsMergeBams
@@ -73,28 +72,45 @@ workflow PostQC {
         id = first_fq.simpleName
         extension = first_fq.getExtension()
 
-        println(id)
-        println(extension)
         FastqInfoRaw(fastq_raw.collect())
         PlotRawFastqHist(fastq_raw.collect(), extension, id)
         
-        id = fastq_consensus.first().map(it -> it[0])
-        extension = fastq_consensus.map(it -> it[1]).first().getExtension()
+        first_fq = fastq_consensus.first()
+        id = first_fq.map(it -> it[0])
+        extension = first_fq.map(it -> it[1]).getExtension()
 
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
         PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id)
 
-        SamtoolsMergeBams('splibams_merged', split_bam.collect())
-        PlotReadStructure(SamtoolsMergeBams.out)
+        merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
+        PlotReadStructure(merged_split_bam)
+        
+
+        roi = FindRegionOfInterest(consensus_bam)
+        // pileups_split_bam = MPileupSplit(consensus_bam.combine(reference_fasta), roi)
+        // pileups_consensus_bam = MPileupConsensus(merged_split_bam.combine(reference_fasta), roi)
+
+        if (params.variant_calling == "validate") {
+            PlotVcf(vcf)
+        }
         
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsFlagstats(consensus_bam)
-        FindRegionOfInterest(consensus_bam)
-        // if (params.variant_calling == "validate") {
-        //     PlotVcf(vcf)
-        // }
+        
         if (quick_results == true) {
             SamtoolsQuickcheck.out.view()
             SamtoolsFlagstats.out.view()
         }
 }
+
+
+// workflow CreateAccuracyPlot {
+//     take:
+//         merged_consensus_bam
+//         merged_split_bam
+//         reference_fasta
+
+//     main:
+
+
+// }
