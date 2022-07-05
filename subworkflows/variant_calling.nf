@@ -18,6 +18,7 @@ include {
 
 include {
     VariantValidate
+    FilterVariants
 } from "./modules/bin"
 
 workflow FreebayesSimple{
@@ -69,4 +70,7 @@ workflow ValidatePosibleVariantLocations{
             positions = variant_file
         }
         VariantValidate(reads_aligned,positions)
+        FilterVariants(VariantValidate.out)
+
+
 }

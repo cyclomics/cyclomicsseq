@@ -86,6 +86,38 @@ process VariantValidate{
         """
 }
 
+process FilterVariants {
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        path(vcf_file)
+
+    output:
+        path("${vcf_file.simpleName}_filtered.vcf")
+    
+    script:
+        """
+        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.vcf
+        """
+}
+
+process PlotFastqsQUalAndLength{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        path(fastq)
+        val grep_pattern
+        val plot_file_prefix
+
+    output:
+        path("${plot_file_prefix}_histograms.html")
+    
+    script:
+        """
+        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html
+        """
+}
+
 process PlotReadStructure{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
@@ -103,18 +135,17 @@ process PlotReadStructure{
         """
 }
 
-process PlotFastqsQUalAndLength{
+process PlotVcf{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple path(fastq)
-        val grep_pattern
+        path(vcf)
 
     output:
-        path("${fastq.simpleName}_histograms.html")
+        path("${vcf.simpleName}.html")
     
     script:
         """
-        plot_fastq_histograms.py $grep_pattern ${fastq.simpleName}_histograms.html
+        plot_vcf.py $vcf ${vcf.simpleName}.html
         """
 }
