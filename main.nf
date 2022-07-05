@@ -154,16 +154,16 @@ workflow {
 00.    raw data quality control
 ========================================================================================
 */
-    if( params.qc == "simple" ) {
+    // if( params.qc == "simple" ) {
 
-        QC_MinionQc(seq_summary)
-    }
-    else if( params.qc == "skip" ) {
-        println "Skipping QC control"
-    }
-    else {
-        error "Invalid qc selector: ${params.qc}"
-    }
+    //     QC_MinionQc(seq_summary)
+    // }
+    // else if( params.qc == "skip" ) {
+    //     println "Skipping QC control"
+    // }
+    // else {
+    //     error "Invalid qc selector: ${params.qc}"
+    // }
 
 /*
 ========================================================================================
@@ -262,12 +262,13 @@ workflow {
 ========================================================================================
 */ 
     PostQC(
-        read_info_json,
+        PrepareGenome.out.fasta_combi
         read_fastq,
+        CycasConsensus.out.split_bam
         base_unit_reads,
+        read_info_json,
         reads_aligned,
         params.quick_results,
-        CycasConsensus.out.split_bam
     )
 }
 /*

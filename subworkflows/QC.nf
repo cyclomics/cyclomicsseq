@@ -63,6 +63,7 @@ workflow PostQC {
         consensus_bam
         quick_results
         split_bam
+        reference_fasta
 
     main:
         // dont add the ID to the process
