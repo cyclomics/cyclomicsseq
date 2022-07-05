@@ -137,7 +137,7 @@ def _create_fastq_reads(metadata) -> str:
     reads = []
     consensus_data = metadata["consensus_reads"]
     for k, v in consensus_data.items():
-        if v['filtered']:
+        if v["filtered"]:
             continue
         # extract the int from the string
         tag_id = re.findall(r"\d+", k)[0]
@@ -148,7 +148,7 @@ def _create_fastq_reads(metadata) -> str:
         unique_readname = (
             f"{metadata['readname']}_{assembly_type}_{tag_id}_{v['alignment_position']}"
         )
-        v['readname_unique'] = unique_readname
+        v["readname_unique"] = unique_readname
         reads.append(_create_fastq_entry(unique_readname, v["seq"], v["qual"]))
 
     return reads
@@ -175,6 +175,7 @@ def _create_metadata(group, rules, empty_group=False):
     for rule in rules:
         result["rules"][rule.name] = rule.score(group)
     return result
+
 
 def _process_read(
     read,

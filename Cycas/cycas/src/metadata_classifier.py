@@ -125,7 +125,7 @@ class SingleInsert(BaseMetadataClass):
         outcome = False
         if not metadata["Check1ChromosomesPresent"]:
             return outcome
-        if ["CheckTwoStartLocationsByOwnLength"]:
+        if metadata["CheckTwoStartLocationsByOwnLength"]:
             return outcome
         if metadata["CheckEqualStartLocations"] > 0.8:
             return self.__class__.__name__
