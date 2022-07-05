@@ -13,6 +13,8 @@ include {
 include {
     CollectClassificationTypes
     PlotReadStructure
+    PlotFastqsQUalAndLength as PlotRawFastqHist
+    PlotFastqsQUalAndLength as PlotConFastqHist
 } from "./modules/bin"
 
 include {
@@ -66,9 +68,11 @@ workflow PostQC {
         // dont add the ID to the process
         // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
         FastqInfoRaw(fastq_raw.collect())
+        PlotRawFastqHist(fastq_raw.collect(), "*.fastq.gz")
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect())
+        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(), "*.fastq")
         
-        SamtoolsMergeBams('splibams_merged', split_bam)
+        SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(SamtoolsMergeBams.out)
 
         SamtoolsQuickcheck(consensus_bam)

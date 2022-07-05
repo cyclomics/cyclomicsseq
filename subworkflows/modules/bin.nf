@@ -102,3 +102,19 @@ process PlotReadStructure{
         plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segmets.html ${bam.simpleName}_read_structure.html
         """
 }
+
+process PlotFastqsQUalAndLength{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple path(fastq)
+        val grep_pattern
+
+    output:
+        path("${fastq.simpleName}_histograms.html")
+    
+    script:
+        """
+        plot_fastq_histograms.py $grep_pattern ${fastq.simpleName}_histograms.html
+        """
+}

@@ -267,6 +267,7 @@ workflow {
         base_unit_reads,
         reads_aligned,
         params.quick_results,
+        CycasConsensus.out.split_bam
     )
 }
 /*
