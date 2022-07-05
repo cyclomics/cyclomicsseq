@@ -116,5 +116,5 @@ git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
 
 To update run
 ``` bash
-git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag>
+git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag> --squash
 ```

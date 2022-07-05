@@ -262,9 +262,9 @@ workflow {
 ========================================================================================
 */ 
     PostQC(
-        PrepareGenome.out.fasta_combi
+        PrepareGenome.out.fasta_combi,
         read_fastq,
-        CycasConsensus.out.split_bam
+        CycasConsensus.out.split_bam,
         base_unit_reads,
         read_info_json,
         reads_aligned,
