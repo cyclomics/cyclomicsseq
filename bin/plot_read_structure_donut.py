@@ -4,6 +4,7 @@ from collections import Counter
 from math import pi
 
 import pandas as pd
+import numpy as np
 import pysam
 
 # from plotly.subplots import make_subplots
@@ -17,7 +18,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Div, ColumnDataSource
 
 
-def _bam_to_df(bam, chr=None, start=None, stop=None):
+def _bam_to_df(bam, chr=None, start=None, stop=None, ):
     """
     Convert a bam into a pandas dataframe for the columns we need.
     """
@@ -29,14 +30,23 @@ def _bam_to_df(bam, chr=None, start=None, stop=None):
     cigar = []
     original_length = []
 
-    for read in bam.fetch(chr, start, stop):
+    for read in bam.fetch(chr, start, stop, until_eof=True):
         qname.append(read.qname)
         flag.append(read.flag)
-        rname.append(read.reference_name)
         pos.append(read.pos)
         mapq.append(read.mapq)
-        cigar.append(read.cigarstring)
-        original_length.append(read.infer_read_length())
+
+        # values that can be missing:
+        cigarstring = read.cigarstring
+        cigar.append(cigarstring if cigarstring else "*")
+        read_reference_name = read.reference_name
+        rname.append(read_reference_name if read_reference_name else "*")
+
+        # length is special since pysam uses the cigar string to get the length
+        original_read_length = read.infer_read_length()
+        if not original_read_length:
+            original_read_length = len(read.seq)
+        original_length.append(original_read_length)
 
     return pd.DataFrame(
         {
@@ -292,16 +302,15 @@ if __name__ == "__main__":
     parser.add_argument("donut_plot_readstructure")
     args = parser.parse_args()
 
-    # split_bam = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics/000014/CycasConsensus/Minimap2AlignAdaptiveParameterized/FAT55621_pass_61af019d_23_filtered.bam"
-    # output_file_name = "tmp.html"
-    # title = "my title"
-    # assert os.path.exists(split_bam)
-    # main(split_bam, "assem.html", 'assem count', "Donuts.html", 'Donut plot 123')
-
     main(
         args.bam_file,
         args.assembly_plot,
         "Segment count per assembly in reference",
         args.donut_plot_readstructure,
-        "Read structure by both read and base count",
+        "Read structure by both read and base count by chromosomal presence per readname",
     )
+
+    # split_bam = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics/000010_dev/PostQC/SamtoolsMergeBams/splibams_merged.merged.bam"
+    # output_file_name = "tmp.html"
+    # title = "my title"
+    # main(split_bam, "assem.html", 'assem count', "Donuts.html", 'Donut plot 123')
