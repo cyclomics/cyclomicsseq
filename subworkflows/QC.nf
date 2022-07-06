@@ -16,6 +16,7 @@ include {
     PlotFastqsQUalAndLength as PlotRawFastqHist
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
+    PlotQScores
 } from "./modules/bin"
 
 include {
@@ -87,8 +88,10 @@ workflow PostQC {
         
 
         roi = FindRegionOfInterest(consensus_bam)
-        // pileups_split_bam = MPileupSplit(consensus_bam.combine(reference_fasta), roi)
-        // pileups_consensus_bam = MPileupConsensus(merged_split_bam.combine(reference_fasta), roi)
+        pileups_split_bam = MPileupSplit(merged_split_bam.combine(reference_fasta), roi)
+        pileups_consensus_bam = MPileupConsensus( consensus_bam.combine(reference_fasta), roi)
+
+        PlotQScores(pileups_split_bam.combine(pileups_consensus_bam))
 
         if (params.variant_calling == "validate") {
             PlotVcf(vcf)
