@@ -79,5 +79,7 @@ workflow ValidatePosibleVariantLocations{
         VariantValidate(reads_aligned, positions)
         FilterVariants(VariantValidate.out)
 
-
+    emit:
+        locations = VariantValidate.out
+        variants = FilterVariants.out
 }

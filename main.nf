@@ -233,26 +233,32 @@ workflow {
     
     if( params.variant_calling == "freebayes" ) {
         FreebayesSimple(reads_aligned, PrepareGenome.out.mmi_combi)
-        vcf = FreebayesSimple.out
+        variant_vcf = FreebayesSimple.out
+        locations = ""
     }
     else if (params.variant_calling == "varscan"){
         Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
-        vcf = Varscan.out
+        variant_vcf = Varscan.out
+        locations = ""
     }
     else if (params.variant_calling == "validate"){
-        vcf = ValidatePosibleVariantLocations(
+        ValidatePosibleVariantLocations(
             reads_aligned,
             params.region_file,
             PrepareGenome.out.fasta_combi
         )
+        locations = ValidatePosibleVariantLocations.out.locations
+        variant_vcf = ValidatePosibleVariantLocations.out.variants
+    
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
-        vcf = ""
+        variant_vcf = ""
+        locations = ""
     }
     // else if( params.variant_calling == "skip" ) {
     //     println "Skipping variant_calling"
-    //     vcf = ""
+    //     variant_vcf = ""
     // }
     // 
 
@@ -260,7 +266,8 @@ workflow {
 ========================================================================================
 04.    Reporting
 ========================================================================================
-*/ 
+*/  
+    println(variant_vcf)
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
@@ -269,6 +276,7 @@ workflow {
         read_info_json,
         reads_aligned,
         params.quick_results,
+        locations,
     )
 }
 /*
