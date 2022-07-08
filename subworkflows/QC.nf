@@ -71,6 +71,7 @@ workflow PostQC {
         read_info
         consensus_bam
         quick_results
+        vcf
 
     main:
         // dont add the ID to the process
@@ -102,9 +103,9 @@ workflow PostQC {
 
         PlotQScores(PerbaseBaseDepthSplit.out, PerbaseBaseDepthConsensus.out)
 
-        // if (params.variant_calling == "validate") {
-        //     PlotVcf(vcf)
-        // }
+        if (params.variant_calling == "validate") {
+            PlotVcf(vcf)
+        }
         
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsFlagstats(consensus_bam)
