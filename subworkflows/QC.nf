@@ -36,6 +36,12 @@ include {
     SamtoolsMergeBams
 } from "./modules/samtools"
 
+include {
+    PerbaseBaseDepth as PerbaseBaseDepthSplit
+    PerbaseBaseDepth as PerbaseBaseDepthConsensus
+} from "./modules/perbase"
+
+
 workflow  QC_pycoqc{
     take:
         read_directory
@@ -88,14 +94,17 @@ workflow PostQC {
         
 
         roi = FindRegionOfInterest(consensus_bam)
-        pileups_split_bam = MPileupSplit(merged_split_bam.combine(reference_fasta), roi)
-        pileups_consensus_bam = MPileupConsensus( consensus_bam.combine(reference_fasta), roi)
+        // pileups_split_bam = MPileupSplit(merged_split_bam.combine(reference_fasta), roi)
+        // pileups_consensus_bam = MPileupConsensus( consensus_bam.combine(reference_fasta), roi)
+        
+        PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
+        PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
 
-        PlotQScores(pileups_split_bam.combine(pileups_consensus_bam))
+        PlotQScores(PerbaseBaseDepthSplit.out, PerbaseBaseDepthConsensus.out)
 
-        if (params.variant_calling == "validate") {
-            PlotVcf(vcf)
-        }
+        // if (params.variant_calling == "validate") {
+        //     PlotVcf(vcf)
+        // }
         
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsFlagstats(consensus_bam)

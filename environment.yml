@@ -107,12 +107,13 @@ dependencies:
   - oniguruma=6.9.8=h166bdaf_0
   - openjdk=8.0.312=h7f98852_0
   - openjpeg=2.4.0=hb52868f_1
-  - openssl=1.1.1p=h166bdaf_0
+  - openssl=1.1.1q=h166bdaf_0
   - packaging=21.3=pyhd8ed1ab_0
   - pandas=1.4.2=py38h47df419_2
   - pango=1.50.7=hbd2fdc8_0
   - pcre=8.45=h9c3ff4c_0
   - pcre2=10.37=h032f7d1_0
+  - perbase=0.8.3=h93ac3e5_0
   - perl=5.32.1=2_h7f98852_perl5
   - pillow=9.1.1=py38h0ee0e06_1
   - pip=22.1.2=pyhd8ed1ab_0

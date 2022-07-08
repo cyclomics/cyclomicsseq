@@ -22,7 +22,7 @@ params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
 params.backbone_name              = ""
 
-params.validation_location_file   = ""
+params.region_file                = "auto"
 
 params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
 // reference indexes are expected to be in reference folder
@@ -33,7 +33,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 params.qc                   = "simple" // simple or skip
 params.consensus_calling    = "cycas" // simple or skip
 params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
-params.variant_calling      = "varscan"
+params.variant_calling      = "validate"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
 params.quick_results        = false
@@ -51,7 +51,7 @@ log.info """
         reference                : $params.reference
         backbone_fasta           : $params.backbone_fasta
         backbone_name            : $params.backbone_name
-        validation_location_file : $params.validation_location_file  
+        region_file : $params.region_file  
         output folder            : $params.output_dir
     Method:  
         QC                       : $params.qc
@@ -111,8 +111,8 @@ workflow {
     ========================================================================================
     */
     // check environments
-    if (params.validation_location_file != ""){
-        log.warn "Overwriting variant_calling strategy due to the presence of a --validation_location_file"
+    if (params.region_file != "auto"){
+        log.warn "Overwriting variant_calling strategy due to the presence of a --region_file"
         params.variant_calling = "validate"
         log.info "--variant_calling set to $params.variant_calling"
     }
@@ -240,9 +240,9 @@ workflow {
         vcf = Varscan.out
     }
     else if (params.variant_calling == "validate"){
-        ValidatePosibleVariantLocations(
+        vcf = ValidatePosibleVariantLocations(
             reads_aligned,
-            params.validation_location_file,
+            params.region_file,
             PrepareGenome.out.fasta_combi
         )
     }

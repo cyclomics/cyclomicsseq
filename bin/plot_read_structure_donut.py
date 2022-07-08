@@ -18,7 +18,7 @@ from bokeh.layouts import row, column
 from bokeh.models import Div, ColumnDataSource
 
 
-def _bam_to_df(bam, chr=None, start=None, stop=None, ):
+def _bam_to_df(bam, chr=None, start=None, stop=None):
     """
     Convert a bam into a pandas dataframe for the columns we need.
     """

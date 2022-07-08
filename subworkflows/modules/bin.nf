@@ -74,7 +74,7 @@ process VariantValidate{
 
     input:
         tuple val(X), path(bam), path(bai)
-        path(validation_bed)
+        tuple val(X), path(validation_bed)
 
 
     output:
@@ -154,13 +154,15 @@ process PlotQScores{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple path(split_pileup), path(consensus_pileup)
+        tuple val(X), path(split_pileup)
+        tuple val(Y), path(consensus_pileup)
 
     output:
         path("${consensus_pileup.simpleName}.html")
     
     script:
         """
+        
         plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
         """
 }
