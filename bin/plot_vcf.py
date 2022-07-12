@@ -40,7 +40,7 @@ def get_roi_pileup_df(
             roi.append((chrom, strech[0], strech[-1]))
 
     return roi
-    
+
 
 def read_vcf(path):
     with open(path, "r") as f:
@@ -84,16 +84,16 @@ def update_vcf_with_truth(true_vcf, df):
 
 def make_scatter_plots(data, roi):
     hover = HoverTool(
-    tooltips=[
-        ("position", "@CHROM : @POS"),
-        ("VAF", "@VAF"),
-        ("Frequency", "@FREQ"),
-        ("forward ratio", "@FWDR"),
-        ("reverse ratio", "@REVR"),
-        ("Same base", "@SAME"),
-        ("Depth", "@DP"),
-        ("Depth after Qfilter", "@DPQ"),
-    ]
+        tooltips=[
+            ("position", "@CHROM : @POS"),
+            ("VAF", "@VAF"),
+            ("Frequency", "@FREQ"),
+            ("forward ratio", "@FWDR"),
+            ("reverse ratio", "@REVR"),
+            ("Same base", "@SAME"),
+            ("Depth", "@DP"),
+            ("Depth after Qfilter", "@DPQ"),
+        ]
     )
 
     plots = []
@@ -106,7 +106,6 @@ def make_scatter_plots(data, roi):
         data_relevant = data_relevant[data_relevant.CHROM == chrom]
         data_relevant = data_relevant[data_relevant.POS >= start]
         data_relevant = data_relevant[data_relevant.POS <= stop]
-
 
         # Pos scatter vaf
         p_vaf = figure(title=f"Positional VAF {chrom}:{start}-{stop}")
@@ -124,11 +123,17 @@ def make_scatter_plots(data, roi):
         p_ratio.add_tools(hover)
 
         # Depth
-        p_depth = figure(title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}")
+        p_depth = figure(
+            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}"
+        )
         p_depth.xaxis.axis_label = "Position"
         p_depth.yaxis.axis_label = "Depth"
-        p_depth.scatter("POS", "DP", source=data_relevant, color="orange", legend_label="depth")
-        p_depth.scatter("POS", "DPQ", source=data_relevant, legend_label="depth after Q filtering")
+        p_depth.scatter(
+            "POS", "DP", source=data_relevant, color="orange", legend_label="depth"
+        )
+        p_depth.scatter(
+            "POS", "DPQ", source=data_relevant, legend_label="depth after Q filtering"
+        )
         p_depth.add_tools(hover)
         p_depth.legend.location = "bottom_center"
         plots.append(row(p_vaf, p_ratio, p_depth))
@@ -158,4 +163,4 @@ if __name__ == "__main__":
     # vcf = '/home/dami/projects/variantcalling/depth/datasets/000010_v4_bb41/2000/potential_vars_1000.vcf'
     # true_vcf = '/home/dami/projects/variantcalling/depth/datasets_cyclomics/000010_v4_bb41/Native/real_variants.vcf'
 
-    main(args.vcf_file,args.plot_file)
+    main(args.vcf_file, args.plot_file)
