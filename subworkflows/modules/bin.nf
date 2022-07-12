@@ -131,7 +131,7 @@ process PlotReadStructure{
     
     script:
         """
-        plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segmets.html ${bam.simpleName}_read_structure.html
+        plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
         """
 }
 
