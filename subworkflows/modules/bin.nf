@@ -125,7 +125,7 @@ process PlotReadStructure{
         tuple val(X), path(bam), path(bai)
 
     output:
-        path("${bam.simpleName}_aligned_segmets.html")
+        path("${bam.simpleName}_aligned_segments.html")
         path("${bam.simpleName}_read_structure.html")
 
     
