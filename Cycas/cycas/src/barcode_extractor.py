@@ -43,7 +43,7 @@ class BarcodeExtrator:
 
         for pos in offset_positions:
             # if we have a partial backbone we need to look earlier in the reads
-            
+
             nucs = [
                 cons.get_aligned_position(pos, self.offset)
                 for cons in self.alignment_blocks.values()

@@ -48,6 +48,16 @@ If docker is not an option, singularity(or Apptainer as it is called since Q2 20
 
 ## changelog
 
+### 0.4.2
+- Added many QC steps with plots,
+- Removed MionIONQC
+- changed default variant calling to validate
+- added auto detect of region of interest
+
+
+### 0.4.1
+- changed default read_pattern regex to detect rebasecalled sequencing runs automatically when pointed at the output folder.
+
 ### 0.4.0
 - Updated Cycas to prevent runtime error with BB41
 - Added variant validation optionality.
@@ -113,5 +123,5 @@ git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
 
 To update run
 ``` bash
-git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag>
+git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag> --squash
 ```

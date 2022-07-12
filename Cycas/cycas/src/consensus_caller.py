@@ -95,7 +95,7 @@ class ConsensusAlignment:
 
         # use offset to indicate start, ignore all - and insertions, but keep deletions
         target_pos = position - offset
-        target_pos+= sum([x == '-' or x== "I" for x in self.cigar[:target_pos]])
+        target_pos += sum([x == "-" or x == "I" for x in self.cigar[:target_pos]])
 
         return self.get_seq_pos(target_pos)
 
@@ -313,10 +313,15 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 )
                 filter_on_count = True
 
-
             # create consensus objects and get values,
-            cons, qual, barcode, barcode_arrays, alignment_start, flipped = self.create_block_consensus(block
-            )
+            (
+                cons,
+                qual,
+                barcode,
+                barcode_arrays,
+                alignment_start,
+                flipped,
+            ) = self.create_block_consensus(block)
             # add to the reporting for the output
             result[tag] = {
                 "filtered": filter_on_count,
@@ -378,7 +383,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             # remove non-participating reads, check if we have enough participation to make consensus
             filtered_nucs = []
             filtered_quals = []
-            for n,q in zip(nucs,quals):
+            for n, q in zip(nucs, quals):
                 if n != "_":
                     filtered_nucs.append(n)
                     filtered_quals.append(q)
@@ -393,17 +398,16 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             deletion_ratio = nucs.count("-") / len(nucs)
             if deletion_ratio >= self.minimal_deletion_ratio:
                 continue
-                
+
             filtered_nucs = []
             filtered_quals = []
-            for n,q in zip(nucs,quals):
+            for n, q in zip(nucs, quals):
                 if n != "-":
                     filtered_nucs.append(n)
                     filtered_quals.append(q)
 
             nucs = filtered_nucs
             quals = filtered_quals
-
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             # If we start the consensus string we store the position
@@ -438,5 +442,5 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             barcode,
             barcode_arrays,
             alignment_start,
-            flipped
+            flipped,
         )

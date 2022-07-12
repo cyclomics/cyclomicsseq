@@ -21,7 +21,7 @@ class AlignmentProcessor:
         return result
 
     def create_paired_alignment_groups_per_chromosome_and_distance(
-        self, group, distance='auto'
+        self, group, distance="auto"
     ):
         """
         Find all groups of alignment per chromosome that are at least `distance` seperated on said chromosome.
@@ -35,10 +35,8 @@ class AlignmentProcessor:
                 x.alignment_chromosome_start for x in group_chr.alignments
             ]
             # if we can set the distnace automatically we use 2x the median
-            if distance == 'auto':
-                lengths = [
-                    x.alignment_length for x in group_chr.alignments
-                ]
+            if distance == "auto":
+                lengths = [x.alignment_length for x in group_chr.alignments]
                 distance = round(2 * median(lengths))
             distance = int(distance)
 
@@ -74,10 +72,8 @@ class AlignmentProcessor:
             )
             start_positions = [x.alignment_chromosome_start for x in group.alignments]
             # if we can set the distnace automatically we use 2x the median
-            if distance == 'auto':
-                lengths = [
-                    x.alignment_length for x in group_chr.alignments
-                ]
+            if distance == "auto":
+                lengths = [x.alignment_length for x in group_chr.alignments]
                 distance = round(2 * median(lengths))
             distance = int(distance)
 

@@ -1,91 +1,126 @@
 #!/usr/bin/env python
 
-import sys
+import argparse
+import logging
+from collections import defaultdict
+from email.policy import default
+from pathlib import Path
+from typing import Dict, Tuple
 
 import pysam
 
+HEADER_TO_TAG = defaultdict(lambda: -1)
 
-def load_json(seqsum_path, readname_index=3):
-    seqsum_indexes = {}
-    print("Loading sequencing summary")
+HEADER_TO_TAG["channel"] = "XC"
+HEADER_TO_TAG["mux"] = "XM"
+HEADER_TO_TAG["start_time"] = "XT"
+HEADER_TO_TAG["duration"] = "XD"
+HEADER_TO_TAG["adapter_duration"] = "XA"
+HEADER_TO_TAG["sequence_length_template"] = "XL"
+HEADER_TO_TAG["mean_qscore_template"] = "XQ"
+HEADER_TO_TAG["median_template"] = "XT"
+HEADER_TO_TAG["mad_template"] = "XM"
+HEADER_TO_TAG["end_reason"] = "XE"
+
+USED_TAGS = list(HEADER_TO_TAG.keys())
+
+
+def load_seqsum(
+    seqsum_path: str, readname_index=3
+) -> Tuple[Dict[str, str], Dict[str, int]]:
+    """
+    Load in the sequnecing summary file.
+    """
+    seqsum_indexes = defaultdict(lambda: -1)
+
+    logging.info("Loading sequencing summary")
     with open(seqsum_path, "r") as seqsum:
         header = seqsum.readline()
         for i, name in enumerate(header.split()):
             seqsum_indexes[name] = i
-            print("\t", i, name)
+            logging.info("\t", i, name)
+
         lines = [line.split() for line in seqsum.readlines()]
-        readnames = [x[readname_index] for x in lines]
-    print("- Done")
-    return header, dict(zip(readnames, lines)), seqsum_indexes
+        readname_info = {x[readname_index]: x for x in lines}
+    logging.info("- Done")
+    return readname_info, seqsum_indexes
 
 
-def add_y_tags(seqsum_path, in_bam_path, out_bam_path, split_queryname=True):
+def tag_aln(aln, query_name, seqsum, seqsum_indexes, items=USED_TAGS):
+    """
+    for a set of information in `items`, look up the index and the tag and add it to the tags list of aln
+    If the tag is not in the summary, or an item in the summary is not in tags, dont do anything.
+    """
+    readsum = seqsum[query_name]
+    new_tags = []
+    for i in items:
+        tag = HEADER_TO_TAG[i]
+        header_index = seqsum_indexes[i]
+
+        # tagless column
+        if tag == -1:
+            continue
+
+        # something not in the sequencing summary
+        if header_index == -1:
+            continue
+
+        value = readsum[header_index]
+
+        new_tags.append((tag, value))
+
+    aln.tags = aln.tags + new_tags
+    return aln
+
+
+def process_query_name(name, split_queryname=True, splitter="_"):
+    if not split_queryname:
+        return name
+
+    return name.split(splitter)[0]
+
+
+def main(seqsum_path, in_bam_path, out_bam_path, split_queryname=True):
     # Initialize file handles
     in_bam_file = pysam.AlignmentFile(in_bam_path, "rb")
-    hss, seqsum, seqsum_indexes = load_json(seqsum_path)
-    out_bam_file = pysam.AlignmentFile(
-        out_bam_path + ".bam", "wb", header=in_bam_file.header
-    )
+    seqsum, seqsum_indexes = load_seqsum(seqsum_path)
+    out_bam_file = pysam.AlignmentFile(out_bam_path, "wb", header=in_bam_file.header)
 
     for aln in in_bam_file.fetch():
-        query_name = aln.query_name
-        if split_queryname:
-            query_name = query_name.split("_")[0]
+        query_name = process_query_name(aln.query_name, split_queryname, "_")
+
         if query_name in seqsum:
-            readsum = seqsum[query_name]
-            # TODO: make this extenable
-            aln.tags = aln.tags + [
-                (header_to_tag["channel"], int(readsum[seqsum_indexes["channel"]])),
-                (header_to_tag["mux"], int(readsum[seqsum_indexes["mux"]])),
-                (
-                    header_to_tag["channel_mux"],
-                    readsum[seqsum_indexes["channel"]]
-                    + "."
-                    + readsum[seqsum_indexes["mux"]],
-                ),
-                (
-                    header_to_tag["start_time"],
-                    float(readsum[seqsum_indexes["start_time"]]),
-                ),
-                (header_to_tag["duration"], float(readsum[seqsum_indexes["duration"]])),
-                (
-                    header_to_tag["adapter_duration"],
-                    float(readsum[seqsum_indexes["duration"]])
-                    - float(readsum[seqsum_indexes["start_time"]]),
-                ),
-                (
-                    header_to_tag["sequence_length_template"],
-                    int(readsum[seqsum_indexes["sequence_length_template"]]),
-                ),
-                (
-                    header_to_tag["mean_qscore_template"],
-                    float(readsum[seqsum_indexes["mean_qscore_template"]]),
-                ),
-                (
-                    header_to_tag["median_template"],
-                    float(readsum[seqsum_indexes["median_template"]]),
-                ),
-                (
-                    header_to_tag["mad_template"],
-                    float(readsum[seqsum_indexes["mad_template"]]),
-                ),
-                (header_to_tag["end_reason"], readsum[seqsum_indexes["end_reason"]]),
-            ]
-            out_bam_file.write(aln)
+            aln = tag_aln(aln, query_name, seqsum, seqsum_indexes)
+        out_bam_file.write(aln)
         # exit()
 
     in_bam_file.close()
     out_bam_file.close()
 
 
-file_json = sys.argv[1]
-# file_seqsum = '/media/dami/cyclomics_003/ont/001_accuracy_testing/SS_220209_cyclomics/002/20220209_1609_X5_FAS04073_a6645565/sequencing_summary_FAS04073_77432eb4.txt'
-file_bam = sys.argv[2]
-# file_bam = '/media/dami/cyclomics_003/tmp/annotationtest/Minimap2Align/SamToBam/FAS04073_pass_77432eb4_140.fastq.bam'
-file_out = sys.argv[3]
-# file_out = 'testing'
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Process the information in the sequencing summary and add it to the bam."
+    )
 
-add_y_tags(file_json, file_bam, file_out)
+    parser.add_argument("file_seqsum", type=Path)
+    parser.add_argument("file_bam", type=Path)
+    parser.add_argument("file_out", type=Path)
+    args = parser.parse_args()
+    logging.info(args)
 
-pysam.sort("-o", file_out + ".sort.bam", file_out + ".bam")
-pysam.index(file_out + ".sort.bam")
+    intermediate_bam = args.file_bam.with_suffix(".unsorted.bam")
+    logging.info(intermediate_bam)
+
+    pore_time_aln = main(args.file_seqsum, args.file_bam, intermediate_bam)
+
+    # pysam requires pure strings
+    pysam.sort("-o", str(args.file_out), str(intermediate_bam))
+    pysam.index(str(args.file_out))
+
+    # file_seqsum = Path('/media/dami/cyclomics_003/ont/001_accuracy_testing/SS_220209_cyclomics/002/20220209_1609_X5_FAS04073_a6645565/sequencing_summary_FAS04073_77432eb4.txt')
+    # file_bam = Path('/media/dami/cyclomics_003/tmp/annotationtest/Minimap2Align/SamToBam/FAS04073_pass_77432eb4_140.fastq.bam')
+    # file_out = Path('testing.bam')
+    # intermediate_bam = file_out.with_suffix(".unsorted.bam")
+
+    # pore_time_aln = main(file_seqsum, file_bam, intermediate_bam)

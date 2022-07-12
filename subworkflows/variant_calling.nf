@@ -18,7 +18,12 @@ include {
 
 include {
     VariantValidate
+    FilterVariants
 } from "./modules/bin"
+
+include {
+    FindRegionOfInterest
+} from "./modules/samtools"
 
 workflow FreebayesSimple{
     take:
@@ -60,13 +65,21 @@ workflow ValidatePosibleVariantLocations{
         reference
 
     main:
-        variant_file = Channel.fromPath(params.validation_location_file, checkIfExists: false)
+        variant_file = Channel.fromPath(params.region_file, checkIfExists: false)
 
-        if( variant_file_name.endsWith('.vcf') ) {
+        if (variant_file_name == 'auto') {
+            positions = FindRegionOfInterest(reads_aligned)
+        }
+        else if( variant_file_name.endsWith('.vcf') ) {
             positions = VcfToBed(variant_file)
         }
         else {
             positions = variant_file
         }
-        VariantValidate(reads_aligned,positions)
+        VariantValidate(reads_aligned, positions)
+        FilterVariants(VariantValidate.out)
+
+    emit:
+        locations = VariantValidate.out
+        variants = FilterVariants.out
 }
