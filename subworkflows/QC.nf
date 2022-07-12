@@ -17,6 +17,7 @@ include {
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
     PlotQScores
+    PlotMetadataStats
 } from "./modules/bin"
 
 include {
@@ -92,7 +93,7 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        
+        PlotMetadataStats(read_info.collect())
 
         roi = FindRegionOfInterest(consensus_bam)
         // pileups_split_bam = MPileupSplit(merged_split_bam.combine(reference_fasta), roi)

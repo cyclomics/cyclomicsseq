@@ -166,3 +166,18 @@ process PlotQScores{
         plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
         """
 }
+
+process PlotMetadataStats{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple val(X), path(jsons)
+
+    output:
+        path("${X}_metadata_plots.html")
+    
+    script:
+        """
+        plot_metadata.py '*.json' ${X}_metadata_plots.html
+        """
+}
