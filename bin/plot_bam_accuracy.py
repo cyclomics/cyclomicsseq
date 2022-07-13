@@ -237,7 +237,7 @@ def perbase_table_to_df(table_path):
     try:
         df = pd.read_csv(table_path, sep="\t")
     except pd.errors.EmptyDataError:
-        return None
+        return pd.DataFrame()
     df["REF_BASE_UPPER"] = df.REF_BASE.str.upper()
     df["REF_COUNT"] = df.lookup(df.index, df["REF_BASE_UPPER"])
     df["ACCURACY"] = df.REF_COUNT / df.DEPTH
@@ -391,7 +391,7 @@ def new_main(perbase_path1, perbase_path2, output_plot_file):
     df1 = perbase_table_to_df(perbase_path1)
     df2 = perbase_table_to_df(perbase_path2)
 
-    if df1 == None or df2 == None:
+    if df1.empty or df2.empty:
         f = open(output_plot_file, "w")
         f.write("<h1>One of the pileups was not deep enouhh</h1>")
         f.close()
