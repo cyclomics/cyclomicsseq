@@ -391,7 +391,7 @@ def new_main(perbase_path1, perbase_path2, output_plot_file):
     df1 = perbase_table_to_df(perbase_path1)
     df2 = perbase_table_to_df(perbase_path2)
 
-    if not df1 or not df2:
+    if df1 == None or df2 == None:
         f = open(output_plot_file, "w")
         f.write("<h1>One of the pileups was not deep enouhh</h1>")
         f.close()
