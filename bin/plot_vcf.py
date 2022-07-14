@@ -113,10 +113,10 @@ def make_scatter_plots(data, roi):
         p_vaf.yaxis.axis_label = "VAF ratio"
         p_vaf.scatter("POS", "VAF", source=data_relevant)
         p_vaf.add_tools(hover)
-        p_vaf.title.text_font_size = '16pt'
-        p_vaf.xaxis.axis_label = 'read length'
+        p_vaf.title.text_font_size = "16pt"
+        p_vaf.xaxis.axis_label = "read length"
         p_vaf.xaxis.axis_label_text_font_size = "12pt"
-        p_vaf.yaxis.axis_label = 'alinged segments'
+        p_vaf.yaxis.axis_label = "alinged segments"
         p_vaf.yaxis.axis_label_text_font_size = "12pt"
 
         # show(p_vaf)
@@ -127,11 +127,13 @@ def make_scatter_plots(data, roi):
         p_ratio.yaxis.axis_label = "reverse ratio"
         p_ratio.scatter("FWDR", "REVR", source=data_relevant)
         p_ratio.add_tools(hover)
-        p_ratio.title.text_font_size = '16pt'
-        p_ratio.xaxis.axis_label = 'read length'
-        p_ratio.xaxis.axis_label_text_font_size = "12pt"
-        p_ratio.yaxis.axis_label = 'alinged segments'
-        p_ratio.yaxis.axis_label_text_font_size = "12pt"
+        p_ratio.title.text_font_size = "18pt"
+        p_ratio.xaxis.axis_label = "read length"
+        p_ratio.xaxis.axis_label_text_font_size = "16pt"
+        p_ratio.yaxis.axis_label = "alinged segments"
+        p_ratio.yaxis.axis_label_text_font_size = "16pt"
+        p_ratio.xaxis.major_label_text_font_size = "12pt"
+        p_ratio.yaxis.major_label_text_font_size = "12pt"
 
         # Depth
         p_depth = figure(
@@ -147,11 +149,13 @@ def make_scatter_plots(data, roi):
         )
         p_depth.add_tools(hover)
         p_depth.legend.location = "bottom_center"
-        p_depth.title.text_font_size = '16pt'
-        p_depth.xaxis.axis_label = 'read length'
-        p_depth.xaxis.axis_label_text_font_size = "12pt"
-        p_depth.yaxis.axis_label = 'alinged segments'
-        p_depth.yaxis.axis_label_text_font_size = "12pt"
+        p_depth.title.text_font_size = "18pt"
+        p_depth.xaxis.axis_label = "read length"
+        p_depth.xaxis.axis_label_text_font_size = "16pt"
+        p_depth.yaxis.axis_label = "alinged segments"
+        p_depth.yaxis.axis_label_text_font_size = "16pt"
+        p_depth.xaxis.major_label_text_font_size = "12pt"
+        p_depth.yaxis.major_label_text_font_size = "12pt"
 
         plots.append(row(p_vaf, p_ratio, p_depth))
 

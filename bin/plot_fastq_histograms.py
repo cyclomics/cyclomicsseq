@@ -41,11 +41,13 @@ def plot_overall_Q_hist(overall_Q, my_title):
     p.y_range.start = 0
     p.x_range.start = 0
 
-    p.title.text_font_size = '16pt'
-    p.xaxis.axis_label = 'Base Q'
-    p.xaxis.axis_label_text_font_size = "12pt"
-    p.yaxis.axis_label = 'Relative abundance'
-    p.yaxis.axis_label_text_font_size = "12pt"
+    p.title.text_font_size = "18pt"
+    p.xaxis.axis_label = "Base Q"
+    p.xaxis.axis_label_text_font_size = "16pt"
+    p.yaxis.axis_label = "Relative abundance"
+    p.yaxis.axis_label_text_font_size = "16pt"
+    p.xaxis.major_label_text_font_size = "12pt"
+    p.yaxis.major_label_text_font_size = "12pt"
     return p
 
 
@@ -65,12 +67,14 @@ def plot_length_hist(lengths, my_title_len):
     p.y_range.start = 0
     p.x_range.start = 0
 
-    p.title.text_font_size = '16pt'
-    p.xaxis.axis_label = 'read lenght'
-    p.xaxis.axis_label_text_font_size = "12pt"
-    p.yaxis.axis_label = 'Count'
-    p.yaxis.axis_label_text_font_size = "12pt"
-    
+    p.title.text_font_size = "18pt"
+    p.xaxis.axis_label = "read lenght"
+    p.xaxis.axis_label_text_font_size = "16pt"
+    p.yaxis.axis_label = "Count"
+    p.yaxis.axis_label_text_font_size = "16pt"
+    p.xaxis.major_label_text_font_size = "12pt"
+    p.yaxis.major_label_text_font_size = "12pt"
+
     return p
 
 
