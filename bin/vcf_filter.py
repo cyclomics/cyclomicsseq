@@ -36,12 +36,12 @@ class VCF_file:
             },
             sep="\t",
         ).rename(columns={"#CHROM": "CHROM"})
-
-        formats = df.FORMAT[0].split(":")
-        for i, fmt in enumerate(formats):
-            df[fmt] = df.Sample1.apply(
-                lambda x: float((x.split(":")[i] if (x.split(":")[i]) else 0))
-            )
+        if not df.empty:
+            formats = df.FORMAT[0].split(":")
+            for i, fmt in enumerate(formats):
+                df[fmt] = df.Sample1.apply(
+                    lambda x: float((x.split(":")[i] if (x.split(":")[i]) else 0))
+                )
         return df
 
     def write(self, path):
@@ -63,6 +63,9 @@ class VCF_file:
         min_vaf=0.003,
         min_dir_ratio_ratio=0.1,
     ):
+        # nothing to filter
+        if self.vcf.empty:
+            return
 
         ratio_ratios = (min_dir_ratio_ratio, 1 / min_dir_ratio_ratio)
 
