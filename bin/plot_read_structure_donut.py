@@ -248,6 +248,7 @@ def create_readtype_donuts(
         donut_plot.axis.axis_label = None
         donut_plot.axis.visible = False
         donut_plot.grid.grid_line_color = None
+        donut_plot.title.text_font_size = '16pt'
         return donut_plot
 
     output_file(filename=plot_file, title=plot_title)

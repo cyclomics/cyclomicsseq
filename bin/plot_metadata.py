@@ -43,8 +43,20 @@ def read_jsons_into_plots(json_folder, plot_file):
     p1 = figure(title="Normalized Mappability")
     p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
 
+    p1.title.text_font_size = '16pt'
+    p1.xaxis.axis_label = 'bases/bases mapped'
+    p1.xaxis.axis_label_text_font_size = "12pt"
+    p1.yaxis.axis_label = '%'
+    p1.yaxis.axis_label_text_font_size = "12pt"
+
     p2 = figure(title="Length vs segments identified")
-    p2.scatter(repeat_data)
+    p2.scatter(x=raw_lens, y=segments)
+    
+    p2.title.text_font_size = '16pt'
+    p2.xaxis.axis_label = 'read length'
+    p2.xaxis.axis_label_text_font_size = "12pt"
+    p2.yaxis.axis_label = 'alinged segments'
+    p2.yaxis.axis_label_text_font_size = "12pt"
 
     output_file(plot_file, title="metadata plots")
     save(column([p1, p2]))
@@ -53,12 +65,14 @@ def read_jsons_into_plots(json_folder, plot_file):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Create hist plot from a regex for fastq and fastq.gz files."
-    )
+    # parser = argparse.ArgumentParser(
+    #     description="Create hist plot from a regex for fastq and fastq.gz files."
+    # )
 
-    parser.add_argument("json_glob_path")
-    parser.add_argument("plot_file")
-    args = parser.parse_args()
+    # parser.add_argument("json_glob_path")
+    # parser.add_argument("plot_file")
+    # args = parser.parse_args()
 
-    read_jsons_into_plots(args.json_glob_path, args.plot_file)
+    # read_jsons_into_plots(args.json_glob_path, args.plot_file)
+    read_jsons_into_plots('dummy_json', 'tmp.html')
+

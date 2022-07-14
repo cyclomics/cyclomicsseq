@@ -38,6 +38,14 @@ def plot_overall_Q_hist(overall_Q, my_title):
         tooltips="@Q: @count (@relative_count{%0.2f})",
     )
     p.vbar(x="Q", top="relative_count", width=0.8, source=source)
+    p.y_range.start = 0
+    p.x_range.start = 0
+
+    p.title.text_font_size = '16pt'
+    p.xaxis.axis_label = 'Base Q'
+    p.xaxis.axis_label_text_font_size = "12pt"
+    p.yaxis.axis_label = 'Relative abundance'
+    p.yaxis.axis_label_text_font_size = "12pt"
     return p
 
 
@@ -55,11 +63,14 @@ def plot_length_hist(lengths, my_title_len):
     )
 
     p.y_range.start = 0
-    # p.legend.location = "center_right"
-    # p.legend.background_fill_color = "#fefefe"
-    # p.xaxis.axis_label = 'x'
-    # p.yaxis.axis_label = 'Pr(x)'
-    # p.grid.grid_line_color="white"
+    p.x_range.start = 0
+
+    p.title.text_font_size = '16pt'
+    p.xaxis.axis_label = 'read lenght'
+    p.xaxis.axis_label_text_font_size = "12pt"
+    p.yaxis.axis_label = 'Count'
+    p.yaxis.axis_label_text_font_size = "12pt"
+    
     return p
 
 

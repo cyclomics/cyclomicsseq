@@ -348,6 +348,12 @@ def plot_compare_accuracy(
             color="orange",
             legend_label="Consensus",
         )
+
+        p_freq.title.text_font_size = '16pt'
+        p_freq.xaxis.axis_label_text_font_size = "12pt"
+        p_freq.yaxis.axis_label_text_font_size = "12pt"
+        p_freq.legend.location = "bottom_right"
+
         plots.append(p_freq)
 
     return column(*plots)
@@ -368,6 +374,10 @@ def make_qscore_scatter(df1, df2):
 
     q_scatter.scatter("Q_x", "Q_y", source=df_merge, color="orange")
     q_scatter.line([0, 50], [0, 50], color="grey", alpha=0.5)
+
+    q_scatter.title.text_font_size = '16pt'
+    q_scatter.xaxis.axis_label_text_font_size = "12pt"
+    q_scatter.yaxis.axis_label_text_font_size = "12pt"
 
     return q_scatter
 
