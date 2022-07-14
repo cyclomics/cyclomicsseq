@@ -59,6 +59,9 @@ def read_vcf(path):
         },
         sep="\t",
     ).rename(columns={"#CHROM": "CHROM"})
+    
+    if df.empty:
+        return df
 
     formats = df.FORMAT[0].split(":")
     for i, fmt in enumerate(formats):
@@ -113,6 +116,12 @@ def make_scatter_plots(data, roi):
         p_vaf.yaxis.axis_label = "VAF ratio"
         p_vaf.scatter("POS", "VAF", source=data_relevant)
         p_vaf.add_tools(hover)
+        p_vaf.title.text_font_size = "16pt"
+        p_vaf.xaxis.axis_label = "read length"
+        p_vaf.xaxis.axis_label_text_font_size = "12pt"
+        p_vaf.yaxis.axis_label = "alinged segments"
+        p_vaf.yaxis.axis_label_text_font_size = "12pt"
+
         # show(p_vaf)
 
         # fwd ratio vs reverse ratio
@@ -121,6 +130,13 @@ def make_scatter_plots(data, roi):
         p_ratio.yaxis.axis_label = "reverse ratio"
         p_ratio.scatter("FWDR", "REVR", source=data_relevant)
         p_ratio.add_tools(hover)
+        p_ratio.title.text_font_size = "18pt"
+        p_ratio.xaxis.axis_label = "read length"
+        p_ratio.xaxis.axis_label_text_font_size = "16pt"
+        p_ratio.yaxis.axis_label = "alinged segments"
+        p_ratio.yaxis.axis_label_text_font_size = "16pt"
+        p_ratio.xaxis.major_label_text_font_size = "12pt"
+        p_ratio.yaxis.major_label_text_font_size = "12pt"
 
         # Depth
         p_depth = figure(
@@ -136,6 +152,14 @@ def make_scatter_plots(data, roi):
         )
         p_depth.add_tools(hover)
         p_depth.legend.location = "bottom_center"
+        p_depth.title.text_font_size = "18pt"
+        p_depth.xaxis.axis_label = "read length"
+        p_depth.xaxis.axis_label_text_font_size = "16pt"
+        p_depth.yaxis.axis_label = "alinged segments"
+        p_depth.yaxis.axis_label_text_font_size = "16pt"
+        p_depth.xaxis.major_label_text_font_size = "12pt"
+        p_depth.yaxis.major_label_text_font_size = "12pt"
+
         plots.append(row(p_vaf, p_ratio, p_depth))
 
     return column(*plots)
@@ -143,6 +167,12 @@ def make_scatter_plots(data, roi):
 
 def main(vcf_file, plot_file):
     data = read_vcf(args.vcf_file)
+    if data.empty:
+        f = open(plot_file, "w")
+        f.write("<h1>No variants found</h1>")
+        f.close()
+        return
+    
     roi = get_roi_pileup_df(data)
     # print(data)
     plot = make_scatter_plots(data, roi)
