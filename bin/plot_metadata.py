@@ -43,7 +43,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     p1 = figure(title="Normalized Mappability")
     p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
 
-    p2 = figure()
+    p2 = figure(title="Length vs segments identified")
     p2.scatter(repeat_data)
 
     output_file(plot_file, title="metadata plots")

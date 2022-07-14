@@ -171,13 +171,13 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple val(X), path(jsons)
+        tuple path(jsons)
 
     output:
-        path("${X}_metadata_plots.html")
+        path("metadata_plots.html")
     
     script:
         """
-        plot_metadata.py '*.json' ${X}_metadata_plots.html
+        plot_metadata.py . metadata_plots.html
         """
 }
