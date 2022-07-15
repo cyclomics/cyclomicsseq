@@ -353,7 +353,7 @@ def plot_compare_accuracy(
         p_freq.xaxis.axis_label_text_font_size = "16pt"
         p_freq.yaxis.axis_label_text_font_size = "16pt"
         p_freq.legend.location = "bottom_right"
-        p_freq.major_label_text_font_size = "12pt"
+        p_freq.xaxis.major_label_text_font_size = "12pt"
         p_freq.yaxis.major_label_text_font_size = "12pt"
 
         plots.append(p_freq)
@@ -380,7 +380,7 @@ def make_qscore_scatter(df1, df2):
     q_scatter.title.text_font_size = "18pt"
     q_scatter.xaxis.axis_label_text_font_size = "16pt"
     q_scatter.yaxis.axis_label_text_font_size = "16pt"
-    q_scatter.major_label_text_font_size = "12pt"
+    q_scatter.xaxis.major_label_text_font_size = "12pt"
     q_scatter.yaxis.major_label_text_font_size = "12pt"
 
     return q_scatter
