@@ -132,13 +132,13 @@ def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
             seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
             tags = make_tags(gen_meta, seg_meta, seg_id)
             aln = update_tags(aln, tags)
-
         out_bam_file.write(aln)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Process the information in the metadata and add it to the bam."
     )
+
 
     parser.add_argument("file_metadata", type=Path)
     parser.add_argument("file_bam", type=Path)
@@ -149,8 +149,9 @@ if __name__ == "__main__":
     pore_time_aln = main(args.file_metadata, args.file_bam, intermediate_bam)
 
     # pysam requires pure strings
-    pysam.sort("-o", str(args.file_out), str(intermediate_bam))
-    pysam.index(str(args.file_out))
+    # pysam.sort("-o", str(args.file_out), str(intermediate_bam))
+    # pysam.index(str(args.file_out))
+
 
     # test_metadata = (
     #     "/home/dami/Software/cycloseq/FAT55666_pass_8a93c5bd_123_filtered.metadata.json"
@@ -158,4 +159,5 @@ if __name__ == "__main__":
     # test_bam = "/home/dami/Software/cycloseq/FAT55666_pass_8a93c5bd_123_filtered.bam"
 
     # main(test_metadata, test_bam, "annotatetest.bam")
+
 

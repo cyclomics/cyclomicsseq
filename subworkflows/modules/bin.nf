@@ -176,10 +176,10 @@ process PlotMetadataStats{
         path(jsons)
 
     output:
-        path("${X}_metadata_plots.html")
+        path("metadata_plots.html")
     
     script:
         """
-        plot_metadata.py '*.json' ${X}_metadata_plots.html
+        plot_metadata.py . metadata_plots.html
         """
 }

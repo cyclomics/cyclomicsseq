@@ -348,6 +348,14 @@ def plot_compare_accuracy(
             color="orange",
             legend_label="Consensus",
         )
+
+        p_freq.title.text_font_size = "18pt"
+        p_freq.xaxis.axis_label_text_font_size = "16pt"
+        p_freq.yaxis.axis_label_text_font_size = "16pt"
+        p_freq.legend.location = "bottom_right"
+        p_freq.xaxis.major_label_text_font_size = "12pt"
+        p_freq.yaxis.major_label_text_font_size = "12pt"
+
         plots.append(p_freq)
 
     return column(*plots)
@@ -369,24 +377,16 @@ def make_qscore_scatter(df1, df2):
     q_scatter.scatter("Q_x", "Q_y", source=df_merge, color="orange")
     q_scatter.line([0, 50], [0, 50], color="grey", alpha=0.5)
 
+    q_scatter.title.text_font_size = "18pt"
+    q_scatter.xaxis.axis_label_text_font_size = "16pt"
+    q_scatter.yaxis.axis_label_text_font_size = "16pt"
+    q_scatter.xaxis.major_label_text_font_size = "12pt"
+    q_scatter.yaxis.major_label_text_font_size = "12pt"
+
     return q_scatter
 
 
-def main(pileup_split, pileup_cons, output_plot_file):
-    print("main)")
-    df1 = pileup_to_df(pileup_split)
-    df2 = pileup_to_df(pileup_cons)
-    roi = get_roi_pileup_df(df1)
-    positional_accuracy = plot_compare_accuracy(roi, [df1, df2])
-    print("done")
-    q_score_plot = make_qscore_scatter(df1, df2)
-
-    output_file(output_plot_file, title="Cyclomics accuracy")
-
-    save(column([q_score_plot, positional_accuracy]))
-
-
-def new_main(perbase_path1, perbase_path2, output_plot_file):
+def main(perbase_path1, perbase_path2, output_plot_file):
 
     df1 = perbase_table_to_df(perbase_path1)
     df2 = perbase_table_to_df(perbase_path2)
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     parser.add_argument("output")
 
     args = parser.parse_args()
-    new_main(args.pileup_split, args.pileup_consensus, args.output)
+    main(args.pileup_split, args.pileup_consensus, args.output)
 
     # pileup_split = '/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/work/9c/1793ed932d613a9e65320558e8fdf9/splibams_merged.pileup'
     # pileup_cons = '/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/work/9c/1793ed932d613a9e65320558e8fdf9/FAS37222.pileup'
