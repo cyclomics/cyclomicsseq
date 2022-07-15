@@ -42,7 +42,7 @@ process AnnotateBamYTags{
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple val(X), path(bam), path(bai), path(json)
+        tuple val(X), path(bam), path(json)
         
 
     output:
@@ -50,6 +50,7 @@ process AnnotateBamYTags{
 
     script:
         """
+        samtools index $bam
         annotate_bam_y.py $json $bam ${X}.annotated.bam
         """
 }

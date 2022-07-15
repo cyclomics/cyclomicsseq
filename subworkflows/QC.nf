@@ -76,7 +76,7 @@ workflow PostQC {
 
     main:
         // dont add the ID to the process
-        // CollectClassificationTypes(read_info.map(it -> it[1]).collect())
+
         first_fq = fastq_raw.first()
         id = first_fq.simpleName
         extension = first_fq.getExtension()
@@ -93,12 +93,10 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        PlotMetadataStats(id, read_info.map(it -> it[1]).collect())
+        PlotMetadataStats(id, read_info.map(it -> it[1]).unique().collect())
 
         roi = FindRegionOfInterest(consensus_bam)
-        // pileups_split_bam = MPileupSplit(merged_split_bam.combine(reference_fasta), roi)
-        // pileups_consensus_bam = MPileupConsensus( consensus_bam.combine(reference_fasta), roi)
-        
+      
         PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
         PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
 
