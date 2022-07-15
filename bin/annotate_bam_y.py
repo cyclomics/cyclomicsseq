@@ -146,7 +146,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     intermediate_bam = args.file_bam.with_suffix(".unsorted.bam")
 
-    pore_time_aln = main(args.file_seqsum, args.file_bam, intermediate_bam)
+    pore_time_aln = main(args.file_metadata, args.file_bam, intermediate_bam)
 
     # pysam requires pure strings
     pysam.sort("-o", str(args.file_out), str(intermediate_bam))

@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 
 include {
     AnnotateBamXTags
+    AnnotateBamYTags
 } from "./modules/bin.nf"
 
 include {
@@ -90,12 +91,15 @@ workflow Minimap2Align{
     take:
         reads
         reference_genome
+        jsons
 
     main:
 
         Minimap2AlignAdaptive(reads.map(it -> it[1]), reference_genome)
         id = reads.first()map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
+
+        AnnotateBamYTags(Minimap2AlignAdaptive.out.join(jsons))
         bams = Minimap2AlignAdaptive.out.map(it -> it[1]).collect()
         
         SamtoolsMergeBams(id, bams)
