@@ -29,11 +29,11 @@ process AnnotateBamXTags{
         path(sequencing_summary)
 
     output:
-        tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
+        tuple val(X), path("${X}.taged.bam"), path("${X}.taged.bam.bai")
 
     script:
         """
-        annotate_bam_x.py $sequencing_summary $bam ${X}.annotated.bam
+        annotate_bam_x.py $sequencing_summary $bam ${X}.taged.bam
         """
 }
 
@@ -46,11 +46,11 @@ process AnnotateBamYTags{
         
 
     output:
-        tuple val(X), path("${X}.y_tagged.sort.bam"), path("${X}.y_tagged.sort.bam.bai")
+        tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
 
     script:
         """
-        annotate_bam_y.py $json $bam ${X}.y_tagged
+        annotate_bam_y.py $json $bam ${X}.annotated.bam
         """
 }
 

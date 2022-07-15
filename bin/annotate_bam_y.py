@@ -1,100 +1,42 @@
 #!/usr/bin/env python
 
 import argparse
-import logging
-from collections import defaultdict
-from email.policy import default
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Any, Dict
+import json
 
 from tqdm import tqdm
 import pysam
 
-HEADER_TO_TAG = defaultdict(lambda: -1)
-
-HEADER_TO_TAG["channel"] = "XC"
-HEADER_TO_TAG["mux"] = "XM"
-HEADER_TO_TAG["start_time"] = "XT"
-HEADER_TO_TAG["duration"] = "XD"
-HEADER_TO_TAG["adapter_duration"] = "XA"
-HEADER_TO_TAG["sequence_length_template"] = "XL"
-HEADER_TO_TAG["mean_qscore_template"] = "XQ"
-HEADER_TO_TAG["median_template"] = "XT"
-HEADER_TO_TAG["mad_template"] = "XM"
-HEADER_TO_TAG["end_reason"] = "XE"
-
-USED_TAGS = list(HEADER_TO_TAG.keys())
-
-
-def load_seqsum(
-    seqsum_path: str, readname_index=3
-) -> Tuple[Dict[str, str], Dict[str, int]]:
-    """
-    Load in the sequnecing summary file.
-    """
-    seqsum_indexes = defaultdict(lambda: -1)
-
-    logging.info("Loading sequencing summary")
-    with open(seqsum_path, "r") as seqsum:
-        header = seqsum.readline()
-        for i, name in enumerate(header.split()):
-            seqsum_indexes[name] = i
-            logging.info("\t", i, name)
-
-        lines = [line.split() for line in seqsum.readlines()]
-        readname_info = {x[readname_index]: x for x in lines}
-    logging.info("- Done")
-    return readname_info, seqsum_indexes
-
-
-def tag_aln(aln, query_name, seqsum, seqsum_indexes, items=USED_TAGS):
-    """
-    for a set of information in `items`, look up the index and the tag and add it to the tags list of aln
-    If the tag is not in the summary, or an item in the summary is not in tags, dont do anything.
-    """
-    readsum = seqsum[query_name]
-    new_tags = []
-    for i in items:
-        tag = HEADER_TO_TAG[i]
-        header_index = seqsum_indexes[i]
-
-        # tagless column
-        if tag == -1:
-            continue
-
-        # something not in the sequencing summary
-        if header_index == -1:
-            continue
-
-        value = readsum[header_index]
-
-        new_tags.append((tag, value))
-
-    aln.tags = aln.tags + new_tags
-    return aln
 
 
 def process_query_name(name, split_queryname=True, splitter="_"):
+    """
+    Split a string called name if split_queryname is True based on the splitter provided
+    eg:
+    
+    abc_def with splitter _ will become abc
+    abc_def_efg with splitter _ will become abc
+    """
     if not split_queryname:
         return name
 
     return name.split(splitter)[0]
 
 
-import json
-
-
-def create_metadata(json_path):
+def create_metadata(json_path) -> Dict:
+    """
+    Open the json path and load into a dict
+    """
     with open(json_path) as d:
         dict_data = json.load(d)
     return dict_data
 
 
-def apply_metadata_tags(bam: str, metadata: Dict):
-    pass
-
-
-def extract_segment_from_meta(general_meta, full_name):
+def extract_segment_from_meta(general_meta, full_name) -> Dict:
+    """
+    Extract the data relevant to the specific read from the all the data available about the raw read.
+    """
     c_reads = general_meta["consensus_reads"]
     segment_data = [(k, v) for k, v in c_reads.items()]
     result = None
@@ -107,11 +49,31 @@ def extract_segment_from_meta(general_meta, full_name):
     return result
 
 
-def extract_barcode(meta):
-    return "NNNN"
+def extract_barcode(general_meta) -> str:
+    """
+    Extract the relevant barcode from the overall metadata
+    """
+    c_reads = general_meta["consensus_reads"]
+    segment_data = [(k, v) for k, v in c_reads.items()]
+    barcodes_full = [x[1]['barcode'] for x in segment_data]
+    barcodes_filtered = [x for x in barcodes_full if x != "NNNN"]
+
+    if len(barcodes_full) == 1:
+        barcode = barcodes_full[0]
+    elif len(barcodes_filtered) == 1:
+        barcode = barcodes_filtered[0]
+    elif len(barcodes_filtered) >2:
+        barcode = "|".join(barcodes_filtered)
+    else:
+        barcode = "NNNN"
+
+    return barcode
 
 
 def extract_partner_locations(general_meta, joiner="|"):
+    """
+    Find the location of all subreads for a given raw read
+    """
     locations = []
     for k, v in general_meta["consensus_reads"].items():
         locations.append(v["alignment_position"])
@@ -120,14 +82,20 @@ def extract_partner_locations(general_meta, joiner="|"):
     return joiner.join(locations)
 
 
-def update_tags(aln, items):
+def update_tags(aln:pysam.AlignedSegment, items:Dict[str,Any]) -> pysam.AlignedSegment:
+    """
+    Update the BAM tags on a read.
+    """
     new_tags = []
     for tag, value in items.items():
         new_tags.append((tag, value))
     aln.tags = aln.tags + new_tags
     return aln
 
-def make_tags(gen_meta, seg_meta, seg_id):
+def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
+    """
+    Given the metadata, create a dict with the tags as key and the corresponding value as value.
+    """
     tags = {}
 
     tags["YC"] = gen_meta["classification"]
@@ -148,6 +116,9 @@ def make_tags(gen_meta, seg_meta, seg_id):
     return tags
 
 def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
+    """
+    Look up the Y tags in the metadata for all reads in a bam.
+    """
     metadata = create_metadata(metadata_json)
     in_bam = pysam.AlignmentFile(in_bam_path, "rb")
     out_bam_file = pysam.AlignmentFile(out_bam_path, "wb", header=in_bam.header)
