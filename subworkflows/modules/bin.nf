@@ -29,11 +29,11 @@ process AnnotateBamXTags{
         path(sequencing_summary)
 
     output:
-        tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
+        tuple val(X), path("${X}.taged.bam"), path("${X}.taged.bam.bai")
 
     script:
         """
-        annotate_bam_x.py $sequencing_summary $bam ${X}.annotated.bam
+        annotate_bam_x.py $sequencing_summary $bam ${X}.taged.bam
         """
 }
 
@@ -42,15 +42,16 @@ process AnnotateBamYTags{
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple val(X), path(bam), path(bai), path(json)
+        tuple val(X), path(bam), path(json)
         
 
     output:
-        tuple val(X), path("${X}.y_tagged.sort.bam"), path("${X}.y_tagged.sort.bam.bai")
+        tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
 
     script:
         """
-        annotate_bam_y.py $json $bam ${X}.y_tagged
+        samtools index $bam
+        annotate_bam_y.py $json $bam ${X}.annotated.bam
         """
 }
 
@@ -171,7 +172,8 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple val(X), path(jsons)
+        val(X)
+        path(jsons)
 
     output:
         path("metadata_plots.html")

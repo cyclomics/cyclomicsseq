@@ -16,15 +16,15 @@ nextflow.enable.dsl = 2
 ========================================================================================
 */
 // ### PARAMETERS
-params.input_read_dir             = "$HOME/Data/raw_data/MAR6252/"
+params.input_read_dir             = ""
 params.read_pattern               = "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
-params.backbone_fasta             = "$HOME/Data/backbones/backbones_db_current_slim.fasta"
+params.backbone_fasta             = ""
 params.backbone_name              = ""
 
 params.region_file                = "auto"
 
-params.reference = "$HOME/Data/references/Homo_sapiens/T2T/chm13v2.0.fa"
+params.reference = ""
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/Data/CyclomicsSeq"
 
@@ -208,11 +208,9 @@ workflow {
 ========================================================================================
 02.    Alignment
 ========================================================================================
-*/
-    // TODO: Annotate the info from the Tidehunter summary eg: AnnotateTidehunterSummary(Minimap2Align.out, )
-    
+*/    
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, CycasConsensus.out.json_id)
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "skip" ) {
@@ -267,7 +265,6 @@ workflow {
 04.    Reporting
 ========================================================================================
 */  
-    println(variant_vcf)
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
