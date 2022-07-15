@@ -49,7 +49,7 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.Sample1.apply(
-                    lambda x: relaxed_float((x.split(":")[i] if (x.split(":")[i]) else 0))
+                    lambda x: self.relaxed_float((x.split(":")[i] if (x.split(":")[i]) else 0))
                 )
         return df
 
