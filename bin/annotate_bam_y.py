@@ -149,8 +149,8 @@ if __name__ == "__main__":
     pore_time_aln = main(args.file_metadata, args.file_bam, intermediate_bam)
 
     # pysam requires pure strings
-    # pysam.sort("-o", str(args.file_out), str(intermediate_bam))
-    # pysam.index(str(args.file_out))
+    pysam.sort("-o", str(args.file_out), str(intermediate_bam))
+    pysam.index(str(args.file_out))
 
 
     # test_metadata = (
