@@ -3,6 +3,7 @@
 import logging
 from collections import Counter, namedtuple
 from pathlib import Path
+import time
 
 import pysam
 from tqdm import tqdm
@@ -328,6 +329,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
             r.samples["Sample1"][fld] = fld_entry
 
         vcf.write(r)
+    time.sleep(0.5)
     vcf.close()
 
 
