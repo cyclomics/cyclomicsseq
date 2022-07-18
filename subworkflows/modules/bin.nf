@@ -43,7 +43,6 @@ process AnnotateBamYTags{
 
     input:
         tuple val(X), path(bam), path(json)
-        
 
     output:
         tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
