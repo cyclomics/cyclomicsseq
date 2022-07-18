@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from datetime import datetime
 from typing import Any, Dict
 import json
 
@@ -119,26 +120,34 @@ def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
     """
     Look up the Y tags in the metadata for all reads in a bam.
     """
+    start_time = datetime.now()
+    
     metadata = create_metadata(metadata_json)
     in_bam = pysam.AlignmentFile(in_bam_path, "rb")
     out_bam_file = pysam.AlignmentFile(out_bam_path, "wb", header=in_bam.header)
-
+    aln_count = 0
+    metadata_count = 0
     for aln in tqdm(in_bam.fetch()):
+        aln_count += 1
         full_name = aln.query_name
         query_name = process_query_name(full_name, split_queryname, "_")
         
         if query_name in metadata:
+            metadata_count += 1
             gen_meta = metadata[query_name]
             seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
             tags = make_tags(gen_meta, seg_meta, seg_id)
             aln = update_tags(aln, tags)
         out_bam_file.write(aln)
 
+    out_bam_file.close()
+    print (f"Added metadata to {metadata_count} alignments out of {aln_count} in {datetime.now() - start_time}")
+    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Process the information in the metadata and add it to the bam."
     )
-
 
     parser.add_argument("file_metadata", type=Path)
     parser.add_argument("file_bam", type=Path)
@@ -146,7 +155,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     intermediate_bam = args.file_bam.with_suffix(".unsorted.bam")
 
-    pore_time_aln = main(args.file_metadata, args.file_bam, intermediate_bam)
+    main(args.file_metadata, args.file_bam, intermediate_bam)
 
     # pysam requires pure strings
     pysam.sort("-o", str(args.file_out), str(intermediate_bam))
@@ -154,10 +163,8 @@ if __name__ == "__main__":
 
 
     # test_metadata = (
-    #     "/home/dami/Software/cycloseq/FAT55666_pass_8a93c5bd_123_filtered.metadata.json"
+    #     "/home/dami/Software/cycloseq/FAT55692_pass_43d236d5_123_filtered.metadata.json"
     # )
-    # test_bam = "/home/dami/Software/cycloseq/FAT55666_pass_8a93c5bd_123_filtered.bam"
+    # test_bam = "/home/dami/Software/cycloseq/FAT55692_pass_43d236d5_123_filtered.annotated.bam"
 
     # main(test_metadata, test_bam, "annotatetest.bam")
-
-
