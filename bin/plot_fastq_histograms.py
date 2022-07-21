@@ -53,7 +53,6 @@ def plot_overall_Q_hist(overall_Q, my_title):
 
 def plot_length_hist(lengths, my_title_len):
     hist, edges = np.histogram(lengths, bins=90)
-    print("hi")
     p = figure(plot_height=500, plot_width=1000, title=my_title_len)
     p.quad(
         top=hist,
@@ -68,7 +67,7 @@ def plot_length_hist(lengths, my_title_len):
     p.x_range.start = 0
 
     p.title.text_font_size = "18pt"
-    p.xaxis.axis_label = "read lenght"
+    p.xaxis.axis_label = "read length"
     p.xaxis.axis_label_text_font_size = "16pt"
     p.yaxis.axis_label = "Count"
     p.yaxis.axis_label_text_font_size = "16pt"
