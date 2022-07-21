@@ -11,16 +11,17 @@ import pysam
 
 HEADER_TO_TAG = defaultdict(lambda: -1)
 
-HEADER_TO_TAG["channel"] = "XC"
-HEADER_TO_TAG["mux"] = "XM"
-HEADER_TO_TAG["start_time"] = "XT"
-HEADER_TO_TAG["duration"] = "XD"
 HEADER_TO_TAG["adapter_duration"] = "XA"
-HEADER_TO_TAG["sequence_length_template"] = "XL"
-HEADER_TO_TAG["mean_qscore_template"] = "XQ"
-HEADER_TO_TAG["median_template"] = "XT"
-HEADER_TO_TAG["mad_template"] = "XM"
+HEADER_TO_TAG["channel"] = "XC"
+HEADER_TO_TAG["duration"] = "XD"
 HEADER_TO_TAG["end_reason"] = "XE"
+HEADER_TO_TAG["sequence_length_template"] = "XL"
+HEADER_TO_TAG["mad_template"] = "XM"
+HEADER_TO_TAG["median_template"] = "XP"
+HEADER_TO_TAG["start_time"] = "XT"
+HEADER_TO_TAG["mean_qscore_template"] = "XQ"
+HEADER_TO_TAG["mux"] = "XX"
+
 
 USED_TAGS = list(HEADER_TO_TAG.keys())
 
