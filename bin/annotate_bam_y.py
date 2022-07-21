@@ -108,7 +108,7 @@ def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
         tags["YI"] = seg_id
 
     if seg_meta:
-        tags["Yt"] = seg_meta["aligned_bases_before_consensus"]
+        tags["YE"] = seg_meta["aligned_bases_before_consensus"]
         tags["YL"] = seg_meta["len"]
         tags["YA"] = seg_meta["alignment_position"]
         tags["YR"] = seg_meta["alignment_orientation"]
