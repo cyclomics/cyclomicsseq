@@ -89,7 +89,7 @@ def extract_nucleotide_count(
                 ym = [x[1] for x in tags if x[0] == "YM"][0]
             except:
                 ym = 0
-                
+
             # collect data on all reads spanning position
             if not pileupread.is_del and not pileupread.is_refskip:
                 nuc = read.query_sequence[readpos]
@@ -428,7 +428,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
 if __name__ == "__main__":
     import argparse
 
-    dev = True
+    dev = False
     if not dev:
         parser = argparse.ArgumentParser(
             description="Process the information in the sequencing summary and add it to the bam."
