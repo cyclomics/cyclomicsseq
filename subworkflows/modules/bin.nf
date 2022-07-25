@@ -158,7 +158,8 @@ process PlotQScores{
         tuple val(Y), path(consensus_pileup)
 
     output:
-        path("${consensus_pileup.simpleName}.html"), path("${consensus_pileup.simpleName}.csv")
+        path("${consensus_pileup.simpleName}.html")
+        path("${consensus_pileup.simpleName}.csv")
     
     script:
         """
