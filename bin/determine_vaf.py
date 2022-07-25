@@ -77,10 +77,19 @@ def extract_nucleotide_count(
         nuc_qual = []
         alt_base_ratio_fwd = 0
         alt_base_ratio_rev = 0
+        ym_ticker = []
+        
 
         for pileupread in pileupcolumn.pileups:
             readpos = pileupread.query_position
             read = pileupread.alignment
+            tags = read.get_tags()
+            # broad try except, as this is not core functionality
+            try:
+                ym = [x[1] for x in tags if x[0] == "YM"][0]
+            except:
+                ym = 0
+                
             # collect data on all reads spanning position
             if not pileupread.is_del and not pileupread.is_refskip:
                 nuc = read.query_sequence[readpos]
@@ -92,6 +101,7 @@ def extract_nucleotide_count(
                     nucs_rev.append(nuc)
                     nuc_qual.append((nuc, qual, "R"))
 
+                ym_ticker.append((nuc, ym))
                 if float(qual) > high_base_quality_cutoff:
                     hc_nucs.append(nuc)
                 quals.append(read.query_qualities[readpos])
@@ -102,7 +112,7 @@ def extract_nucleotide_count(
                         nucs_fwd.append(nuc)
                     else:
                         nucs_rev.append(nuc)
-
+        
         # Calculate metrics
         hc_count = Counter(hc_nucs)
         if len(hc_count.most_common()) > 1:
@@ -139,7 +149,7 @@ def extract_nucleotide_count(
             continue
 
         else:
-
+            
             data_present = counts_mc[0][1] / total
             non_ref_ratio_filtered = 1 - (counts_mc[0][1] / counted_nucs)
 
@@ -155,7 +165,7 @@ def extract_nucleotide_count(
                 alt_base_mean_qual = np.mean(
                     [x[1] for x in nuc_qual if x[0] == alt_base]
                 )
-                # calculate observational ratio
+                # calculate
                 ticker = [x[1] for x in ym_ticker if x[0] == base]
                 alt_ticker = [x[1] for x in ym_ticker if x[0] == alt_base]
                 obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
@@ -188,6 +198,7 @@ def extract_nucleotide_count(
             tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
             # print(test_var)
 
+    
     # create an object to store all gathered data
     var = Variant(
         DP=total if total else 0,
@@ -198,14 +209,27 @@ def extract_nucleotide_count(
         FWDR=alt_base_ratio_fwd if alt_base_ratio_fwd else 0,
         REVC=rev_count if rev_count else 0,
         REVR=alt_base_ratio_rev if alt_base_ratio_rev else 0,
-        TOTC=tot_count if tot_count else 0,
-        TOTR=tot_ratio if tot_ratio else 0,
+        TOTC=tot_count if tot_count else 0  ,
+        TOTR= tot_ratio if tot_ratio else 0 ,
         SAME=(1 if base else 0),
         OBSR=obs_ratio if obs_ratio else 0,
         ABQ=alt_base_mean_qual if alt_base_mean_qual else 0,
-        OBQ=quals_mean if quals_mean else 0,
+        OBQ= quals_mean if quals_mean else 0,
         HCR=hc_ratio if hc_ratio else 0,
     )
+    # print(var)
+    # print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
+    # print(f"found positions {counted_nucs}")
+    # print(f"raw counts: {counts}")
+    # print(f"raw counts fwd: {counts_fwd}")
+    # print(f"raw counts rev: {counts_rev}")
+
+    # print(f"non reference_ratio : {data_present} ({data_present * 100:.2f}%)")
+    # print(
+    #     f"alternative ratio   : {non_ref_ratio_filtered} ({non_ref_ratio_filtered * 100:.2f}%)"
+    # )
+
+    # print(var)
     return (assembly, alleles, var)
 
 
@@ -224,7 +248,7 @@ def initialize_output_vcf(vcf_path, contigs):
     for contig in contigs:
         vcfh.add_meta("contig", items=[("ID", contig)])
 
-    # Add tags to FORMAT in our VCF header
+    # Add GT to FORMAT in our VCF header
     vcfh.add_meta(
         "FORMAT",
         items=[
@@ -397,7 +421,6 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
             r.samples["Sample1"][fld] = fld_entry
 
         vcf.write(r)
-    # give system time to write, caused some issues in the past
     time.sleep(0.5)
     vcf.close()
 
@@ -405,7 +428,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(
             description="Process the information in the sequencing summary and add it to the bam."
