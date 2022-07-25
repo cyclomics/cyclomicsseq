@@ -77,7 +77,6 @@ def extract_nucleotide_count(
         nuc_qual = []
         alt_base_ratio_fwd = 0
         alt_base_ratio_rev = 0
-        ym_ticker = []
 
         for pileupread in pileupcolumn.pileups:
             readpos = pileupread.query_position
@@ -93,7 +92,6 @@ def extract_nucleotide_count(
                     nucs_rev.append(nuc)
                     nuc_qual.append((nuc, qual, "R"))
 
-                ym_ticker.append((nuc, ym))
                 if float(qual) > high_base_quality_cutoff:
                     hc_nucs.append(nuc)
                 quals.append(read.query_qualities[readpos])
