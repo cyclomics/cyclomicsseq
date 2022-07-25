@@ -7,6 +7,7 @@ import time
 
 import pysam
 from tqdm import tqdm
+import numpy as np
 
 
 def is_intable(value):
@@ -31,7 +32,13 @@ def create_bed_positions(bed_file):
 
 
 def extract_nucleotide_count(
-    bam, assembly, pos, pileup_depth, minimum_base_quality=10, add_dels=False
+    bam,
+    assembly,
+    pos,
+    pileup_depth,
+    minimum_base_quality=10,
+    add_dels=False,
+    high_base_quality_cutoff=80,
 ):
     tags = [
         "DP",
@@ -45,49 +52,72 @@ def extract_nucleotide_count(
         "TOTC",
         "TOTR",
         "SAME",
+        "OBSR",
+        "ABQ",
+        "OBQ",
+        "HCR",
     ]
     Variant = namedtuple("Variant", tags)
-
-    data_present = 0
-    alt_base_fwd = None
-    fwd_count = 0
-    alt_base_ratio_fwd = 0
-    alt_base_rev = None
-    rev_count = 0
-    alt_base_ratio_rev = 0
     alleles = (".", ".")
-    non_ref_ratio_filtered = 1
-    total = 0
-    base = None
-    counted_nucs = 0
 
-    for pileupcolumn in bam.pileup(
+    positional_generator = bam.pileup(
         assembly,
         pos,
         pos + 1,
         truncate=True,
         max_depth=pileup_depth,
         min_base_quality=minimum_base_quality,
-    ):
+    )
+    for pileupcolumn in positional_generator:
+        # all kinds of counters
         nucs_fwd = []
         nucs_rev = []
+        quals = []
+        hc_nucs = []
+        nuc_qual = []
         alt_base_ratio_fwd = 0
         alt_base_ratio_rev = 0
+        ym_ticker = []
+
         for pileupread in pileupcolumn.pileups:
+            readpos = pileupread.query_position
+            read = pileupread.alignment
+            # collect data on all reads spanning position
             if not pileupread.is_del and not pileupread.is_refskip:
-                nuc = pileupread.alignment.query_sequence[pileupread.query_position]
-                if pileupread.alignment.is_forward:
+                nuc = read.query_sequence[readpos]
+                qual = read.query_qualities[readpos]
+                if read.is_forward:
                     nucs_fwd.append(nuc)
+                    nuc_qual.append((nuc, qual, "F"))
                 else:
                     nucs_rev.append(nuc)
+                    nuc_qual.append((nuc, qual, "R"))
 
+                ym_ticker.append((nuc, ym))
+                if float(qual) > high_base_quality_cutoff:
+                    hc_nucs.append(nuc)
+                quals.append(read.query_qualities[readpos])
             else:
                 if add_dels:
                     nuc = "-"
-                    if pileupread.alignment.is_forward:
+                    if read.is_forward:
                         nucs_fwd.append(nuc)
                     else:
                         nucs_rev.append(nuc)
+        
+        # Calculate metrics
+        hc_count = Counter(hc_nucs)
+        if len(hc_count.most_common()) > 1:
+            hc_ratio = (
+                1
+                / sum([x[1] for x in hc_count.most_common()])
+                * hc_count.most_common()[1][1]
+            )
+        else:
+            hc_ratio = 0
+
+        total = pileupcolumn.n
+        quals_mean = np.mean(qual)
 
         nucs = nucs_fwd + nucs_rev
         counts_fwd, counts_rev, counts = (
@@ -95,48 +125,57 @@ def extract_nucleotide_count(
             Counter(nucs_rev),
             Counter(nucs),
         )
+        counts_fwd_mc, counts_rev_mc, counts_mc = (
+            counts_fwd.most_common(),
+            counts_rev.most_common(),
+            counts.most_common(),
+        )
 
-        counted_nucs = sum([x[1] for x in counts.most_common()])
-        counted_nucs_fwd = sum([x[1] for x in counts_fwd.most_common()])
-        counted_nucs_rev = sum([x[1] for x in counts_rev.most_common()])
-
-        total = pileupcolumn.n
+        # access counts to calc totals
+        counted_nucs = sum([x[1] for x in counts_mc])
+        counted_nucs_fwd = sum([x[1] for x in counts_fwd_mc])
+        counted_nucs_rev = sum([x[1] for x in counts_rev_mc])
 
         # empty position:
-        if counted_nucs == 0:
+        if counted_nucs == 0 or total == 0:
             continue
 
         else:
-            if total > 0 and len(counts.most_common()) > 0:
-                data_present = counts.most_common()[0][1] / total
-            else:
-                data_present = 0
+            
+            data_present = counts_mc[0][1] / total
+            non_ref_ratio_filtered = 1 - (counts_mc[0][1] / counted_nucs)
 
-            if counted_nucs > 0:
-                non_ref_ratio_filtered = 1 - (counts.most_common()[0][1] / counted_nucs)
-            else:
-                non_ref_ratio_filtered = 1
-
-            if len(counts.most_common()) > 1:
-                alleles = (counts.most_common()[0][0], counts.most_common()[1][0])
-            elif len(counts.most_common()) == 1:
+            if len(counts_mc) == 1:
                 # perfect positions
-                alleles = (counts.most_common()[0][0], ".")
-            else:
-                alleles = (".", ".")
+                alleles = (counts_mc[0][0], ".")
+                alt_base_mean_qual = 0
 
-            if len(counts_fwd.most_common()) > 1:
-                alt_base_fwd = counts_fwd.most_common()[1][0]
-                fwd_count = counts_fwd.most_common()[1][1]
+            else:
+                alleles = (counts_mc[0][0], counts_mc[1][0])
+                base = counts_mc[0][0]
+                alt_base = counts_mc[1][0]
+                alt_base_mean_qual = np.mean(
+                    [x[1] for x in nuc_qual if x[0] == alt_base]
+                )
+                # calculate observational ratio
+                ticker = [x[1] for x in ym_ticker if x[0] == base]
+                alt_ticker = [x[1] for x in ym_ticker if x[0] == alt_base]
+                obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
+
+            # Check support fwd
+            if len(counts_fwd_mc) > 1:
+                alt_base_fwd = counts_fwd_mc[1][0]
+                fwd_count = counts_fwd_mc[1][1]
                 alt_base_ratio_fwd = fwd_count / counted_nucs_fwd
             else:
                 alt_base_fwd = None
                 fwd_count = 0
                 alt_base_ratio_fwd = 0
 
-            if len(counts_rev.most_common()) > 1:
-                alt_base_rev = counts_rev.most_common()[1][0]
-                rev_count = counts_rev.most_common()[1][1]
+            # Check support reverse
+            if len(counts_rev_mc) > 1:
+                alt_base_rev = counts_rev_mc[1][0]
+                rev_count = counts_rev_mc[1][1]
                 alt_base_ratio_rev = rev_count / counted_nucs_rev
             else:
                 alt_base_rev = None
@@ -147,33 +186,29 @@ def extract_nucleotide_count(
             if alt_base_fwd == alt_base_rev and alt_base_fwd:
                 base = alt_base_fwd
 
-        # create an object to store all gathered data
+            tot_count = fwd_count + rev_count
+            tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
+            # print(test_var)
+
+    
+    # create an object to store all gathered data
     var = Variant(
-        DP=total,
-        DPQ=counted_nucs,
-        FREQ=data_present,
-        VAF=non_ref_ratio_filtered,
-        FWDC=fwd_count,
-        FWDR=alt_base_ratio_fwd,
-        REVC=rev_count,
-        REVR=alt_base_ratio_rev,
-        TOTC="",
-        TOTR="",
+        DP=total if total else 0,
+        DPQ=counted_nucs if counted_nucs else 0,
+        FREQ=data_present if data_present else 0,
+        VAF=non_ref_ratio_filtered if non_ref_ratio_filtered else 0,
+        FWDC=fwd_count if fwd_count else 0,
+        FWDR=alt_base_ratio_fwd if alt_base_ratio_fwd else 0,
+        REVC=rev_count if rev_count else 0,
+        REVR=alt_base_ratio_rev if alt_base_ratio_rev else 0,
+        TOTC=tot_count if tot_count else 0  ,
+        TOTR= tot_ratio if tot_ratio else 0 ,
         SAME=(1 if base else 0),
+        OBSR=obs_ratio if obs_ratio else 0,
+        ABQ=alt_base_mean_qual if alt_base_mean_qual else 0,
+        OBQ= quals_mean if quals_mean else 0,
+        HCR=hc_ratio if hc_ratio else 0,
     )
-    # print(var)
-    # print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
-    # print(f"found positions {counted_nucs}")
-    # print(f"raw counts: {counts}")
-    # print(f"raw counts fwd: {counts_fwd}")
-    # print(f"raw counts rev: {counts_rev}")
-
-    # print(f"non reference_ratio : {data_present} ({data_present * 100:.2f}%)")
-    # print(
-    #     f"alternative ratio   : {non_ref_ratio_filtered} ({non_ref_ratio_filtered * 100:.2f}%)"
-    # )
-
-    # print(var)
     return (assembly, alleles, var)
 
 
@@ -192,7 +227,7 @@ def initialize_output_vcf(vcf_path, contigs):
     for contig in contigs:
         vcfh.add_meta("contig", items=[("ID", contig)])
 
-    # Add GT to FORMAT in our VCF header
+    # Add tags to FORMAT in our VCF header
     vcfh.add_meta(
         "FORMAT",
         items=[
@@ -295,6 +330,42 @@ def initialize_output_vcf(vcf_path, contigs):
             ("Description", "Same base found forward and reverse"),
         ],
     )
+    vcfh.add_meta(
+        "FORMAT",
+        items=[
+            ("ID", "OBSR"),
+            ("Number", 1),
+            ("Type", "String"),
+            ("Description", "observational ratio of alternative allele"),
+        ],
+    )
+    vcfh.add_meta(
+        "FORMAT",
+        items=[
+            ("ID", "ABQ"),
+            ("Number", 1),
+            ("Type", "String"),
+            ("Description", "alternative base quality (mean)"),
+        ],
+    )
+    vcfh.add_meta(
+        "FORMAT",
+        items=[
+            ("ID", "OBQ"),
+            ("Number", 1),
+            ("Type", "String"),
+            ("Description", "overall base quality (mean)"),
+        ],
+    )
+    vcfh.add_meta(
+        "FORMAT",
+        items=[
+            ("ID", "HCR"),
+            ("Number", 1),
+            ("Type", "String"),
+            ("Description", "high quality ratio"),
+        ],
+    )
 
     vcf = pysam.VariantFile(vcf_path, "w", header=vcfh)
     return vcf
@@ -320,7 +391,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
         for fld in result[2]._fields:
             fld_value = getattr(result[2], fld)
             if type(fld_value) == float:
-                fld_entry = str(f"{getattr(result[2], fld):.4f}")
+                fld_entry = str(f"{getattr(result[2], fld):.6f}")
             elif type(fld_value) == int:
                 fld_entry = str(f"{getattr(result[2], fld)}")
             else:
@@ -329,6 +400,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
             r.samples["Sample1"][fld] = fld_entry
 
         vcf.write(r)
+    # give system time to write, caused some issues in the past
     time.sleep(0.5)
     vcf.close()
 
@@ -352,10 +424,6 @@ if __name__ == "__main__":
 
     if dev:
         # bed = Path("dilution_series_expected_mutations.bed")
-        bed = Path(
-            "/media/dami/cyclomics_003/raw_data/ONT/PNK_05_Rob/variant_locations/real_variants_chm13-v2_0_panels.bed"
-        )
-        bam = Path(
-            "/media/dami/cyclomics_003/results/ONT/PNK_01_rob/Annotate/AnnotateBamXTags/FAS16079.annotated.bam"
-        )
+        bed = Path("/home/dami/projects/variantcalling/depth/TP53_S0.bed")
+        bam = Path("/home/dami/Data/dev/000016/FAT55661.YM_gt_5.bam")
         main(bam, bed, "tmp.vcf")
