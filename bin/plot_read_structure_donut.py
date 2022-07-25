@@ -226,7 +226,7 @@ def create_readtype_donuts(
             plot_width=donut_plot_width,
             title=subtitle,
             tools="hover",
-            tooltips=[("type:", "@type"),("count:", "@count"), ("%", "@percentage")],
+            tooltips=[("type:", "@type"), ("count:", "@count"), ("%", "@percentage")],
             x_range=donut_plot_x_range,
             y_range=donut_plot_y_range,
             toolbar_location=None,
@@ -248,15 +248,21 @@ def create_readtype_donuts(
         # mask all % below 2%
         data["percentage"] = data["percentage"].mask(data["percentage"] < 2)
         # format to 1 decimal
-        data["percentage"] = data['percentage'].map('{:,.1f}%'.format)
+        data["percentage"] = data["percentage"].map("{:,.1f}%".format)
         # remove nan string
-        data["percentage"] = data["percentage"].replace(['nan%'], '')
+        data["percentage"] = data["percentage"].replace(["nan%"], "")
         # padd to appear in right place
-        data["percentage"] = data["percentage"].str.pad(18, side = "left")
+        data["percentage"] = data["percentage"].str.pad(18, side="left")
         source = ColumnDataSource(data)
 
-        labels = LabelSet(x=0, y=1, text='percentage',
-        angle=cumsum('angle', include_zero=True), source=source, render_mode='canvas')
+        labels = LabelSet(
+            x=0,
+            y=1,
+            text="percentage",
+            angle=cumsum("angle", include_zero=True),
+            source=source,
+            render_mode="canvas",
+        )
 
         donut_plot.add_layout(labels)
 

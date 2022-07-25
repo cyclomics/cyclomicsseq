@@ -18,7 +18,7 @@ class VCF_file:
             float(x)
         except ValueError:
             return float(0)
-            
+
     def read_vcf(self, path):
         with open(path, "r") as f:
             header = []
@@ -49,7 +49,9 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.Sample1.apply(
-                    lambda x: self.relaxed_float((x.split(":")[i] if (x.split(":")[i]) else 0))
+                    lambda x: self.relaxed_float(
+                        (x.split(":")[i] if (x.split(":")[i]) else 0)
+                    )
                 )
         return df
 

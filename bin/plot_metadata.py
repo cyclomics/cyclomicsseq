@@ -17,34 +17,35 @@ from bokeh.models import LabelSet, ColumnDataSource
 
 
 concat_type_colors = {
-        "BB-I": "DodgerBlue",  # perfect
-        "BB-only": "Crimson",  # waste
-        "I-only": "MediumSlateBlue",  # informing but missing barcode
-        "Unmapped": "Gray",  # waste
-        "mBB-only": "Tomato",  # waste
-        "mI-only": "DarkOrchid",  # informing but missing barcode
-        "BB-mI": "RoyalBlue",  # OK
-        "mBB-I": "Navi",  # OK
-        "mBB-mI": "SkyBlue",  # OK
-        "Unknown": "Gold",  # Waste
-    }
+    "BB-I": "DodgerBlue",  # perfect
+    "BB-only": "Crimson",  # waste
+    "I-only": "MediumSlateBlue",  # informing but missing barcode
+    "Unmapped": "Gray",  # waste
+    "mBB-only": "Tomato",  # waste
+    "mI-only": "DarkOrchid",  # informing but missing barcode
+    "BB-mI": "RoyalBlue",  # OK
+    "mBB-I": "Navi",  # OK
+    "mBB-mI": "SkyBlue",  # OK
+    "Unknown": "Gold",  # Waste
+}
 cycas_class_mapper = {
-    "BackboneInsert" : concat_type_colors["BB-I"],
-    "SingleBackbone" : concat_type_colors["BB-only"],
-    "Unkown" : concat_type_colors["Unknown"],
-    "SingleInsert" : concat_type_colors["I-only"],
-    "BackboneDoubleInsert" : concat_type_colors["BB-mI"],
+    "BackboneInsert": concat_type_colors["BB-I"],
+    "SingleBackbone": concat_type_colors["BB-only"],
+    "Unkown": concat_type_colors["Unknown"],
+    "SingleInsert": concat_type_colors["I-only"],
+    "BackboneDoubleInsert": concat_type_colors["BB-mI"],
 }
 
+
 def _calculate_angle_and_color(stats, concat_type_colors):
-        _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
-        _df1.columns = ["type", "count"]
-        _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
-        _df1["percentage"] = _df1["count"] / _df1["count"].sum() * 100
-        _df1["color"] = _df1.type.map(lambda x: concat_type_colors[x])
+    _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
+    _df1.columns = ["type", "count"]
+    _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
+    _df1["percentage"] = _df1["count"] / _df1["count"].sum() * 100
+    _df1["color"] = _df1.type.map(lambda x: concat_type_colors[x])
 
+    return _df1
 
-        return _df1
 
 def _plot_donut(
     data,
@@ -62,7 +63,7 @@ def _plot_donut(
         plot_width=donut_plot_width,
         title=subtitle,
         tools="hover",
-        tooltips=[("type:", "@type"),("count:", "@count"), ("%", "@percentage")],
+        tooltips=[("type:", "@type"), ("count:", "@count"), ("%", "@percentage")],
         x_range=donut_plot_x_range,
         y_range=donut_plot_y_range,
         toolbar_location=None,
@@ -84,15 +85,21 @@ def _plot_donut(
     # mask all % below 2%
     data["percentage"] = data["percentage"].mask(data["percentage"] < 2)
     # format to 1 decimal
-    data["percentage"] = data['percentage'].map('{:,.1f}%'.format)
+    data["percentage"] = data["percentage"].map("{:,.1f}%".format)
     # remove nan string
-    data["percentage"] = data["percentage"].replace(['nan%'], '')
+    data["percentage"] = data["percentage"].replace(["nan%"], "")
     # padd to appear in right place
-    data["percentage"] = data["percentage"].str.pad(18, side = "left")
+    data["percentage"] = data["percentage"].str.pad(18, side="left")
     source = ColumnDataSource(data)
 
-    labels = LabelSet(x=0, y=1, text='percentage',
-    angle=cumsum('angle', include_zero=True), source=source, render_mode='canvas')
+    labels = LabelSet(
+        x=0,
+        y=1,
+        text="percentage",
+        angle=cumsum("angle", include_zero=True),
+        source=source,
+        render_mode="canvas",
+    )
 
     donut_plot.add_layout(labels)
     # remove chart elements
@@ -101,7 +108,7 @@ def _plot_donut(
     donut_plot.grid.grid_line_color = None
     donut_plot.title.text_font_size = "16pt"
     return donut_plot
-    
+
 
 def read_jsons_into_plots(json_folder, plot_file):
     alignment_ratio = []
@@ -127,7 +134,7 @@ def read_jsons_into_plots(json_folder, plot_file):
                 raw_len = data["raw_length"]
                 segment = data["alignment_count"]
                 classification = data["classification"]
-                
+
                 repeat_data.append((raw_len, segment))
                 raw_lens.append(raw_len)
                 segments.append(segment)
@@ -159,7 +166,6 @@ def read_jsons_into_plots(json_folder, plot_file):
     p2.yaxis.axis_label_text_font_size = "16pt"
     p2.xaxis.major_label_text_font_size = "12pt"
     p2.yaxis.major_label_text_font_size = "12pt"
-    
 
     classification_count = Counter(classifications)
     _df1 = _calculate_angle_and_color(classification_count, cycas_class_mapper)

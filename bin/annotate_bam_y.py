@@ -10,7 +10,6 @@ from tqdm import tqdm
 import pysam
 
 
-
 def process_query_name(name, split_queryname=True, splitter="_"):
     """
     Split a string called name if split_queryname is True based on the splitter provided
@@ -56,14 +55,14 @@ def extract_barcode(general_meta) -> str:
     """
     c_reads = general_meta["consensus_reads"]
     segment_data = [(k, v) for k, v in c_reads.items()]
-    barcodes_full = [x[1]['barcode'] for x in segment_data]
+    barcodes_full = [x[1]["barcode"] for x in segment_data]
     barcodes_filtered = [x for x in barcodes_full if x != "NNNN"]
 
     if len(barcodes_full) == 1:
         barcode = barcodes_full[0]
     elif len(barcodes_filtered) == 1:
         barcode = barcodes_filtered[0]
-    elif len(barcodes_filtered) >2:
+    elif len(barcodes_filtered) > 2:
         barcode = "|".join(barcodes_filtered)
     else:
         barcode = "NNNN"
@@ -83,7 +82,9 @@ def extract_partner_locations(general_meta, joiner="|"):
     return joiner.join(locations)
 
 
-def update_tags(aln:pysam.AlignedSegment, items:Dict[str,Any]) -> pysam.AlignedSegment:
+def update_tags(
+    aln: pysam.AlignedSegment, items: Dict[str, Any]
+) -> pysam.AlignedSegment:
     """
     Update the BAM tags on a read.
     """
@@ -92,6 +93,7 @@ def update_tags(aln:pysam.AlignedSegment, items:Dict[str,Any]) -> pysam.AlignedS
         new_tags.append((tag, value))
     aln.tags = aln.tags + new_tags
     return aln
+
 
 def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
     """
@@ -116,12 +118,13 @@ def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
 
     return tags
 
+
 def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
     """
     Look up the Y tags in the metadata for all reads in a bam.
     """
     start_time = datetime.now()
-    
+
     metadata = create_metadata(metadata_json)
     in_bam = pysam.AlignmentFile(in_bam_path, "rb")
     out_bam_file = pysam.AlignmentFile(out_bam_path, "wb", header=in_bam.header)
@@ -131,7 +134,7 @@ def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
         aln_count += 1
         full_name = aln.query_name
         query_name = process_query_name(full_name, split_queryname, "_")
-        
+
         if query_name in metadata:
             metadata_count += 1
             gen_meta = metadata[query_name]
@@ -141,8 +144,10 @@ def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
         out_bam_file.write(aln)
 
     out_bam_file.close()
-    print (f"Added metadata to {metadata_count} alignments out of {aln_count} in {datetime.now() - start_time}")
-    
+    print(
+        f"Added metadata to {metadata_count} alignments out of {aln_count} in {datetime.now() - start_time}"
+    )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -160,7 +165,6 @@ if __name__ == "__main__":
     # pysam requires pure strings
     pysam.sort("-o", str(args.file_out), str(intermediate_bam))
     pysam.index(str(args.file_out))
-
 
     # test_metadata = (
     #     "/home/dami/Software/cycloseq/FAT55692_pass_43d236d5_123_filtered.metadata.json"

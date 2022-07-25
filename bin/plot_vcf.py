@@ -59,7 +59,7 @@ def read_vcf(path):
         },
         sep="\t",
     ).rename(columns={"#CHROM": "CHROM"})
-    
+
     if df.empty:
         return df
 
@@ -166,7 +166,7 @@ def main(vcf_file, plot_file):
         f.write("<h1>No variants found</h1>")
         f.close()
         return
-    
+
     roi = get_roi_pileup_df(data)
     # print(data)
     plot = make_scatter_plots(data, roi)

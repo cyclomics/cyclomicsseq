@@ -104,7 +104,7 @@ def extract_nucleotide_count(
                         nucs_fwd.append(nuc)
                     else:
                         nucs_rev.append(nuc)
-        
+
         # Calculate metrics
         hc_count = Counter(hc_nucs)
         if len(hc_count.most_common()) > 1:
@@ -141,7 +141,7 @@ def extract_nucleotide_count(
             continue
 
         else:
-            
+
             data_present = counts_mc[0][1] / total
             non_ref_ratio_filtered = 1 - (counts_mc[0][1] / counted_nucs)
 
@@ -190,7 +190,6 @@ def extract_nucleotide_count(
             tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
             # print(test_var)
 
-    
     # create an object to store all gathered data
     var = Variant(
         DP=total if total else 0,
@@ -201,12 +200,12 @@ def extract_nucleotide_count(
         FWDR=alt_base_ratio_fwd if alt_base_ratio_fwd else 0,
         REVC=rev_count if rev_count else 0,
         REVR=alt_base_ratio_rev if alt_base_ratio_rev else 0,
-        TOTC=tot_count if tot_count else 0  ,
-        TOTR= tot_ratio if tot_ratio else 0 ,
+        TOTC=tot_count if tot_count else 0,
+        TOTR=tot_ratio if tot_ratio else 0,
         SAME=(1 if base else 0),
         OBSR=obs_ratio if obs_ratio else 0,
         ABQ=alt_base_mean_qual if alt_base_mean_qual else 0,
-        OBQ= quals_mean if quals_mean else 0,
+        OBQ=quals_mean if quals_mean else 0,
         HCR=hc_ratio if hc_ratio else 0,
     )
     return (assembly, alleles, var)
