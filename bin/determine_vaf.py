@@ -450,7 +450,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
 if __name__ == "__main__":
     import argparse
 
-    dev = True
+    dev = False
     if not dev:
         parser = argparse.ArgumentParser(
             description="Process the information in the sequencing summary and add it to the bam."
