@@ -4,6 +4,7 @@
 import math
 from collections import Counter
 from typing import List, Tuple
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -361,7 +362,7 @@ def plot_compare_accuracy(
     return column(*plots)
 
 
-def make_qscore_scatter(df1, df2):
+def make_qscore_scatter(df1, df2, csv_merge=None):
     print("make_qscore_scatter)")
     pre = df1[["CHROM", "POS", "Q"]]
     post = df2[["CHROM", "POS", "Q"]]
@@ -369,6 +370,8 @@ def make_qscore_scatter(df1, df2):
     df_merge = pd.merge(
         pre, post, how="left", left_on=["CHROM", "POS"], right_on=["CHROM", "POS"]
     )
+    if csv_merge:
+        df_merge.to_csv(csv_merge)
 
     q_scatter = figure(title=f"Q score scatter, variant unaware.", width=1500)
     q_scatter.xaxis.axis_label = "ONT Q score"
@@ -399,7 +402,7 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     roi = get_roi_pileup_df(df1)
 
     positional_accuracy = plot_compare_accuracy(roi, [df1, df2])
-    q_score_plot = make_qscore_scatter(df1, df2)
+    q_score_plot = make_qscore_scatter(df1, df2, output_plot_file.with_suffix(".csv"))
 
     output_file(output_plot_file, title="Cyclomics accuracy")
     save(column([q_score_plot, positional_accuracy]))
@@ -413,16 +416,17 @@ if __name__ == "__main__":
         description="Create hist plot from a regex for fastq and fastq.gz files."
     )
 
-    parser.add_argument("pileup_split")
-    parser.add_argument("pileup_consensus")
-    parser.add_argument("output")
+    parser.add_argument("pileup_split", type=Path)
+    parser.add_argument("pileup_consensus", type=Path)
+    parser.add_argument("output", type=Path)
 
     args = parser.parse_args()
     main(args.pileup_split, args.pileup_consensus, args.output)
 
-    # pileup_split = '/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/work/9c/1793ed932d613a9e65320558e8fdf9/splibams_merged.pileup'
-    # pileup_cons = '/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/work/9c/1793ed932d613a9e65320558e8fdf9/FAS37222.pileup'
-    # main(pileup_split, pileup_cons, 'testQ.html')
+    # pileup_split = Path('/home/dami/Data/dev/000010_5/split.tsv')
+    # pileup_cons = Path('/home/dami/Data/dev/000010_5/consensus.tsv')
+    # output = Path('testQ.html')
+    # main(pileup_split, pileup_cons, output)
 
     # df1 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test_split.tsv')
     # df2 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test.tsv')
