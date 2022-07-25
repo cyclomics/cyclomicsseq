@@ -158,11 +158,10 @@ process PlotQScores{
         tuple val(Y), path(consensus_pileup)
 
     output:
-        path("${consensus_pileup.simpleName}.html")
+        path("${consensus_pileup.simpleName}.html"), path("${consensus_pileup.simpleName}.csv")
     
     script:
         """
-        
         plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
         """
 }
