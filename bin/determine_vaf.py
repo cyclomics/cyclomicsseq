@@ -126,7 +126,7 @@ def extract_nucleotide_count(
                 ym_ticker.append((nuc, ym))
                 if float(qual) > high_base_quality_cutoff:
                     hc_nucs.append(nuc)
-                quals.append(read.query_qualities[readpos])
+                quals.append(qual)
             else:
                 if add_dels:
                     nuc = "-"
@@ -147,7 +147,7 @@ def extract_nucleotide_count(
             hc_ratio = 0
 
         total = pileupcolumn.n
-        quals_mean = np.mean(qual)
+        quals_mean = np.mean(quals)
 
         nucs = nucs_fwd + nucs_rev
         counts_fwd, counts_rev, counts = (
@@ -433,7 +433,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
         )
         for fld in result[2]._fields:
             fld_value = getattr(result[2], fld)
-            if type(fld_value) == float:
+            if type(fld_value) in [float, np.float64, np.float32]:
                 fld_entry = str(f"{getattr(result[2], fld):.6f}")
             elif type(fld_value) == int:
                 fld_entry = str(f"{getattr(result[2], fld)}")
@@ -450,7 +450,7 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(
             description="Process the information in the sequencing summary and add it to the bam."
