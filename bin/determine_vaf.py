@@ -24,7 +24,13 @@ def is_intable(value):
 def create_bed_positions(bed_file):
     with open(bed_file) as f:
         for line in f:
+            # bed should be tab delimited
             L = line.strip().split("\t")
+            # try space splitting
+            if len(L) == 1:
+                L = L[0].split(" ")
+                L = [x for x in L if x]
+
             if not is_intable(L[2]):
                 logging.critical("error in bed file")
             for pos in range(int(L[1]), int(L[2])):
@@ -60,15 +66,31 @@ def extract_nucleotide_count(
     Variant = namedtuple("Variant", tags)
     alleles = (".", ".")
 
-    positional_generator = bam.pileup(
+    total = 0
+    counted_nucs = 0
+    data_present = 0
+    non_ref_ratio_filtered = 0
+    fwd_count = 0
+    alt_base_ratio_fwd = 0
+    rev_count = 0
+    alt_base_ratio_rev = 0
+    tot_count = 0
+    tot_ratio = 0
+    obs_ratio = 0
+    alt_base_mean_qual = 0
+    quals_mean = 0
+    hc_ratio = 0
+    base = None
+
+    
+    for pileupcolumn in bam.pileup(
         assembly,
         pos,
         pos + 1,
         truncate=True,
         max_depth=pileup_depth,
         min_base_quality=minimum_base_quality,
-    )
-    for pileupcolumn in positional_generator:
+    ):
         # all kinds of counters
         nucs_fwd = []
         nucs_rev = []
@@ -198,24 +220,24 @@ def extract_nucleotide_count(
             tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
             # print(test_var)
 
-    
+
     # create an object to store all gathered data
     var = Variant(
-        DP=total if total else 0,
-        DPQ=counted_nucs if counted_nucs else 0,
-        FREQ=data_present if data_present else 0,
-        VAF=non_ref_ratio_filtered if non_ref_ratio_filtered else 0,
-        FWDC=fwd_count if fwd_count else 0,
-        FWDR=alt_base_ratio_fwd if alt_base_ratio_fwd else 0,
-        REVC=rev_count if rev_count else 0,
-        REVR=alt_base_ratio_rev if alt_base_ratio_rev else 0,
-        TOTC=tot_count if tot_count else 0  ,
-        TOTR= tot_ratio if tot_ratio else 0 ,
-        SAME=(1 if base else 0),
-        OBSR=obs_ratio if obs_ratio else 0,
-        ABQ=alt_base_mean_qual if alt_base_mean_qual else 0,
-        OBQ= quals_mean if quals_mean else 0,
-        HCR=hc_ratio if hc_ratio else 0,
+        DP=total ,
+        DPQ=counted_nucs ,
+        FREQ=data_present ,
+        VAF=non_ref_ratio_filtered ,
+        FWDC=fwd_count ,
+        FWDR=alt_base_ratio_fwd ,
+        REVC=rev_count ,
+        REVR=alt_base_ratio_rev ,
+        TOTC=tot_count   ,
+        TOTR= tot_ratio  ,
+        SAME=(1 if base else  0),
+        OBSR=obs_ratio ,
+        ABQ=alt_base_mean_qual ,
+        OBQ= quals_mean ,
+        HCR=hc_ratio ,
     )
     # print(var)
     # print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
@@ -444,6 +466,12 @@ if __name__ == "__main__":
 
     if dev:
         # bed = Path("dilution_series_expected_mutations.bed")
-        bed = Path("/home/dami/projects/variantcalling/depth/TP53_S0.bed")
-        bam = Path("/home/dami/Data/dev/000016/FAT55661.YM_gt_5.bam")
+        # TP53
+        # bed = Path("/home/dami/projects/variantcalling/depth/TP53_S0.bed")
+        # bam = Path("/home/dami/Data/dev/000016/FAT55661.YM_gt_5.bam")
+
+        # PNK
+        bed = Path("/home/dami/projects/variantcalling/depth/PNK_region.bed")
+        bam = Path("/home/dami/Data/dev/ROB_pnk/FAS12639.YM_gt_3.bam")
+
         main(bam, bed, "tmp.vcf")
