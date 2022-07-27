@@ -16,6 +16,7 @@ from bokeh.plotting import figure
 from bokeh.transform import cumsum
 from bokeh.layouts import row, column
 from bokeh.models import Div, ColumnDataSource
+from bokeh.models import LabelSet, ColumnDataSource
 
 
 def _bam_to_df(bam, chr=None, start=None, stop=None):
@@ -204,6 +205,7 @@ def create_readtype_donuts(
         _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
         _df1.columns = ["type", "count"]
         _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
+        _df1["percentage"] = _df1["count"] / _df1["count"].sum() * 100
         _df1["color"] = _df1.type.map(lambda x: concat_type_colors[x])
 
         return _df1
@@ -224,7 +226,7 @@ def create_readtype_donuts(
             plot_width=donut_plot_width,
             title=subtitle,
             tools="hover",
-            tooltips="@type: @count",
+            tooltips=[("type:", "@type"), ("count:", "@count"), ("%", "@percentage")],
             x_range=donut_plot_x_range,
             y_range=donut_plot_y_range,
             toolbar_location=None,
@@ -243,6 +245,26 @@ def create_readtype_donuts(
             legend_group="type",
             source=data,
         )
+        # mask all % below 2%
+        data["percentage"] = data["percentage"].mask(data["percentage"] < 2)
+        # format to 1 decimal
+        data["percentage"] = data["percentage"].map("{:,.1f}%".format)
+        # remove nan string
+        data["percentage"] = data["percentage"].replace(["nan%"], "")
+        # padd to appear in right place
+        data["percentage"] = data["percentage"].str.pad(18, side="left")
+        source = ColumnDataSource(data)
+
+        labels = LabelSet(
+            x=0,
+            y=1,
+            text="percentage",
+            angle=cumsum("angle", include_zero=True),
+            source=source,
+            render_mode="canvas",
+        )
+
+        donut_plot.add_layout(labels)
 
         # remove chart elements
         donut_plot.axis.axis_label = None
@@ -311,7 +333,5 @@ if __name__ == "__main__":
         "Read structure by both read and base count by chromosomal presence per readname",
     )
 
-    # split_bam = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics/000010_dev/PostQC/SamtoolsMergeBams/splibams_merged.merged.bam"
-    # output_file_name = "tmp.html"
-    # title = "my title"
+    # split_bam = "/media/dami/cyclomics_003/results/Cyclomics/000012_v4/CycasConsensus/Minimap2AlignAdaptiveParameterized/fastq_runid_4a99bd39c5b5f3262fd50fdb53e15f99baef4b0c_153_0_filtered.bam"
     # main(split_bam, "assem.html", 'assem count', "Donuts.html", 'Donut plot 123')

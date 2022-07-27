@@ -38,7 +38,8 @@ params.extra_haplotyping    = "skip"
 params.report               = "yes"
 params.quick_results        = false
 
-
+// Pipeline performance metrics
+params.min_repeat_count = 3
 
 // ### Printout for user
 log.info """
@@ -84,7 +85,7 @@ include {
 
 include {
     Minimap2Align
-    Annotate
+    AnnotateFilter
     PrepareGenome
 } from "./subworkflows/align"
 
@@ -112,10 +113,17 @@ workflow {
     */
     // check environments
     if (params.region_file != "auto"){
-        log.warn "Overwriting variant_calling strategy due to the presence of a --region_file"
-        params.variant_calling = "validate"
-        log.info "--variant_calling set to $params.variant_calling"
+        if (params.variant_calling != "validate") {
+            log.warn "Not All variant calling strategies support the setting of a region file!"
+        }
+        region_file = params.region_file
+        // check if exist for fail fast behaviour
+        Channel.fromPath( region_file, type: 'file', checkIfExists: true)
     }
+    else {
+        region_file = params.region_file
+    }
+
     if (params.profile_selected == 'none') {
         log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
         log.warn "exiting..."
@@ -124,6 +132,7 @@ workflow {
     if (params.profile_selected == 'local') {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
+
 
     // Process inputs:
     // add the trailing slash if its missing 
@@ -151,26 +160,9 @@ workflow {
 
 /*
 ========================================================================================
-00.    raw data quality control
-========================================================================================
-*/
-    // if( params.qc == "simple" ) {
-
-    //     QC_MinionQc(seq_summary)
-    // }
-    // else if( params.qc == "skip" ) {
-    //     println "Skipping QC control"
-    // }
-    // else {
-    //     error "Invalid qc selector: ${params.qc}"
-    // }
-
-/*
-========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
 ========================================================================================
 */
-    // ReverseMapping(read_fastq,backbone_fasta)h
     if( params.consensus_calling == "tidehunter" ) {
         base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
             reference_genome_indexed,
@@ -210,7 +202,7 @@ workflow {
 ========================================================================================
 */    
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, CycasConsensus.out.json_id)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json)
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "skip" ) {
@@ -221,7 +213,7 @@ workflow {
     }
     
     // We only get the sequencing summary once we've obtained all the fastq's
-    reads_aligned = Annotate(reads_aligned, seq_summary)
+    reads_aligned = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
 
 /*
 ========================================================================================
@@ -242,7 +234,7 @@ workflow {
     else if (params.variant_calling == "validate"){
         ValidatePosibleVariantLocations(
             reads_aligned,
-            params.region_file,
+            region_file,
             PrepareGenome.out.fasta_combi
         )
         locations = ValidatePosibleVariantLocations.out.locations
@@ -254,11 +246,6 @@ workflow {
         variant_vcf = ""
         locations = ""
     }
-    // else if( params.variant_calling == "skip" ) {
-    //     println "Skipping variant_calling"
-    //     variant_vcf = ""
-    // }
-    // 
 
 /*
 ========================================================================================
@@ -276,12 +263,3 @@ workflow {
         locations,
     )
 }
-/*
-========================================================================================
-04.    QC stuff
-========================================================================================
-*/  
-
-    // Count reads in input fastqs
-
-    // Count classifications

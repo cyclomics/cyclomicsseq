@@ -48,12 +48,33 @@ If docker is not an option, singularity(or Apptainer as it is called since Q2 20
 
 ## changelog
 
+## 0.5.0
+- Make --minimum-repeat-count parameter settable by user
+- resolve tag conflict in both x and y tags
+- Add csv output to bam accuracy.
+- Increase decimal count in vcf to 6.
+- Increased sensitivity of variant calling.
+
+## 0.4.6
+- Fix annotation file grouping
+- Fix region file code
+- Add option to select reads based on repeat count (YM bam tag)
+
+### 0.4.5
+- Added Y tags to final bam
+- Improved QC
+
+### 0.4.4
+- Fix issues with bam accuracy plotting
+
+### 0.4.3
+- Fix fontsizes
+
 ### 0.4.2
 - Added many QC steps with plots,
 - Removed MionIONQC
 - changed default variant calling to validate
 - added auto detect of region of interest
-
 
 ### 0.4.1
 - changed default read_pattern regex to detect rebasecalled sequencing runs automatically when pointed at the output folder.

@@ -2,6 +2,7 @@
 
 from abc import abstractmethod
 from pathlib import Path
+from typing import Any
 import pandas as pd
 import io
 
@@ -13,13 +14,17 @@ class VCF_file:
         self.vcf = self.read_vcf(self.vcf_file)
 
     @staticmethod
-    def relaxed_float(x):
+    def relaxed_float(x: Any) -> float:
+        """
+        Try except wrapper with value error catch for non floatable objects
+        """
         try:
-            float(x)
+            my_float = float(x)
         except ValueError:
-            return float(0)
-            
-    def read_vcf(self, path):
+            my_float = float(0)
+        return my_float
+
+    def read_vcf(self, path: Path) -> pd.DataFrame:
         with open(path, "r") as f:
             header = []
             lines = []
@@ -49,8 +54,9 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.Sample1.apply(
-                    lambda x: self.relaxed_float((x.split(":")[i] if (x.split(":")[i]) else 0))
-                )
+                    lambda x: self.relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
+                    )
+
         return df
 
     def write(self, path):
@@ -69,8 +75,9 @@ class VCF_file:
         min_dir_ratio=0.001,
         min_dir_count=5,
         min_dqp=500,
-        min_vaf=0.003,
-        min_dir_ratio_ratio=0.1,
+        min_vaf=0.002,
+        min_dir_ratio_ratio=0.3,
+        min_abq = 80
     ):
         # nothing to filter
         if self.vcf.empty:
@@ -82,6 +89,8 @@ class VCF_file:
         print(self.vcf.shape)
         self.vcf = self.vcf[self.vcf["SAME"] > 0.9]
         print("SAME filter")
+        self.vcf = self.vcf[self.vcf["ABQ"] > min_abq]
+        print("ABQ filter")
         print(self.vcf.shape)
         self.vcf = self.vcf[self.vcf["DPQ"] > min_dqp]
         print("DPQ filter")
@@ -122,5 +131,6 @@ if __name__ == "__main__":
     vcf.filter()
     vcf.write(args.file_out)
 
-    # vcf = VCF_file('/home/dami/Downloads/vcf_filter_error/dcffb7f76acf0f1aae134b54a7b99c/FAT55666_validated.vcf')
+    # vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')
+    # vcf.filter()
     # print('loaded')

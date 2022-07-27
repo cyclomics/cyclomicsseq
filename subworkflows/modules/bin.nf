@@ -43,7 +43,6 @@ process AnnotateBamYTags{
 
     input:
         tuple val(X), path(bam), path(json)
-        
 
     output:
         tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
@@ -160,10 +159,10 @@ process PlotQScores{
 
     output:
         path("${consensus_pileup.simpleName}.html")
+        path("${consensus_pileup.simpleName}.csv")
     
     script:
         """
-        
         plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
         """
 }

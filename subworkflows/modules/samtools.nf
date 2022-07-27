@@ -296,3 +296,21 @@ process MPileup{
         samtools mpileup $bam_in -l $bed -f $reference --reverse-del --output-QNAME --output-MQ --max-depth 0 > ${bam_in.simpleName}.pileup
         """
 }
+
+process BamTagFilter{
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+        val(tag)
+        val(minimum_repeats)
+
+    output:
+        tuple val(X), path("${X}.${tag}_gt_${minimum_repeats}.bam"), path("${X}.${tag}_gt_${minimum_repeats}.bam.bai")
+
+    script:
+        """
+        samtools view -b -o ${X}.${tag}_gt_${minimum_repeats}.bam $bam_in --input-fmt-option 'filter=[${tag}]>${minimum_repeats}'
+        samtools index ${X}.${tag}_gt_${minimum_repeats}.bam
+        """
+}

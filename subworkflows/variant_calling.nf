@@ -74,7 +74,9 @@ workflow ValidatePosibleVariantLocations{
             positions = VcfToBed(variant_file)
         }
         else {
-            positions = variant_file
+            
+            positions = variant_file.map(it -> tuple(it.SimpleName, it))
+
         }
         VariantValidate(reads_aligned, positions)
         FilterVariants(VariantValidate.out)

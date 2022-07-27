@@ -137,11 +137,11 @@ workflow CycasConsensus{
         Cycas(MapqAndNMFilter.out)
 
     emit:
+        // take the first 2 elements aka id and fastq
         fastq = Cycas.out.map( it -> it.take(2))
-        id = Cycas.out.map( it -> it[0])
-        json = id.combine(Cycas.out.map( it -> it[2]))
+        // take the id and json
+        json = Cycas.out.map( it -> tuple(it[0], it[2]))
         split_bam = Minimap2AlignAdaptiveParameterized.out
-        json_id = id.combine(Cycas.out.map( it -> it[2])).join(id)
 }
 
 workflow CycasMedaka{

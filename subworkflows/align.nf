@@ -40,6 +40,7 @@ include {
     SamtoolsDepth
     SamtoolsDepthToTSV
     SamtoolsMergeBams
+    BamTagFilter
 } from "./modules/samtools"
 
 include {
@@ -87,20 +88,22 @@ workflow AlignBWA{
 }
 
 workflow Minimap2Align{
-    // Call minimap2 on all reads files (tuple(x,bam)) convert to bam and merge using samtools
+    // Call minimap2 on all reads files (tuple(x,bam)) convert to bam and merge using samtools.
+    // Adds metadata tags (eg YM) from metadata
+    // Will create a single bam given filenames like FAS12345_blabla : FAS12345.bam
     take:
         reads
         reference_genome
         jsons
 
     main:
-
         Minimap2AlignAdaptive(reads.map(it -> it[1]), reference_genome)
-        id = reads.first()map( it -> it[0])
+        id = reads.first().map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
 
-        AnnotateBamYTags(Minimap2AlignAdaptive.out.join(jsons))
-        bams = Minimap2AlignAdaptive.out.map(it -> it[1]).collect()
+        metadata_pairs = Minimap2AlignAdaptive.out.join(jsons)
+        AnnotateBamYTags(metadata_pairs)
+        bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
         
         SamtoolsMergeBams(id, bams)
 
@@ -197,12 +200,15 @@ workflow LastalAlignTrainedFastq{
         SamtoolsIndex.out
 }
 
-workflow Annotate{
+workflow AnnotateFilter{
     take:
         reads
         sequencing_summary
+        minimun_repeat_count
+
     main:
         AnnotateBamXTags(reads, sequencing_summary)
+        BamTagFilter(AnnotateBamXTags.out, 'YM', minimun_repeat_count)
     emit:
-        AnnotateBamXTags.out
+        BamTagFilter.out
 }
