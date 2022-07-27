@@ -59,11 +59,6 @@ def acc_to_Q(acc: float, max_Q=50) -> int:
         return -10 * math.log10(1 - acc)
 
 
-def plot_roi_table(roi):
-    print("plot_roi_table)")
-    pass
-
-
 def _parse_pileup(row):
     print("_parse_pileup)")
     """
@@ -396,7 +391,10 @@ def main(perbase_path1, perbase_path2, output_plot_file):
 
     if df1.empty or df2.empty:
         f = open(output_plot_file, "w")
-        f.write("<h1>One of the pileups was not deep enouhh</h1>")
+        f.write("<h1>One of the pileups was not deep enough.</h1>")
+        f.close()
+        f = open(output_plot_file.with_suffix(".csv"), "w")
+        f.write("One of the pileups was not deep.")
         f.close()
         return
     roi = get_roi_pileup_df(df1)
