@@ -121,16 +121,16 @@ class VCF_file:
 if __name__ == "__main__":
     import argparse
 
-    # parser = argparse.ArgumentParser(description="Filter a vcf")
+    parser = argparse.ArgumentParser(description="Filter a vcf")
 
-    # parser.add_argument("variant_vcf", type=Path)
-    # parser.add_argument("file_out", type=Path)
-    # args = parser.parse_args()
+    parser.add_argument("variant_vcf", type=Path)
+    parser.add_argument("file_out", type=Path)
+    args = parser.parse_args()
 
-    # vcf = VCF_file(args.variant_vcf)
-    # vcf.filter()
-    # vcf.write(args.file_out)
-
-    vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')
+    vcf = VCF_file(args.variant_vcf)
     vcf.filter()
-    print('loaded')
+    vcf.write(args.file_out)
+
+    # vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')
+    # vcf.filter()
+    # print('loaded')
