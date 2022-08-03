@@ -15,6 +15,10 @@ Cycas uses the alignment against the reference genome to determine the type of r
 
 ## Changelog
 
+### 0.4.5
+- Change distance to detect groups.
+- Add requirement that at least 10% of bases need to be present at a location to create consensus.
+
 ### 0.4.4
  - fix bug that causes a decrease in the number of insert only reads.
  - Added first CI steps for linting.

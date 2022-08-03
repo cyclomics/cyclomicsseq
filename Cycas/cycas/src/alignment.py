@@ -34,7 +34,6 @@ class Alignment:
         self.cigars = self.get_cigars(allow_flip=True)  # flips if -
         self.raw_read_length = pysam_obj.infer_read_length()
         self.mapping_quality = pysam_obj.mapping_quality
-        self.inferred_read_length = pysam_obj.infer_read_length()
         self.sequence = pysam_obj.query_alignment_sequence
 
         self.extended_cigar = self.extend_cigar(self.cigars)
@@ -71,7 +70,7 @@ class Alignment:
 
     @property
     def directional_chromosome(self) -> str:
-        """return the chromosome and direction as a string eg chr17- when it maps to chr17 and is mapping in reverse """
+        """return the chromosome and direction as a string eg chr17- when it maps to chr17 and is mapping in reverse"""
         return self.alignment_chromosome + self.alignment_direction
 
     @property
@@ -281,7 +280,7 @@ class AlignmentGroup:
         return ",".join(structure)
 
     def alignment_chromosomes_present(self, directional=True) -> Tuple[str, str]:
-        """Create a tuple from the chromosomes where the is alignment """
+        """Create a tuple from the chromosomes where the is alignment."""
         if directional:
             return {
                 (x.alignment_chromosome, x.alignment_direction) for x in self.alignments
