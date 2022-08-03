@@ -21,7 +21,7 @@ class AlignmentProcessor:
         return result
 
     def create_paired_alignment_groups_per_chromosome_and_distance(
-        self, group, distance="auto"
+        self, group, distance=20
     ):
         """
         Find all groups of alignment per chromosome that are at least `distance` seperated on said chromosome.
@@ -34,12 +34,16 @@ class AlignmentProcessor:
             start_positions = [
                 x.alignment_chromosome_start for x in group_chr.alignments
             ]
-            # if we can set the distnace automatically we use 2x the median
+            lengths = [x.alignment_length for x in group_chr.alignments]
+
+            # if we can set the distance automatically we use 2x the median
+            # 2x caused issues with the multi amplicon panels and is now deemed to convervative
             if distance == "auto":
-                lengths = [x.alignment_length for x in group_chr.alignments]
-                distance = round(2 * median(lengths))
+                distance = round(max(lengths))
             distance = int(distance)
 
+            # if max(start_positions) - min(start_positions) > median(lengths):
+            #     print('potential overlapping amplicon')
             # multi occurence within chromosome
             if max(start_positions) - distance > min(start_positions):
                 logger.debug("multi insert found in single chromosome ")
