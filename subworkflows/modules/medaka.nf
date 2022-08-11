@@ -2,7 +2,7 @@
 nextflow.enable.dsl = 2
 
 process MedakaSmolecule {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'ontresearch/medaka:v1.6.0'
     label 'many_low_cpu_tiny_mem'
 

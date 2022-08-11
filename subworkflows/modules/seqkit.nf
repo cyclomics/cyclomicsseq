@@ -2,7 +2,7 @@
 nextflow.enable.dsl=2
 
 process FastqToFasta {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -18,7 +18,7 @@ process FastqToFasta {
 }
 
 process Extract5PrimeFasta {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -35,7 +35,7 @@ process Extract5PrimeFasta {
 }
 
 process MergeFasta {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -54,7 +54,7 @@ process MergeFasta {
 }
 
 process Extract3PrimeFasta {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -72,7 +72,7 @@ process Extract3PrimeFasta {
 }
 
 process ExtractSpecificRead{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -89,7 +89,7 @@ process ExtractSpecificRead{
 }
 
 process CountFastqInfo{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path(fastq)

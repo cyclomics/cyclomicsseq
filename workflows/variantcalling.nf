@@ -27,7 +27,7 @@ log.info """
 process SamtoolsFaidx{
     // Given a sam or bam file, make a sorted bam
     // Does break when sam is not `propper` eg no @SQ tags
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
 
     cpus 1
@@ -45,7 +45,7 @@ process SamtoolsFaidx{
 }
 
 process Freebayes {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'nfcore/sarek:2.7.1'
     cpus 1
     input:

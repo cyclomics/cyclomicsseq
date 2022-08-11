@@ -26,7 +26,7 @@ log.info """
 
 
 process FastqToFasta {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     cpus 1
 
     input:
@@ -41,7 +41,7 @@ process FastqToFasta {
 }
 
 process splitSequences {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path(fasta)
@@ -71,7 +71,7 @@ process BwaIndex{
         """
 }
 process BwaMemReverse{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
 
     cpus = 1 
@@ -93,7 +93,7 @@ process BwaMemReverse{
 }
 
 process SamtoolsFilterMapped{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'biocontainers/samtools:v1.7.0_cv4'
 
     cpus 1

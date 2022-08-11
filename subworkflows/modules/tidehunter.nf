@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process Tidehunter{
     // _tide_consensus.fasta in ConCall
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
     label 'many_cpu_intensive'
 
@@ -21,7 +21,7 @@ process Tidehunter{
 
 process TidehunterLongest{
     // _tide_consensus.fasta in ConCall
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
     label 'many_cpu_intensive'
 
@@ -38,7 +38,7 @@ process TidehunterLongest{
 }
 
 process TideHunterTableToFasta{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -56,7 +56,7 @@ process TideHunterTableToFasta{
 process TideHunterTrimmmer {
     // Plug tidehunter fasta into this
     // removes everyting after the first comma, since this messes with the bam spec
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -75,7 +75,7 @@ process TideHunterTrimmmer {
 
 
 process Tidehunter53QualTable{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
     label 'many_cpu_medium'
 
@@ -104,7 +104,7 @@ process Tidehunter53QualTable{
         """
 }
 process TideHunterFilterTableStartpos{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -120,7 +120,7 @@ process TideHunterFilterTableStartpos{
 }
 
 process TideHunterQualTableToFastq{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -138,7 +138,7 @@ process TideHunterQualTableToFastq{
 }
 
 process TideHunterQualTableToJson{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -168,7 +168,7 @@ process TideHunterQualTableToJson{
 }
 
 process TideHunterQualJsonMerge{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:

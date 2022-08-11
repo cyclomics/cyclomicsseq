@@ -2,7 +2,7 @@
 nextflow.enable.dsl=2
 
 process SamtoolsIndex{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
 
@@ -36,7 +36,7 @@ process SamtoolsIndexWithID{
 process SamtoolsSort{
     // Given a sam or bam file, make a sorted bam
     // Does break when sam is not `propper` eg no @SQ tags
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -52,7 +52,7 @@ process SamtoolsSort{
 }
 
 process SamtoolsDepth{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -68,7 +68,7 @@ process SamtoolsDepth{
 }
 
 process SamtoolsDepthToTSV{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // the slim version of buster is missing ps, which is needed for nextflow
     label 'many_cpu_intensive'
 
@@ -87,7 +87,7 @@ process SamtoolsDepthToTSV{
 
 process SamToBam{
     // Sort, convert and index 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -105,7 +105,7 @@ process SamToBam{
 
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -122,7 +122,7 @@ process SamtoolsMerge{
 }
 
 process SamtoolsQuickcheck{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -138,7 +138,7 @@ process SamtoolsQuickcheck{
 }
 
 process SamtoolsFlagstats{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -154,7 +154,7 @@ process SamtoolsFlagstats{
 }
 
 process SamtoolsFlagstatsMapPercentage{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -174,7 +174,7 @@ process SamtoolsFlagstatsMapPercentage{
 
 process SamtoolsMergeTuple{
     //  merge n number of bams into one
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -194,7 +194,7 @@ process SamtoolsMergeTuple{
 
 process SamtoolsMergeBams{
     //  merge n number of bams into one
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -214,7 +214,7 @@ process SamtoolsMergeBams{
 
 process RemoveUnmappedReads{
     // Sort, convert and index 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -232,7 +232,7 @@ process RemoveUnmappedReads{
 
 process PrimaryMappedFilter{
     // Sort, convert and index 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -250,7 +250,7 @@ process PrimaryMappedFilter{
 
 process MapqAndNMFilter{
     // Sort, convert and index 
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     
     input:
         tuple val(X), path(bam_in), path(bai_in)
@@ -266,7 +266,7 @@ process MapqAndNMFilter{
 }
 
 process FindRegionOfInterest{
-     publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    //  publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     
     input:
         tuple val(X), path(bam_in), path(bai_in)
@@ -281,7 +281,7 @@ process FindRegionOfInterest{
 }
 
 process MPileup{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     
     input:
         tuple val(X), path(bam_in), path(bai_in), path(reference)
@@ -298,7 +298,7 @@ process MPileup{
 }
 
 process BamTagFilter{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     
     input:
         tuple val(X), path(bam_in), path(bai_in)

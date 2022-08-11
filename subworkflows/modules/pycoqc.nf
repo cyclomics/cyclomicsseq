@@ -2,7 +2,7 @@
 nextflow.enable.dsl=2
 
 process PYCOQC {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "quay.io/biocontainers/pycoqc:2.5.2--py_0"
     label 'many_cpu_medium'
 
