@@ -65,7 +65,7 @@ class VCF_file:
 
             writeable_vcf = self.vcf.rename(columns={"CHROM": "#CHROM"})
             writeable_vcf = writeable_vcf[
-                ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"]
+                ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "Sample1"]
             ]
             # new_vcf.writelines((x.lstrip() for x in writeable_vcf.to_csv(sep='\t').split('\n')))
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
@@ -74,16 +74,28 @@ class VCF_file:
         self,
         min_dir_ratio=0.001,
         min_dir_count=5,
-        min_dqp=500,
+        min_dqp=1000,
         min_vaf=0.002,
-        min_dir_ratio_ratio=0.3,
-        min_abq = 80
+        min_relative_ratio=0.3,
+        min_abq = 70
     ):
         # nothing to filter
         if self.vcf.empty:
             return
+        
+        result = []
+        for row in self.vcf.iterrows():
+            r = row[1]['REVR']
+            f = row[1]['FWDR']
+            low = min(f,r)
+            high = max(f,r)
 
-        ratio_ratios = (min_dir_ratio_ratio, 1 / min_dir_ratio_ratio)
+            if high ==0:
+                result.append(0)
+            else:
+                result.append(low/high)
+        self.vcf['RELR'] = result
+
 
         print("pre filter")
         print(self.vcf.shape)
@@ -110,8 +122,7 @@ class VCF_file:
         self.vcf = self.vcf[self.vcf["REVR"] > min_dir_ratio]
         print("REVR filter")
         print(self.vcf.shape)
-        self.vcf = self.vcf[self.vcf["FWDR"] / self.vcf["REVR"] > min(ratio_ratios)]
-        self.vcf = self.vcf[self.vcf["FWDR"] / self.vcf["REVR"] < max(ratio_ratios)]
+        self.vcf = self.vcf[self.vcf["RELR"] > min_relative_ratio]
         print("relative ratio filter")
         print(self.vcf.shape)
 
