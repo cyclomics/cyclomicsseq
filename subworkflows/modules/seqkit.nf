@@ -90,20 +90,22 @@ process ExtractSpecificRead{
 
 process CountFastqInfo{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         path(fastq)
 
     output:
-        path ("read_count.txt")
-        path ("base_count.txt")
-        path ("overview.txt")
+        result_name=fastq.first.SimpleName
+        path ("${result_name}_read_count.txt")
+        path ("${result_name}_base_count.txt")
+        path ("${result_name}_overview.txt")
 
     
     script:
         """
-        seqkit stats -T $fastq | tee overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > read_count.txt
-        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > base_count.txt
+        seqkit stats -T $fastq | tee ${result_name}_overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > ${result_name}_read_count.txt
+        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > ${result_name}_base_count.txt
         """
 }
 

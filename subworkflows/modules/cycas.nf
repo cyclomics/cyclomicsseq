@@ -3,6 +3,8 @@ nextflow.enable.dsl=2
 
 process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/consensus", mode: 'copy'
+
     cpus = 1
     
     memory { 2.GB * task.attempt }
