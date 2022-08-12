@@ -94,18 +94,18 @@ process CountFastqInfo{
 
     input:
         path(fastq)
+        val(ID)
 
     output:
-        result_name=fastq.first.SimpleName
-        path ("${result_name}_read_count.txt")
-        path ("${result_name}_base_count.txt")
-        path ("${result_name}_overview.txt")
+        path ("${ID}_read_count.txt")
+        path ("${ID}_base_count.txt")
+        path ("${ID}_overview.txt")
 
     
     script:
         """
-        seqkit stats -T $fastq | tee ${result_name}_overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > ${result_name}_read_count.txt
-        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > ${result_name}_base_count.txt
+        seqkit stats -T $fastq | tee ${ID}_overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > ${ID}_read_count.txt
+        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > ${ID}_base_count.txt
         """
 }
 
