@@ -2,7 +2,7 @@
 
 
 process AddDepthToJson{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:
@@ -21,7 +21,7 @@ process AddDepthToJson{
 }
 
 process AnnotateBamXTags{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_intensive'
 
     input:
@@ -38,7 +38,9 @@ process AnnotateBamXTags{
 }
 
 process AnnotateBamYTags{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
+
     label 'many_low_cpu_high_mem'
 
     input:
@@ -55,7 +57,7 @@ process AnnotateBamYTags{
 }
 
 process CollectClassificationTypes{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path(metadata_json)
@@ -70,7 +72,8 @@ process CollectClassificationTypes{
 }
 
 process VariantValidate{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -87,7 +90,8 @@ process VariantValidate{
 }
 
 process FilterVariants {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         path(vcf_file)
@@ -102,7 +106,8 @@ process FilterVariants {
 }
 
 process PlotFastqsQUalAndLength{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         path(fastq)
@@ -119,7 +124,8 @@ process PlotFastqsQUalAndLength{
 }
 
 process PlotReadStructure{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -136,7 +142,8 @@ process PlotReadStructure{
 }
 
 process PlotVcf{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         path(vcf)
@@ -151,7 +158,8 @@ process PlotVcf{
 }
 
 process PlotQScores{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         tuple val(X), path(split_pileup)
@@ -168,7 +176,8 @@ process PlotQScores{
 }
 
 process PlotMetadataStats{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         val(X)

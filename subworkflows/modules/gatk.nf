@@ -2,7 +2,7 @@
 nextflow.enable.dsl = 2
 
 process CreateRererenceDict {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
     label 'many_cpu_intensive'
 
@@ -20,7 +20,7 @@ process CreateRererenceDict {
 } 
 
 process GatkAddOrReplaceReadGroups {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
     label 'many_cpu_intensive'
 
@@ -47,7 +47,7 @@ process GatkAddOrReplaceReadGroups {
 }
 
 process Mutect2TumorOnly {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
     label 'few_cpu_intensive'
 

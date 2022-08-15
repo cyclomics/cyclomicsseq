@@ -181,7 +181,7 @@ class BaseClassifier(ABC):
         metadata[
             "id"
         ] = f"{first_aln.readname}_{first_aln.alignment_chromosome}_{first_aln.alignment_chromosome_start}"
-        metadata["raw_length"] = first_aln.inferred_read_length
+        metadata["raw_length"] = first_aln.raw_read_length
         metadata["baseunit_copies"] = self.calculate_baseunit_copies(
             group.alignments, len(consensus)
         )
@@ -713,7 +713,7 @@ class SingleDirectionalFlip(BaseClassifier):
 
 
 class SingletonBackbone(BaseClassifier):
-    """ Find reads that only have a single aligned object and that are fairly short."""
+    """Find reads that only have a single aligned object and that are fairly short."""
 
     def __init__(self, priority: int) -> None:
         logger.debug(f"Classifier initiated: {self.__class__.__name__}")
@@ -735,7 +735,7 @@ class SingletonBackbone(BaseClassifier):
 
 
 class Singleton(BaseClassifier):
-    """ Find reads that only have a single aligned object and that are fairly short."""
+    """Find reads that only have a single aligned object and that are fairly short."""
 
     def __init__(self, priority: int) -> None:
         logger.debug(f"Classifier initiated: {self.__class__.__name__}")
@@ -785,7 +785,7 @@ class ComplexConcatemer(BaseClassifier):
         metadata = {}
         # required info
         metadata["id"] = f"{first_aln.readname}_complex"
-        metadata["raw_length"] = first_aln.inferred_read_length
+        metadata["raw_length"] = first_aln.raw_read_length
         metadata["baseunit_copies"] = 0
         metadata["baseunit_start_idx"] = 0
         metadata["baseunit_end_idx"] = 0

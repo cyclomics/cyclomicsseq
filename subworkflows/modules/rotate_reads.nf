@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 process RotateByCigar{
     // use custom code by liting to covert the reads from their CAB-BCA to ABC
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
 
     input:

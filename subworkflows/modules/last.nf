@@ -7,7 +7,7 @@ These processes can be used to run Lastal on a docker container called lastal
 nextflow.enable.dsl=2
 
 process LastCreateDB{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
     
     input:
@@ -24,7 +24,7 @@ process LastCreateDB{
 }
 
 process LastTrainModelFasta{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
     
     input:
@@ -42,7 +42,7 @@ process LastTrainModelFasta{
 }
 
 process LastTrainModelFastq{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
     
     input:
@@ -61,7 +61,7 @@ process LastTrainModelFastq{
 
 
 process LastSplit{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
     
     input:
@@ -77,7 +77,7 @@ process LastSplit{
 }
 
 process LastAlignTrained{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
 
     cpus = 16
@@ -100,7 +100,7 @@ process LastAlignTrained{
 }
 
 process LastAlign{
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'lastal'
 
     cpus = 16
@@ -119,7 +119,7 @@ process LastAlign{
 }
 
 process Maf2sam {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     container "lastal"
 
@@ -138,7 +138,7 @@ process Maf2sam {
 process SamtoolsFixSam{
     // Lastal maf-convert does not add @SQ tags to the sam, this is fixed by using samtools view -T here
     // also sorts and converts to bam
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path input_sam

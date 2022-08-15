@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 
 
 process GenerateHtmlReport {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "damicyclomics/cyclomics_dash:0.2.1"
     label 'many_cpu_medium'
 
@@ -29,7 +29,7 @@ process GenerateHtmlReport {
 
 
 process GenerateHtmlReportWithControl {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container "damicyclomics/cyclomics_dash:dev-unstable"
         label 'many_cpu_medium'
 

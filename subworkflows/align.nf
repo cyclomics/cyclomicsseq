@@ -48,6 +48,26 @@ include {
 } from "./modules/seqkit"
 
 
+
+process Reference_info {
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_cpu_medium'
+
+    input:
+        path fasta
+
+    output:
+        path "reference_info.txt"
+
+    script:
+        """
+        echo "--------- md5 hash info ---------" >> reference_info.txt
+        md5sum $fasta > reference_info.txt
+        echo "--------- assembly info ---------" >> reference_info.txt
+        seqkit fx2tab --length --name --header-line --seq-hash >> reference_info.txt
+        """  
+}
+
 workflow PrepareGenome {
     take:
         reference_genome
@@ -70,6 +90,8 @@ workflow PrepareGenome {
         MergeFasta(genome, backbones_fasta)
         IndexCombined(MergeFasta.out)
         IndexReference(genome)
+        Reference_info(MergeFasta.out)
+        
     emit:
         mmi_combi = IndexCombined.out
         mmi_ref = IndexReference.out

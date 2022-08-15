@@ -340,16 +340,16 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
     def generate_block_positions(self, block):
         [
-            (x.first_cigar_value, x.inferred_read_length - x.cigars[-1][1])
+            (x.first_cigar_value, x.raw_read_length - x.cigars[-1][1])
             for x in block.alignments
         ]
         output = []
         for x in block.alignments:
             start = x.first_cigar_value
             end = (
-                x.inferred_read_length - x.cigars[-1][1]
+                x.raw_read_length - x.cigars[-1][1]
                 if x.cigars[-1][0] == "H"
-                else x.inferred_read_length
+                else x.raw_read_length
             )
             output.append((start, end))
         return output
@@ -373,16 +373,18 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
         consensus = ""
         quality = []
-        alignment_start = None
+        alignment_start = 0
+        aligned_segment_count = len(consensus_alignments)
         # loop over all posible positions
         for i in range(max_length):
             nucs = [x.get_seq_pos(i) for x in consensus_alignments.values()]
             quals = [x.get_qual_pos(i) for x in consensus_alignments.values()]
-            probs = [self.phred_to_prob(x) for x in quals]
+            started_or_ended_count = len([x for x in nucs if x == "_"])
 
             # remove non-participating reads, check if we have enough participation to make consensus
             filtered_nucs = []
             filtered_quals = []
+
             for n, q in zip(nucs, quals):
                 if n != "_":
                     filtered_nucs.append(n)
@@ -391,9 +393,13 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             nucs = filtered_nucs
             quals = filtered_quals
 
-            # no nucs? nothing to do
-            if len(nucs) == 0:
+            # not more than 2 nucs? or at least 10% of the reads, rounded up
+            if (
+                len(nucs) < 2
+                or math.ceil(aligned_segment_count * 0.1) < started_or_ended_count
+            ):
                 continue
+
             # if we detect a real delition we dont have to do anything
             deletion_ratio = nucs.count("-") / len(nucs)
             if deletion_ratio >= self.minimal_deletion_ratio:
@@ -408,10 +414,12 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
             nucs = filtered_nucs
             quals = filtered_quals
+            # now we can calculate probs
+            probs = [self.phred_to_prob(x) for x in quals]
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             # If we start the consensus string we store the position
-            if alignment_start is None and best_nuc != "-":
+            if alignment_start is 0 and best_nuc != "-":
                 alignment_start = i + block.get_start_position()
 
             # TODO: check if two nucleotides have the exact same likelihood.
@@ -436,6 +444,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             consensus = str(Seq(consensus).reverse_complement())
             quality = quality[::-1]
             flipped = True
+
         return (
             consensus,
             self.convert_to_ascii(quality),
