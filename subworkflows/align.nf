@@ -65,7 +65,7 @@ process Reference_info {
         md5sum $fasta > reference_info.txt
         echo "--------- assembly info ---------" >> reference_info.txt
         seqkit fx2tab --length --name --header-line --seq-hash $fasta >> reference_info.txt
-        """  
+        """
 }
 
 workflow PrepareGenome {
