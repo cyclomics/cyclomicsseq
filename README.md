@@ -48,6 +48,12 @@ If docker is not an option, singularity(or Apptainer as it is called since Q2 20
 
 ## changelog
 
+## 0.5.2
+- Update Cycas version
+- set --min-repeat-count default to 5
+
+
+
 ## 0.5.0
 - Make --minimum-repeat-count parameter settable by user
 - resolve tag conflict in both x and y tags
