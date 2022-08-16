@@ -52,7 +52,7 @@ log.info """
         reference                : $params.reference
         backbone_fasta           : $params.backbone_fasta
         backbone_name            : $params.backbone_name
-        region_file : $params.region_file  
+        region_file              : $params.region_file  
         output folder            : $params.output_dir
     Method:  
         QC                       : $params.qc
@@ -65,6 +65,12 @@ log.info """
         profile                  : $params.profile_selected
         quick_results            : $params.quick_results
 """
+
+if (params.profile_selected == "conda"){
+    log.info """
+        conda environment : $params.conda_env
+    """
+}
 
 /*
 ========================================================================================
@@ -111,6 +117,7 @@ workflow {
     AA. Parameter processing 
     ========================================================================================
     */
+    // println(params.user_set_nf_assests)
     // check environments
     if (params.region_file != "auto"){
         if (params.variant_calling != "validate") {
