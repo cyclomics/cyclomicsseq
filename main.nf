@@ -68,7 +68,7 @@ log.info """
 
 if (params.profile_selected == "conda"){
     log.info """
-        conda environment : $params._user_conda_location
+        conda environment : $params.user_conda_location
     """
 }
 
@@ -112,14 +112,11 @@ include {
 ========================================================================================
 */
 workflow {
-    println(params._user_set_nxf_home)
-    println(params._user_set_nxf_assets)
     /*
     ========================================================================================
     AA. Parameter processing 
     ========================================================================================
     */
-    // println(params.user_set_nf_assests)
     // check environments
     if (params.region_file != "auto"){
         if (params.variant_calling != "validate") {
