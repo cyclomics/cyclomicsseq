@@ -3,6 +3,8 @@
 ## 0.6.1
 - fix bug in reference genome info generator
 - fix conda environment parser
+- Add backbone files to the pipeline
+- Update README.md
 
 ## 0.6.0
 
@@ -10,7 +12,6 @@
 - Alter variant calling parameters
 - Pass vcf parameters to final file
 - Changed folder structure
-
 
 ## 0.5.2
 - Update Cycas version
