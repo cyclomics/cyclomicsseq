@@ -19,9 +19,8 @@ nextflow.enable.dsl = 2
 params.input_read_dir             = ""
 params.read_pattern               = "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
-params.backbone_fasta             = ""
+params.backbone                   = "BB41"
 params.backbone_name              = ""
-
 params.region_file                = "auto"
 
 params.reference = ""
@@ -41,6 +40,20 @@ params.quick_results        = false
 // Pipeline performance metrics
 params.min_repeat_count = 3
 
+if (params.backbone == "BB41") {
+    backbone_file = "$projectDir/backbones/BB41.fasta"
+}
+else if (params.backbone == "BB22") {
+    backbone_file = "$projectDir/backbones/BB22.fasta"
+}
+else if (params.backbone == "BB25") {
+    backbone_file = "$projectDir/backbones/BB25.fasta"
+}
+else {
+    backbone_file = params.backbone
+}
+
+
 // ### Printout for user
 log.info """
     ===================================================
@@ -50,9 +63,9 @@ log.info """
         input_reads              : $params.input_read_dir
         read_pattern             : $params.read_pattern
         reference                : $params.reference
-        backbone_fasta           : $params.backbone_fasta
+        backbone                 : $params.backbone
         backbone_name            : $params.backbone_name
-        region_file : $params.region_file  
+        region_file              : $params.region_file  
         output folder            : $params.output_dir
     Method:  
         QC                       : $params.qc
@@ -65,6 +78,12 @@ log.info """
         profile                  : $params.profile_selected
         quick_results            : $params.quick_results
 """
+
+if (params.profile_selected == "conda"){
+    log.info """
+        conda environment : $params.user_conda_location
+    """
+}
 
 /*
 ========================================================================================
@@ -149,7 +168,7 @@ workflow {
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
     // read_fastq.view()
     seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
-    backbone_fasta = Channel.fromPath(params.backbone_fasta, checkIfExists: true)
+    backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
     // form a pair for both .fa as well as .fasta ref genomes
