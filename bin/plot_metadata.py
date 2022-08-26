@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-from cProfile import label
 import glob
 import json
 from collections import Counter
 from math import pi
 from pathlib import Path
+import random
 
 import numpy as np
 import pandas as pd
 
-from bokeh.plotting import figure, show
-from bokeh.layouts import row, column
+from bokeh.plotting import figure
+from bokeh.layouts import column
 from bokeh.io import save, output_file
 from bokeh.transform import cumsum
 from bokeh.models import LabelSet, ColumnDataSource
@@ -160,7 +160,13 @@ def read_jsons_into_plots(json_folder, plot_file):
     p1.yaxis.major_label_text_font_size = "12pt"
 
     p2 = figure(plot_height=500, plot_width=1000, title="Length vs segments identified")
-    p2.scatter(x=raw_lens, y=segments)
+    if len(raw_lens) > 10_000:
+        full = list(zip(raw_lens, segments))
+        subset = random.sample(full, 10_000)
+        raw_lens_subset = [x[0] for x in subset]
+        segments_subset = [x[1] for x in subset]
+
+    p2.scatter(x=raw_lens_subset, y=segments_subset)
 
     p2.title.text_font_size = "18pt"
     p2.xaxis.axis_label = "read length"
