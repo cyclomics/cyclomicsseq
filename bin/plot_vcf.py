@@ -4,11 +4,14 @@ import io
 from typing import List, Tuple
 import pandas as pd
 import numpy as np
+from pathlib import Path
+import json
 
 from bokeh.io import save, output_file
 from bokeh.plotting import figure, show
 from bokeh.layouts import row, column
 from bokeh.models import HoverTool
+from bokeh.embed import components
 
 chromosomal_region = Tuple[str, int, int]
 
@@ -172,6 +175,17 @@ def main(vcf_file, plot_file):
     plot = make_scatter_plots(data, roi)
     output_file(args.plot_file, title="variant plots")
     save(plot)
+
+    tab_name = 'Variants'
+    add_info = {}
+    json_obj ={}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]['name'] = tab_name
+    json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(plot)
+    json_obj['additional_info'] = add_info
+    
+    with open(Path(args.plot_file).with_suffix('.json'), 'w')as f:
+        f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":

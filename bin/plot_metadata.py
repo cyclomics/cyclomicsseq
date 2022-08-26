@@ -5,6 +5,7 @@ import glob
 import json
 from collections import Counter
 from math import pi
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,7 @@ from bokeh.layouts import row, column
 from bokeh.io import save, output_file
 from bokeh.transform import cumsum
 from bokeh.models import LabelSet, ColumnDataSource
+from bokeh.embed import components
 
 
 concat_type_colors = {
@@ -185,7 +187,17 @@ def read_jsons_into_plots(json_folder, plot_file):
     )
 
     output_file(plot_file, title="metadata plots")
-    save(column([donut, p1, p2]))
+    final_plot = column([donut, p1, p2])
+
+    tab_name = 'metadata'
+    with open(Path(plot_file).with_suffix('.json'), 'w')as f:
+        json_obj ={}
+        json_obj[tab_name] = {}
+        json_obj[tab_name]['name'] = tab_name
+        json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(final_plot)
+        f.write(json.dumps(json_obj))
+
+    save(final_plot)
 
 
 if __name__ == "__main__":

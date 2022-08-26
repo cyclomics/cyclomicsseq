@@ -17,6 +17,10 @@ include {
 } from "./modules/bwa"
 
 include {
+    SplitReadsOnAdapterSequence
+} from "./modules/fillet"
+
+include {
     SamtoolsFlagstatsMapPercentage
     RemoveUnmappedReads
     PrimaryMappedFilter
@@ -130,6 +134,7 @@ workflow CycasConsensus{
         backbone_fasta
     main:
         FilterShortReads(read_fastq)
+        SplitReadsOnAdapterSequence(FilterShortReads.out)
         Minimap2AlignAdaptiveParameterized(FilterShortReads.out, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)

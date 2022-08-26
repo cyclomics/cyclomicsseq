@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 from collections import Counter
+from itertools import chain
 from math import pi
+from pathlib import Path
+import json
 
 import pandas as pd
 import numpy as np
@@ -10,7 +13,7 @@ import pysam
 # from plotly.subplots import make_subplots
 # import plotly.graph_objects as go
 # import plotly.express as px
-
+from bokeh.embed import components
 from bokeh.io import save, output_file
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
@@ -180,6 +183,17 @@ def create_assembly_count_plot(split_table, output_file_name, my_title):
     p.xaxis.major_label_orientation = "vertical"
     save(p)
 
+    tab_name = 'Alignment'
+    add_info = {}
+
+    json_obj ={}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]['name'] = tab_name
+    json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(p)
+    json_obj['additional_info'] = add_info
+
+    return json_obj
+
 
 def create_readtype_donuts(
     concat_type_stats, concat_type_stats_by_bases, plot_file, plot_title
@@ -276,6 +290,9 @@ def create_readtype_donuts(
     output_file(filename=plot_file, title=plot_title)
     _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
     _df2 = _calculate_angle_and_color(concat_type_stats_by_bases, concat_type_colors)
+    
+    add_info = {}
+    add_info['read_struc_prec_bbi'] = _df1[_df1.type == "BB-I"].percentage[0]
 
     donut_plot_height = 400
     donut_plot_width = 600
@@ -300,8 +317,15 @@ def create_readtype_donuts(
 
     donut_row = row(p1, p2)
     donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
+    tab_name = "read structure"
+    
+    json_obj ={}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]['name'] = tab_name
+    json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(donut_plot)
+    json_obj['additional_info'] = add_info
     save(donut_plot)
-
+    return json_obj
 
 def main(
     bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
@@ -311,9 +335,17 @@ def main(
     """
     df = create_split_bam_table(bam)
     read_counts, base_counts = count_reads_and_bases(df)
-    create_assembly_count_plot(df, assembly_plot_file, assembly_plot_title)
-    create_readtype_donuts(read_counts, base_counts, donut_plot_file, donut_plot_title)
+    assembly_info = create_assembly_count_plot(df, assembly_plot_file, assembly_plot_title)
+    donut_info = create_readtype_donuts(read_counts, base_counts, donut_plot_file, donut_plot_title)
 
+    json_obj = chain(assembly_info.items(), donut_info.items())
+    json_obj  = dict(json_obj)
+    # correct the add info by merging them
+    json_obj['additional_info'] = assembly_info['additional_info']
+    json_obj['additional_info'].update(donut_info['additional_info'])
+
+    with open(Path(donut_plot_file).with_suffix('.json'), 'w')as f:
+        f.write(json.dumps(json_obj))
 
 if __name__ == "__main__":
     import argparse

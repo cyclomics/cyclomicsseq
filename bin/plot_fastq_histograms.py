@@ -3,6 +3,8 @@
 from collections import Counter
 from glob import glob
 from tqdm import tqdm
+import json
+from pathlib import Path
 
 from pyfastx import Fastq
 import pandas as pd
@@ -12,7 +14,9 @@ from bokeh.io import save, output_file, show
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
 from bokeh.layouts import row, column
+from bokeh.embed import components
 
+from plotting_defaults import cyclomics_defaults
 
 def process_fastqs(fastqs_path):
     overall = Counter()
@@ -33,7 +37,7 @@ def plot_overall_Q_hist(overall_Q, my_title):
 
     p = figure(
         plot_height=500,
-        plot_width=1000,
+        plot_width=cyclomics_defaults.width,
         title=my_title,
         tooltips="@Q: @count (@relative_count{%0.2f})",
     )
@@ -53,7 +57,7 @@ def plot_overall_Q_hist(overall_Q, my_title):
 
 def plot_length_hist(lengths, my_title_len):
     hist, edges = np.histogram(lengths, bins=90)
-    p = figure(plot_height=500, plot_width=1000, title=my_title_len)
+    p = figure(plot_height=500, plot_width=cyclomics_defaults.width, title=my_title_len)
     p.quad(
         top=hist,
         bottom=0,
@@ -77,20 +81,33 @@ def plot_length_hist(lengths, my_title_len):
     return p
 
 
-def main(file_extention, output_file_name, my_title_q, my_title_len):
+
+def main(file_extention, output_file_name, my_title_q, my_title_len, tab_name):
 
     Q_scores, lengths = process_fastqs(f"*.{file_extention}")
     total = sum(Q_scores.values())
     overall_Q = [[ord(k) - 33, v / total, v] for k, v in Q_scores.items()]
 
-    print(overall_Q)
+    # print(overall_Q)
     output_file(filename=output_file_name, title="fastq information")
 
     q_hist = plot_overall_Q_hist(overall_Q, my_title_q)
 
     len_hist = plot_length_hist(lengths, my_title_len)
 
-    save(column(q_hist, len_hist))
+    final_plot = column(q_hist, len_hist)
+    
+    with open(Path(output_file_name).with_suffix('.json'), 'w')as f:
+        json_obj ={}
+        json_obj[tab_name] = {}
+        json_obj[tab_name]['name'] = tab_name
+        json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(final_plot)
+        json_obj['additional_info']= {f'reads{tab_name}':len(lengths)}
+        f.write(json.dumps(json_obj))
+
+    save(final_plot)
+
+
 
 
 if __name__ == "__main__":
@@ -102,11 +119,12 @@ if __name__ == "__main__":
 
     parser.add_argument("fastq_regex_suffix")
     parser.add_argument("plot_file")
+    parser.add_argument("tab_name", default='fastq information')
     args = parser.parse_args()
 
-    my_title_q = f"Q scores relative abundance "
+    my_title_q = f"Q scores relative abundance"
     my_title_len = f"Length distribution"
-    main(args.fastq_regex_suffix, args.plot_file, my_title_q, my_title_len)
+    main(args.fastq_regex_suffix, args.plot_file, my_title_q, my_title_len, args.tab_name)
 
     # fastq_file_name = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/raw_data/Cyclomics/000014/HC01_CG_001/20220630_1612_MN40283_FAT55621_6a2c8b02/fastq_pass/*13.fastq.gz"
     # my_title_q = f"Q scores in all Fastq files found using {fastq_file_name}"

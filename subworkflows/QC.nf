@@ -18,6 +18,7 @@ include {
     PlotVcf
     PlotQScores
     PlotMetadataStats
+    PlotReport
 } from "./modules/bin"
 
 include {
@@ -82,14 +83,14 @@ workflow PostQC {
         extension = first_fq.getExtension()
 
         FastqInfoRaw(fastq_raw.collect(),'raw')
-        PlotRawFastqHist(fastq_raw.collect(), extension, id)
+        PlotRawFastqHist(fastq_raw.collect(), extension, id, '"raw fastq info"')
         
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
 
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect(), 'consensus')
-        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id)
+        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id, '"consensus fastq info"')
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
@@ -113,6 +114,13 @@ workflow PostQC {
             SamtoolsQuickcheck.out.view()
             SamtoolsFlagstats.out.view()
         }
+        PlotReport(
+            PlotRawFastqHist.out.combine(
+            PlotConFastqHist.out).combine(
+            PlotReadStructure.out).combine(
+            PlotMetadataStats.out).combine(
+            PlotQScores.out).combine(
+            PlotVcf.out))
 }
 
 

@@ -114,13 +114,14 @@ process PlotFastqsQUalAndLength{
         path(fastq)
         val grep_pattern
         val plot_file_prefix
+        val tab_name
 
     output:
-        path("${plot_file_prefix}_histograms.html")
+        tuple path("${plot_file_prefix}_histograms.html"), path("${plot_file_prefix}_histograms.json")
     
     script:
         """
-        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html
+        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name
         """
 }
 
@@ -132,10 +133,8 @@ process PlotReadStructure{
         tuple val(X), path(bam), path(bai)
 
     output:
-        path("${bam.simpleName}_aligned_segments.html")
-        path("${bam.simpleName}_read_structure.html")
+        tuple path("${bam.simpleName}_aligned_segments.html"), path("${bam.simpleName}_read_structure.html"), path("${bam.simpleName}_read_structure.json")
 
-    
     script:
         """
         plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
@@ -167,8 +166,7 @@ process PlotQScores{
         tuple val(Y), path(consensus_pileup)
 
     output:
-        path("${consensus_pileup.simpleName}.html")
-        path("${consensus_pileup.simpleName}.csv")
+        tuple path("${consensus_pileup.simpleName}.html"), path("${consensus_pileup.simpleName}.csv"), path("${consensus_pileup.simpleName}.json")
     
     script:
         """
@@ -185,10 +183,26 @@ process PlotMetadataStats{
         path(jsons)
 
     output:
-        path("metadata_plots.html")
+        tuple path("metadata_plots.html"), path("metadata_plots.json")
     
     script:
         """
         plot_metadata.py . metadata_plots.html
         """
+}
+process PlotReport{
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+
+    input:
+        path(jsons)
+
+    output:
+        path("report.html")
+    
+    script:
+        """
+        ls
+        generate_report.py '${params}'
+        """
+
 }
