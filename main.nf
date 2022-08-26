@@ -35,6 +35,7 @@ params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "validate"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
+params.split_on_adapter     = "yes"
 params.quick_results        = false
 
 // Pipeline performance metrics
@@ -73,6 +74,7 @@ log.info """
         Alignment                : $params.alignment
         variant_calling          : $params.variant_calling
         report                   : $params.report
+        split                    : $params.split_on_adapter 
 
     Other:
         profile                  : $params.profile_selected
