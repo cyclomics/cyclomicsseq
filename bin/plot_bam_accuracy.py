@@ -338,7 +338,7 @@ def plot_compare_accuracy(
 
         p_freq = figure(title=f"{my_title} {chrom}:{start}-{stop}", width=cyclomics_defaults.width)
         p_freq.xaxis.axis_label = "Position"
-        p_freq.yaxis.axis_label = "FREQ"
+        p_freq.yaxis.axis_label = "Q Score"
         p_freq.line("POS", "Q", source=df1, line_width=2, legend_label="Raw")
         p_freq.line(
             "POS",
@@ -349,12 +349,12 @@ def plot_compare_accuracy(
             legend_label="Consensus",
         )
 
-        p_freq.title.text_font_size = "18pt"
-        p_freq.xaxis.axis_label_text_font_size = "16pt"
-        p_freq.yaxis.axis_label_text_font_size = "16pt"
+        p_freq.title.text_font_size = cyclomics_defaults.plot_title_size
+        p_freq.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+        p_freq.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+        p_freq.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
+        p_freq.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
         p_freq.legend.location = "bottom_right"
-        p_freq.xaxis.major_label_text_font_size = "12pt"
-        p_freq.yaxis.major_label_text_font_size = "12pt"
 
         plots.append(p_freq)
 
@@ -379,19 +379,16 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
     q_scatter.scatter("Q_x", "Q_y", source=df_merge, color="orange")
     q_scatter.line([0, 50], [0, 50], color="grey", alpha=0.5)
 
-    q_scatter.title.text_font_size = "18pt"
-    q_scatter.xaxis.axis_label_text_font_size = "16pt"
-    q_scatter.yaxis.axis_label_text_font_size = "16pt"
-    q_scatter.xaxis.major_label_text_font_size = "12pt"
-    q_scatter.yaxis.major_label_text_font_size = "12pt"
+    q_scatter.title.text_font_size = cyclomics_defaults.plot_title_size
+    q_scatter.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+    q_scatter.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+    q_scatter.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
+    q_scatter.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
 
     x = df_merge.Q_x.dropna().to_numpy()
     print(x)
     hhist, hedges = np.histogram(x, bins=50)
-    hzeros = np.zeros(len(hedges)-1)
     hmax = max(hhist)*1.1
-
-    LINE_ARGS = dict(color="#3A5785", line_color=None)
 
     ph = figure(toolbar_location=None, width=q_scatter.width, height=SIDE_DIST_PLOT_SIZE, x_range=q_scatter.x_range,
                 y_range=(0, hmax), min_border=10, min_border_left=50, y_axis_location="right")
