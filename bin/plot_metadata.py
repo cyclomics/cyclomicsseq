@@ -165,7 +165,10 @@ def read_jsons_into_plots(json_folder, plot_file):
         subset = random.sample(full, 10_000)
         raw_lens_subset = [x[0] for x in subset]
         segments_subset = [x[1] for x in subset]
-
+    else:
+        raw_lens_subset = raw_lens
+        segments_subset = segments
+        
     p2.scatter(x=raw_lens_subset, y=segments_subset)
 
     p2.title.text_font_size = "18pt"
