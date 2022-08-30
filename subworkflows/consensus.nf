@@ -140,7 +140,7 @@ workflow CycasConsensus{
         else {
             fastq = FilterShortReads
         }
-        Minimap2AlignAdaptiveParameterized(FilterShortReads.out, reference_genome)
+        Minimap2AlignAdaptiveParameterized(fastq, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)
