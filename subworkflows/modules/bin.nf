@@ -206,3 +206,55 @@ process PlotReport{
         """
 
 }
+
+process GetUnalignedSegments{
+    publishDir "${params.output_dir}/mappability", mode: 'copy'
+
+    input:
+        tuple val(X), path(input_bam), path(input_index)
+
+    output:
+        tuple val(X), path("${X}.unaligned.fastq"), path("${X}.reads_df.csv")
+
+    script:
+        """
+        recover_segments.py get_unaligned_segments ${X}.NM_50_mapq_20.bam ${X}.unaligned.fastq ${X}.reads_df.csv
+        """
+}
+
+process MapSegmentsBowtie{
+    publishDir "${params.output_dir}/mappability", mode: 'copy'
+
+    input:
+        tuple val(X), path(unaligned_fastq), path(reference_fasta)
+
+    output:
+        tuple val(X), path("${X}.bowtie.unaligned.sorted.bam")
+
+    script:
+        """
+        mkdir -p bowtie
+        bowtie2-build -q -f ${reference_fastq} ${reference_fastq}
+        bowtie2 --local -p 16 -x ${reference_fastq} -U ${unaligned_fastq} -S ${X}.bowtie.unaligned.sam
+        samtools view -S -b -F 4 ${X}.bowtie.unaligned.sam > ${X}.bowtie.unaligned.bam
+        rm ${X}.bowtie.unaligned.sam 
+        samtools sort ${X}.bowtie.unaligned.bam > ${X}.bowtie.unaligned.sorted.bam
+        rm ${X}.bowtie.unaligned.bam
+        samtools index ${X}.bowtie.unaligned.sorted.bam
+        """
+}
+
+process MergeSegmentAlignments{
+    publishDir "${params.output_dir}/mappability", mode: 'copy'
+
+    input:
+        tuple val(X), path(original_bam), path(unaligned_segments_bam), path(reads_df)
+
+    output:
+        tuple val(X), path("${X}.merged_realigned.bam")
+
+    script:
+        """
+        recover_segments.py merge_segment_alignments $original_bam $unaligned_segments_bam $reads_df ${X}.merged_realigned.bam
+        """
+}
