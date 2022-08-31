@@ -149,7 +149,7 @@ process PlotVcf{
         path(vcf)
 
     output:
-        path("${vcf.simpleName}.html")
+        tuple path("${vcf.simpleName}.html"), path("${plot_file_prefix}_histograms.json")
     
     script:
         """
