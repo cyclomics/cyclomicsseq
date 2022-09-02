@@ -149,7 +149,7 @@ process PlotVcf{
         path(vcf)
 
     output:
-        tuple path("${vcf.simpleName}.html"), path("${plot_file_prefix}_histograms.json")
+        tuple path("${vcf.simpleName}.html"), path("${vcf.simpleName}.json")
     
     script:
         """
@@ -202,7 +202,7 @@ process PlotReport{
     script:
         """
         ls
-        generate_report.py '${params}'
+        generate_report.py '${params}' $workflow.manifest.version
         """
 
 }
