@@ -4,6 +4,7 @@ nextflow.enable.dsl=2
 include {
     AnnotateBamXTags
     AnnotateBamYTags
+    Bowtie2Index
 } from "./modules/bin.nf"
 
 include {
@@ -91,12 +92,14 @@ workflow PrepareGenome {
         IndexCombined(MergeFasta.out)
         IndexReference(genome)
         Reference_info(MergeFasta.out)
+        Bowtie2Index(MergeFasta.out)
         
     emit:
         mmi_combi = IndexCombined.out
         mmi_ref = IndexReference.out
         fasta_combi = MergeFasta.out
         fasta_ref = reference_genome
+        bt2_ref = Bowtie2Index.out
 }
 
 workflow AlignBWA{

@@ -198,6 +198,8 @@ workflow {
         CycasConsensus( read_fastq.flatten(),
             PrepareGenome.out.mmi_combi,
             backbone_fasta,
+            PrepareGenome.out.fasta_combi,
+            PrepareGenome.out.bt2_ref
         )
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json

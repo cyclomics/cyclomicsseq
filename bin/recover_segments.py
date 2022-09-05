@@ -149,7 +149,7 @@ def get_unaligned_segments(bam_filename, unaligned_fastq, reads_df):
         for read, sections in fastq_reads:
             for i, section in enumerate(sections):
                 start, end, seq, qual = section[0], section[1], section[2], section[3]
-                fastq.write(f"@{read}_{i+1}_{start}-{end}\n{seq}\n+\n{qual}\n")
+                fastq.write(f"@{read}:{i+1}:{start}-{end}\n{seq}\n+\n{qual}\n")
 
     return unaligned_fastq, reads_df
 
@@ -217,7 +217,7 @@ def merge_segment_alignments(original_bam, realigned_bam, df_path, merged_bamfil
 
     for aln in bowtie_reads:
         # parse info from alignment query names
-        read_name, segment_nr, segment_pos = aln.query_name.split('_')
+        read_name, segment_nr, segment_pos = aln.query_name.split(':')
         segment_start, segment_end = segment_pos.split('-')
         aln.query_name = read_name
         
@@ -286,8 +286,8 @@ if __name__ == "__main__":
     from sys import argv
 
     if argv[1] == "get_unaligned_segments":
-        original_bam, unaliged_fastq, reads_df = argv[2], argv[3], argv[3]
-        get_unaligned_segments(bam=original_bam)
+        original_bam, unaligned_fastq, reads_df = argv[2], argv[3], argv[4]
+        get_unaligned_segments(bam_filename=original_bam, unaligned_fastq=unaligned_fastq, reads_df=reads_df)
 
     elif argv[1] == "merge_segment_alignments":
         original_bam, realigned_bam, df_path, merged_bamfile = argv[2], argv[3], argv[4], argv[5]

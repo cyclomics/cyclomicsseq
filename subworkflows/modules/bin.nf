@@ -222,20 +222,36 @@ process GetUnalignedSegments{
         """
 }
 
-process MapSegmentsBowtie{
-    publishDir "${params.output_dir}/mappability", mode: 'copy'
+process Bowtie2Index{
+    publishDir "${params.output_dir}/bowtie2", mode: 'copy'
+    label 'few_memory_intensive'
 
     input:
-        tuple val(X), path(unaligned_fastq), path(reference_fasta)
+        path(reference)
 
     output:
-        tuple val(X), path("${X}.bowtie.unaligned.sorted.bam")
+       path "${reference}.*", includeInputs: true, emit: bt2_ref
+        //path ("${params.output_dir}/bowtie2/${reference}")
 
     script:
         """
-        mkdir -p bowtie
-        bowtie2-build -q -f ${reference_fastq} ${reference_fastq}
-        bowtie2 --local -p 16 -x ${reference_fastq} -U ${unaligned_fastq} -S ${X}.bowtie.unaligned.sam
+        bowtie2-build -q -f ${reference} ${reference}
+        """
+}
+
+process MapSegmentsBowtie{
+    publishDir "${params.output_dir}/mappability", mode: 'copy'
+    maxForks 5
+
+    input:
+        tuple val(X), path(unaligned_fastq), path(reads_df), path(reference)
+
+    output:
+        tuple val(X), path("${X}.bowtie.unaligned.sorted.bam"), path("${X}.bowtie.unaligned.sorted.bam.bai"), path(reads_df)
+
+    script:
+        """
+        bowtie2 --local -p ${task.cpus} -x ${params.output_dir}/bowtie2/${reference} -U ${unaligned_fastq} -S ${X}.bowtie.unaligned.sam
         samtools view -S -b -F 4 ${X}.bowtie.unaligned.sam > ${X}.bowtie.unaligned.bam
         rm ${X}.bowtie.unaligned.sam 
         samtools sort ${X}.bowtie.unaligned.bam > ${X}.bowtie.unaligned.sorted.bam
@@ -246,15 +262,19 @@ process MapSegmentsBowtie{
 
 process MergeSegmentAlignments{
     publishDir "${params.output_dir}/mappability", mode: 'copy'
+    maxForks 5
 
     input:
-        tuple val(X), path(original_bam), path(unaligned_segments_bam), path(reads_df)
+        tuple val(X), path(original_bam), path(original_bam_index), path(unaligned_segments_bam), path(unaligned_segments_bam_index), path(reads_df)
 
     output:
-        tuple val(X), path("${X}.merged_realigned.bam")
+        tuple val(X), path("${X}.merged_realigned.sorted.bam"), path("${X}.merged_realigned.sorted.bam.bai")
 
     script:
         """
         recover_segments.py merge_segment_alignments $original_bam $unaligned_segments_bam $reads_df ${X}.merged_realigned.bam
+        samtools sort ${X}.merged_realigned.bam > ${X}.merged_realigned.sorted.bam
+        rm ${X}.merged_realigned.bam
+        samtools index ${X}.merged_realigned.sorted.bam
         """
 }

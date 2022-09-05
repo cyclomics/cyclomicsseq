@@ -1,6 +1,12 @@
 
 nextflow.enable.dsl=2
 
+include {
+    GetUnalignedSegments
+    Bowtie2Index
+    MapSegmentsBowtie
+    MergeSegmentAlignments
+} from "./modules/bin"
 
 include {
     FastqToFasta
@@ -130,8 +136,11 @@ workflow TidehunterBackBoneQual{
 workflow CycasConsensus{
     take:
         read_fastq
-        reference_genome
+        reference_genome_index
         backbone_fasta
+        reference_genome_fasta
+        bt2_ref
+
     main:
         FilterShortReads(read_fastq)
         if (params.split_on_adapter != "no") {
@@ -140,11 +149,14 @@ workflow CycasConsensus{
         else {
             fastq = FilterShortReads
         }
-        Minimap2AlignAdaptiveParameterized(fastq, reference_genome)
+        Minimap2AlignAdaptiveParameterized(fastq, reference_genome_index)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)
-        Cycas(MapqAndNMFilter.out)
+        GetUnalignedSegments(MapqAndNMFilter.out)
+        MapSegmentsBowtie(GetUnalignedSegments.out.combine(reference_genome_fasta))
+        MergeSegmentAlignments(MapqAndNMFilter.out.join(MapSegmentsBowtie.out))
+        Cycas(MergeSegmentAlignments.out)
 
     emit:
         // take the first 2 elements aka id and fastq
