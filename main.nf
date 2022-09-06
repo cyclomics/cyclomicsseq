@@ -190,7 +190,8 @@ workflow {
             reference_genome_indexed,
             backbone_fasta,
             params.tidehunter.primer_length,
-            params.backbone_name
+            params.backbone_name,
+            PrepareGenome.out.mmi_combi
         )
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq

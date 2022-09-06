@@ -47,6 +47,7 @@ include {
     MinimapAlignMany
     Minimap2AlignAdaptive
     Minimap2AlignAdaptiveParameterized
+    Minimap2AlignAdaptiveParameterized as MinimapForSplitMap
 } from "./modules/minimap"
 
 include {
@@ -101,6 +102,8 @@ workflow TidehunterBackBoneQual{
         backbone_fasta
         backbone_primer_len
         backbone_name
+        reference_genome_mmi
+
     main:
         // get backbones
         ExtractSpecificRead(backbone_fasta, backbone_name)
@@ -116,13 +119,13 @@ workflow TidehunterBackBoneQual{
         id = id.map(it -> it.split('_')[0])
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
         TideHunterQualJsonMerge(id, jsons)
-        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
+        MinimapForSplitMap(read_fastq, reference_genome_mmi)
 
 
     emit:
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
-        split_bam = Minimap2AlignAdaptiveParameterized.out
+        split_bam = MinimapForSplitMap.out
 
 }
 
