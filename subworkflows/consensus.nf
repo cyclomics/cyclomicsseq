@@ -116,14 +116,13 @@ workflow TidehunterBackBoneQual{
         id = id.map(it -> it.split('_')[0])
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
         TideHunterQualJsonMerge(id, jsons)
-        // BWaMemSorted(Cutadapt.out, reference_gen)
-        // SambambaSortSam(BwaMemSorted.out)
-        // SamtoolsIndex(SambambaSortSam.out)
-        // RotateByCigar(SamtoolsIndex.out)
+        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
+
 
     emit:
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
+        split_bam = Minimap2AlignAdaptiveParameterized.out
 
 }
 

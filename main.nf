@@ -68,6 +68,7 @@ log.info """
         backbone_name            : $params.backbone_name
         region_file              : $params.region_file  
         output folder            : $params.output_dir
+        Cmd line                 : $workflow.commandLine
     Method:  
         QC                       : $params.qc
         consensus_calling        : $params.consensus_calling
@@ -193,6 +194,7 @@ workflow {
         )
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
+        split_bam = TidehunterBackBoneQual.out.split_bam
     }
     else if (params.consensus_calling == "cycas"){
         CycasConsensus( read_fastq.flatten(),
@@ -201,6 +203,7 @@ workflow {
         )
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json
+        split_bam = CycasConsensus.out.split_bam
     }
     else if(params.consensus_calling == "medaka" ) {
         CycasMedaka( read_fastq.flatten(),
@@ -276,7 +279,7 @@ workflow {
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
-        CycasConsensus.out.split_bam,
+        split_bam,
         base_unit_reads,
         read_info_json,
         reads_aligned,
