@@ -113,35 +113,59 @@ def _plot_donut(
     return donut_plot
 
 
-def read_jsons_into_plots(json_folder, plot_file):
-    alignment_ratio = []
-    repeat_data = []
-    raw_lens = []
-    segments = []
-    classifications = []
+def parse_Cycas_metadata(dict_data):
+    alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
 
+    for read in dict_data.keys():
+        data = dict_data[read]
+        raw_len = data["raw_length"]
+        aln_len = sum(
+            [
+                v["aligned_bases_before_consensus"]
+                for k, v in data["consensus_reads"].items()
+            ]
+        )
+        alignment_ratio.append((raw_len, aln_len))
+
+        raw_len = data["raw_length"]
+        segment = data["alignment_count"]
+        classification = data["classification"]
+
+        repeat_data.append((raw_len, segment))
+        raw_lens.append(raw_len)
+        segments.append(segment)
+        classifications.append(classification)
+
+    return alignment_ratio,repeat_data, raw_lens, segments, classifications
+
+
+def parse_Tidehunter_metadata(dict_data):
+    alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
+
+    for i,data in enumerate(dict_data):
+        if i == 0:
+            continue
+        
+        aln_ratio = float(data['baseunit_copies'])*float(data['baseunit_length'])
+        alignment_ratio.append((int(data['raw_length']), aln_ratio))
+        repeat_data.append((data['raw_length'],data['baseunit_copies']))
+        raw_lens.append(data['raw_length'])
+        segments.append(data['baseunit_copies'])
+        classifications.append('Unkown')
+
+    return alignment_ratio,repeat_data, raw_lens, segments, classifications
+
+
+def read_jsons_into_plots(json_folder, plot_file):
     for test_json in glob.glob(f"{json_folder}/*.json"):
         with open(test_json) as d:
             dict_data = json.load(d)
-            for read in dict_data.keys():
-                data = dict_data[read]
-                raw_len = data["raw_length"]
-                aln_len = sum(
-                    [
-                        v["aligned_bases_before_consensus"]
-                        for k, v in data["consensus_reads"].items()
-                    ]
-                )
-                alignment_ratio.append((raw_len, aln_len))
+            if type(dict_data) == dict:
+                alignment_ratio,repeat_data, raw_lens, segments, classifications = parse_Cycas_metadata(dict_data)
+            else:
+                alignment_ratio,repeat_data, raw_lens, segments, classifications = parse_Tidehunter_metadata(dict_data)
 
-                raw_len = data["raw_length"]
-                segment = data["alignment_count"]
-                classification = data["classification"]
-
-                repeat_data.append((raw_len, segment))
-                raw_lens.append(raw_len)
-                segments.append(segment)
-                classifications.append(classification)
+                
 
     X = [x[0] for x in alignment_ratio]
     Y = [x[1] for x in alignment_ratio]

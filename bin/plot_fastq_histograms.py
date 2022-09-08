@@ -5,6 +5,7 @@ from glob import glob
 from tqdm import tqdm
 import json
 from pathlib import Path
+import os
 
 from pyfastx import Fastq
 import pandas as pd
@@ -22,6 +23,9 @@ def process_fastqs(fastqs_path):
     overall = Counter()
     lengths = []
     for fq in tqdm(glob(fastqs_path)):
+        if os.stat(fq).st_size == 0:
+            print(f"fastq is empty: {fq}")
+            continue
         read_file = Fastq(fq, build_index=False)
         for read in read_file:
             read_q_count = Counter(read[2])
