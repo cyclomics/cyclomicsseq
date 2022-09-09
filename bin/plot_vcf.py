@@ -168,6 +168,7 @@ def main(vcf_file, plot_file):
     add_info = {}
     json_obj ={}
     json_obj[tab_name] = {}
+    json_obj[tab_name]['name'] = tab_name
 
     if data.empty:
         f = open(plot_file, "w")
@@ -184,8 +185,6 @@ def main(vcf_file, plot_file):
     output_file(args.plot_file, title="variant plots")
     save(plot)
 
-    
-    json_obj[tab_name]['name'] = tab_name
     json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(plot)
     json_obj['additional_info'] = add_info
     

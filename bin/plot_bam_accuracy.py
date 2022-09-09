@@ -427,6 +427,7 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     add_info = {}
     json_obj ={}
     json_obj[tab_name] = {}
+    json_obj[tab_name]['name'] = tab_name
 
     if df1.empty or df2.empty:
         f = open(output_plot_file, "w")
@@ -447,7 +448,6 @@ def main(perbase_path1, perbase_path2, output_plot_file):
         final_plot = column([q_score_plot, positional_accuracy])
 
         
-        json_obj[tab_name]['name'] = tab_name
         json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(final_plot)
         json_obj['additional_info'] = add_info
         
