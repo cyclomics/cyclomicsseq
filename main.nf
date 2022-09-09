@@ -290,5 +290,5 @@ workflow {
 }
 
 workflow.onComplete {
-	log.info ( workflow.success ? "\nDone. Open the following folder --> $params.output_dir\n" : "something went wrong in the pipeline" )
+	log.info ( workflow.success ? "\nDone. The results are available in following folder --> $params.output_dir\n" : "something went wrong in the pipeline" )
 }
