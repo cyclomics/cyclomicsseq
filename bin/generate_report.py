@@ -134,11 +134,7 @@ def main(args):
     )
 
     tabs = ReportTabCollection([])
-    jsons = [
-        "/home/dami/Software/cycloseq/testrun2/QC/ABZ922_pass_ec514dc6_2_histograms.json",
-        "/home/dami/Software/cycloseq/testrun2/QC/ABZ922_pass_ec514dc6_2_filtered_histograms.json",
-    ]
-
+    
     for plot_json in glob("*.json"):
         with open(plot_json, "r") as f:
             test_json_content = json.load(f)
@@ -149,7 +145,7 @@ def main(args):
             else:
                 try:
                     tabs += v
-                except ValueError:
+                except (ValueError, KeyError) as e:
                     pass
 
     print(data["aditional_info"])

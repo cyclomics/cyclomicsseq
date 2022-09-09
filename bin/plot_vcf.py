@@ -164,10 +164,18 @@ def make_scatter_plots(data, roi):
 
 def main(vcf_file, plot_file):
     data = read_vcf(args.vcf_file)
+    tab_name = 'Variants'
+    add_info = {}
+    json_obj ={}
+    json_obj[tab_name] = {}
+
     if data.empty:
         f = open(plot_file, "w")
         f.write("<h1>No variants found</h1>")
         f.close()
+        json_obj[tab_name]['script'], json_obj[tab_name]['div'] = "", "<h1>One of the pileups was not deep enough.</h1>"
+        with open(Path(args.plot_file).with_suffix('.json'), 'w')as f:
+            f.write(json.dumps(json_obj))
         return
 
     roi = get_roi_pileup_df(data)
@@ -176,10 +184,7 @@ def main(vcf_file, plot_file):
     output_file(args.plot_file, title="variant plots")
     save(plot)
 
-    tab_name = 'Variants'
-    add_info = {}
-    json_obj ={}
-    json_obj[tab_name] = {}
+    
     json_obj[tab_name]['name'] = tab_name
     json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(plot)
     json_obj['additional_info'] = add_info

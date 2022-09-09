@@ -41,6 +41,7 @@ cycas_class_mapper = {
 
 
 def _calculate_angle_and_color(stats, concat_type_colors):
+    print(stats)
     _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
     _df1.columns = ["type", "count"]
     _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
@@ -114,6 +115,8 @@ def _plot_donut(
 
 
 def parse_Cycas_metadata(dict_data):
+    print('cycas parsing')
+
     alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
 
     for read in dict_data.keys():
@@ -140,25 +143,27 @@ def parse_Cycas_metadata(dict_data):
 
 
 def parse_Tidehunter_metadata(dict_data):
+    print('tidehunter parsing')
     alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
 
     for i,data in enumerate(dict_data):
         if i == 0:
             continue
-        
+        print(data)
         aln_ratio = float(data['baseunit_copies'])*float(data['baseunit_length'])
         alignment_ratio.append((int(data['raw_length']), aln_ratio))
         repeat_data.append((data['raw_length'],data['baseunit_copies']))
         raw_lens.append(data['raw_length'])
         segments.append(data['baseunit_copies'])
         classifications.append('Unkown')
-
+    print(dict_data)
     return alignment_ratio,repeat_data, raw_lens, segments, classifications
 
 
 def read_jsons_into_plots(json_folder, plot_file):
     for test_json in glob.glob(f"{json_folder}/*.json"):
         with open(test_json) as d:
+            print(test_json)
             dict_data = json.load(d)
             if type(dict_data) == dict:
                 alignment_ratio,repeat_data, raw_lens, segments, classifications = parse_Cycas_metadata(dict_data)
