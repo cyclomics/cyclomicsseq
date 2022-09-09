@@ -1,5 +1,10 @@
 # changelog
 
+## 0.7.0
+- Change output structure
+- Added single page reporting, available in QC/report.html
+- Added readsplitting
+
 ## 0.6.1
 - fix bug in reference genome info generator
 - fix conda environment parser
@@ -7,7 +12,6 @@
 - Update README.md
 
 ## 0.6.0
-
 - Update cycas version for consensus generation
 - Alter variant calling parameters
 - Pass vcf parameters to final file
