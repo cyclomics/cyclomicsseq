@@ -125,7 +125,7 @@ workflow Minimap2Align{
         id = id.map(it -> it.split('_')[0])
 
         if (consensus_calling == "cycas") {
-            println('annotating bams with Y tags')
+            // For now we only do Y tag addition for cycas
             metadata_pairs = Minimap2AlignAdaptive.out.join(jsons)
             AnnotateBamYTags(metadata_pairs)
             bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
