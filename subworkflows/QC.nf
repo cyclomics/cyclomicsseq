@@ -83,18 +83,19 @@ workflow PostQC {
         extension = first_fq.getExtension()
 
         FastqInfoRaw(fastq_raw.collect(),'raw')
-        PlotRawFastqHist(fastq_raw.collect(), extension, id, '"raw fastq info"')
+        PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"raw fastq info"')
         
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
 
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect(), 'consensus')
-        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id, '"consensus fastq info"')
+        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id + "consensus", '"consensus fastq info"')
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        PlotMetadataStats(id, read_info.map(it -> it[1]).unique().collect())
+        read_info.view()
+        PlotMetadataStats(read_info.collect())
 
         roi = FindRegionOfInterest(consensus_bam)
       
@@ -118,7 +119,6 @@ workflow PostQC {
             PlotRawFastqHist.out.combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
-            PlotMetadataStats.out).combine(
             PlotQScores.out).combine(
             PlotVcf.out))
 }

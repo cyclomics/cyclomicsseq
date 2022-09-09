@@ -179,8 +179,7 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
-        val(X)
-        path(jsons)
+        tuple val(x), path(jsons)
 
     output:
         tuple path("metadata_plots.html"), path("metadata_plots.json")
