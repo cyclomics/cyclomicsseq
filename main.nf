@@ -35,6 +35,7 @@ params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "validate"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
+params.split_on_adapter     = "yes"
 params.quick_results        = false
 
 // Pipeline performance metrics
@@ -67,12 +68,14 @@ log.info """
         backbone_name            : $params.backbone_name
         region_file              : $params.region_file  
         output folder            : $params.output_dir
+        Cmd line                 : $workflow.commandLine
     Method:  
         QC                       : $params.qc
         consensus_calling        : $params.consensus_calling
         Alignment                : $params.alignment
         variant_calling          : $params.variant_calling
         report                   : $params.report
+        split                    : $params.split_on_adapter 
 
     Other:
         profile                  : $params.profile_selected
@@ -151,7 +154,12 @@ workflow {
     if (params.profile_selected == 'local') {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
-
+    if (params.profile_selected != 'docker') {
+            if (params.consensus_calling == 'tidehunter'){
+                println('Tidehunter only works with docker in this version, due to a bug in the Tidehunter release.')
+                exit(1)
+            }
+        }
 
     // Process inputs:
     // add the trailing slash if its missing 
@@ -183,14 +191,17 @@ workflow {
 ========================================================================================
 */
     if( params.consensus_calling == "tidehunter" ) {
+        
         base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
             reference_genome_indexed,
             backbone_fasta,
             params.tidehunter.primer_length,
-            params.backbone_name
+            params.backbone_name,
+            PrepareGenome.out.mmi_combi
         )
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
+        split_bam = TidehunterBackBoneQual.out.split_bam
     }
     else if (params.consensus_calling == "cycas"){
         CycasConsensus( read_fastq.flatten(),
@@ -199,6 +210,7 @@ workflow {
         )
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json
+        split_bam = CycasConsensus.out.split_bam
     }
     else if(params.consensus_calling == "medaka" ) {
         CycasMedaka( read_fastq.flatten(),
@@ -221,7 +233,7 @@ workflow {
 ========================================================================================
 */    
     if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json)
+        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json, params.consensus_calling)
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "skip" ) {
@@ -274,11 +286,15 @@ workflow {
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
-        CycasConsensus.out.split_bam,
+        split_bam,
         base_unit_reads,
         read_info_json,
         reads_aligned,
         params.quick_results,
         locations,
     )
+}
+
+workflow.onComplete {
+	log.info ( workflow.success ? "\nDone. The results are available in following folder --> $params.output_dir\n" : "something went wrong in the pipeline" )
 }

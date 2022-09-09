@@ -97,7 +97,7 @@ process Tidehunter53QualTable{
         --five-prime $prime_5_fasta \
         --three-prime $prime_3_fasta \
         --min-period $params.tidehunter.minimum_period \
-        --min-len $params.tidehunter.minimum_period \
+        --min-len $params.tidehunter.minimum_length \
         --min-copy $params.tidehunter.minimum_copy \
         -a $params.tidehunter.minimum_match_ratio \
         $fasta >> ${fasta.SimpleName}.consensus.tsv
@@ -120,7 +120,7 @@ process TideHunterFilterTableStartpos{
 }
 
 process TideHunterQualTableToFastq{
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:

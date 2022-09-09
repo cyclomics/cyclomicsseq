@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+from plotting_defaults import cyclomics_defaults
 
 import math
 from collections import Counter
 from typing import List, Tuple
 from pathlib import Path
+import json
 
 import pandas as pd
 import numpy as np
@@ -13,8 +15,11 @@ import re
 from bokeh.io import save, output_file
 from bokeh.plotting import figure, show
 from bokeh.layouts import row, column
+from bokeh.embed import components
+from bokeh.layouts import gridplot
 
 chromosomal_region = Tuple[str, int, int]
+SIDE_DIST_PLOT_SIZE = 100
 
 
 def get_roi_pileup_df(
@@ -332,9 +337,11 @@ def plot_compare_accuracy(
         df2 = df2[df2.POS >= start]
         df2 = df2[df2.POS <= stop]
 
-        p_freq = figure(title=f"{my_title} {chrom}:{start}-{stop}", width=1500)
+        p_freq = figure(
+            title=f"{my_title} {chrom}:{start}-{stop}", width=cyclomics_defaults.width
+        )
         p_freq.xaxis.axis_label = "Position"
-        p_freq.yaxis.axis_label = "FREQ"
+        p_freq.yaxis.axis_label = "Q Score"
         p_freq.line("POS", "Q", source=df1, line_width=2, legend_label="Raw")
         p_freq.line(
             "POS",
@@ -345,12 +352,12 @@ def plot_compare_accuracy(
             legend_label="Consensus",
         )
 
-        p_freq.title.text_font_size = "18pt"
-        p_freq.xaxis.axis_label_text_font_size = "16pt"
-        p_freq.yaxis.axis_label_text_font_size = "16pt"
+        p_freq.title.text_font_size = cyclomics_defaults.plot_title_size
+        p_freq.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+        p_freq.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+        p_freq.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
+        p_freq.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
         p_freq.legend.location = "bottom_right"
-        p_freq.xaxis.major_label_text_font_size = "12pt"
-        p_freq.yaxis.major_label_text_font_size = "12pt"
 
         plots.append(p_freq)
 
@@ -368,26 +375,94 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
     if csv_merge:
         df_merge.to_csv(csv_merge)
 
-    q_scatter = figure(title=f"Q score scatter, variant unaware.", width=1500)
+    q_scatter = figure(
+        title=f"Q score scatter, variant unaware.",
+        width=cyclomics_defaults.width - SIDE_DIST_PLOT_SIZE,
+    )
     q_scatter.xaxis.axis_label = "ONT Q score"
     q_scatter.yaxis.axis_label = "Cyclomics Q score"
 
     q_scatter.scatter("Q_x", "Q_y", source=df_merge, color="orange")
     q_scatter.line([0, 50], [0, 50], color="grey", alpha=0.5)
 
-    q_scatter.title.text_font_size = "18pt"
-    q_scatter.xaxis.axis_label_text_font_size = "16pt"
-    q_scatter.yaxis.axis_label_text_font_size = "16pt"
-    q_scatter.xaxis.major_label_text_font_size = "12pt"
-    q_scatter.yaxis.major_label_text_font_size = "12pt"
+    q_scatter.title.text_font_size = cyclomics_defaults.plot_title_size
+    q_scatter.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+    q_scatter.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
+    q_scatter.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
+    q_scatter.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
 
-    return q_scatter
+    x = df_merge.Q_x.dropna().to_numpy()
+    print(x)
+    hhist, hedges = np.histogram(x, bins=50)
+    hmax = max(hhist) * 1.1
+
+    ph = figure(
+        toolbar_location=None,
+        width=q_scatter.width,
+        height=SIDE_DIST_PLOT_SIZE,
+        x_range=q_scatter.x_range,
+        y_range=(0, hmax),
+        min_border=10,
+        min_border_left=50,
+        y_axis_location="right",
+    )
+    ph.xgrid.grid_line_color = None
+    ph.yaxis.major_label_orientation = np.pi / 4
+    ph.background_fill_color = "#fafafa"
+
+    ph.quad(
+        bottom=0,
+        left=hedges[:-1],
+        right=hedges[1:],
+        top=hhist,
+        color="white",
+        line_color="#3A5785",
+    )
+
+    # create the vertical histogram
+    y = df_merge.Q_y.dropna().to_numpy()
+
+    vhist, vedges = np.histogram(y, bins=50)
+    vzeros = np.zeros(len(vedges) - 1)
+    vmax = max(vhist) * 1.1
+
+    pv = figure(
+        toolbar_location=None,
+        width=SIDE_DIST_PLOT_SIZE,
+        height=q_scatter.height,
+        x_range=(0, vmax),
+        y_range=q_scatter.y_range,
+        min_border=10,
+        y_axis_location="right",
+    )
+    pv.ygrid.grid_line_color = None
+    pv.xaxis.major_label_orientation = np.pi / 4
+    pv.background_fill_color = "#fafafa"
+
+    pv.quad(
+        left=0,
+        bottom=vedges[:-1],
+        top=vedges[1:],
+        right=vhist,
+        color="white",
+        line_color="#3A5785",
+    )
+
+    layout = gridplot([[q_scatter, pv], [ph, None]], merge_tools=False)
+
+    return layout
 
 
 def main(perbase_path1, perbase_path2, output_plot_file):
 
     df1 = perbase_table_to_df(perbase_path1)
     df2 = perbase_table_to_df(perbase_path2)
+
+    tab_name = "Consensus quality"
+    add_info = {}
+    json_obj = {}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]["name"] = tab_name
 
     if df1.empty or df2.empty:
         f = open(output_plot_file, "w")
@@ -396,14 +471,30 @@ def main(perbase_path1, perbase_path2, output_plot_file):
         f = open(output_plot_file.with_suffix(".csv"), "w")
         f.write("One of the pileups was not deep.")
         f.close()
-        return
-    roi = get_roi_pileup_df(df1)
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+            "",
+            "<h1>One of the pileups was not deep enough.</h1>",
+        )
 
-    positional_accuracy = plot_compare_accuracy(roi, [df1, df2])
-    q_score_plot = make_qscore_scatter(df1, df2, output_plot_file.with_suffix(".csv"))
+    else:
+        roi = get_roi_pileup_df(df1)
 
-    output_file(output_plot_file, title="Cyclomics accuracy")
-    save(column([q_score_plot, positional_accuracy]))
+        positional_accuracy = plot_compare_accuracy(roi, [df1, df2])
+        q_score_plot = make_qscore_scatter(
+            df1, df2, output_plot_file.with_suffix(".csv")
+        )
+
+        output_file(output_plot_file, title="Cyclomics accuracy")
+        final_plot = column([q_score_plot, positional_accuracy])
+
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
+        json_obj["additional_info"] = add_info
+
+        save(final_plot)
+    print("writing json")
+    print(Path(output_plot_file).with_suffix(".json"))
+    with open(Path(output_plot_file).with_suffix(".json"), "w") as f:
+        f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":

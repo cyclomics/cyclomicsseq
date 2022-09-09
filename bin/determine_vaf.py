@@ -23,7 +23,7 @@ def is_intable(value):
         return False
 
 
-def create_bed_positions(bed_file, end_warning_length = 4):
+def create_bed_positions(bed_file, end_warning_length=4):
     with open(bed_file) as f:
         for line in f:
             print(line)
@@ -37,21 +37,21 @@ def create_bed_positions(bed_file, end_warning_length = 4):
             if not is_intable(L[2]):
                 logging.critical("error in bed file")
             for pos in range(int(L[1]), int(L[2])):
-                close_to_end =  pos + end_warning_length >= int(L[2])
+                close_to_end = pos + end_warning_length >= int(L[2])
                 yield L[0], pos, close_to_end
+
 
 @dataclass
 class Indel:
     type: str
     found: bool = False
-    type: str = ''
+    type: str = ""
     length: int = 0
-    assemby: str = ''
+    assemby: str = ""
     start_position: int = 0
-    sequence: str = ''
-    support_count_fwd:int = 0
-    support_count_rev:int = 0
-
+    sequence: str = ""
+    support_count_fwd: int = 0
+    support_count_rev: int = 0
 
 
 def check_snp_indel(pu_column, variant_th=0.003, variant_count_th=10):
@@ -80,31 +80,46 @@ def check_snp_indel(pu_column, variant_th=0.003, variant_count_th=10):
     # TODO: report propper vcf
 
     total = pu_column.n
-    pu = pu_column.get_query_sequences(mark_matches=True, mark_ends=True, add_indels=True,)
+    pu = pu_column.get_query_sequences(
+        mark_matches=True, mark_ends=True, add_indels=True
+    )
 
-    pu_indel = [x for x in pu if x.upper() not in ['.', ',', '*', '^', "A", "C","T","G"]]
+    pu_indel = [
+        x for x in pu if x.upper() not in [".", ",", "*", "^", "A", "C", "T", "G"]
+    ]
 
-    inserts = [x for x in pu_indel if x[1] == '+']
+    inserts = [x for x in pu_indel if x[1] == "+"]
     # remove the directional indicator and make uppercase since var name contains that info
     # eg convert A+3TTT' into TTT and A+1a to A
     inserts_fwd = [x[3:].upper() for x in inserts if x[-1].isupper()]
-    inserts_rev = [x[3:].upper()  for x in inserts if x[-1].islower()]
+    inserts_rev = [x[3:].upper() for x in inserts if x[-1].islower()]
 
-    deletions = [x for x in pu_indel if x[1] == '-']
+    deletions = [x for x in pu_indel if x[1] == "-"]
     # remove the directional indicator and make uppercase since var name contains that info
     # G-15NNNNNNNNNNNNNNN g-15nnnnnnnnnnnnnnn turn into 15NN... and 15NN.. in their respective variable
-    deletions_fwd = [x[2:].upper()  for x in deletions if x[-1] == 'N']
-    deletions_rev = [x[2:].upper()  for x in deletions if x[-1] == 'n']
+    deletions_fwd = [x[2:].upper() for x in deletions if x[-1] == "N"]
+    deletions_rev = [x[2:].upper() for x in deletions if x[-1] == "n"]
 
     # check some basic stats to continue construction of insert & deletion
-    deletion_indicator = True if 1 / total * len(deletions) > variant_th and len(deletions) > variant_count_th else False
-    insert_indicator = True if 1 / total * len(inserts) > variant_th and len(inserts) > variant_count_th else False
+    deletion_indicator = (
+        True
+        if 1 / total * len(deletions) > variant_th and len(deletions) > variant_count_th
+        else False
+    )
+    insert_indicator = (
+        True
+        if 1 / total * len(inserts) > variant_th and len(inserts) > variant_count_th
+        else False
+    )
 
     variant_found = Indel(None)
     if insert_indicator:
         # check same insert as most prevalent in both directions
         try:
-            if Counter(inserts_fwd).most_common(1)[0][0] == Counter(inserts_rev).most_common(1)[0][0]:
+            if (
+                Counter(inserts_fwd).most_common(1)[0][0]
+                == Counter(inserts_rev).most_common(1)[0][0]
+            ):
                 variant_found.found = True
                 variant_found.type = "instert"
         # only support from single direction
@@ -112,11 +127,11 @@ def check_snp_indel(pu_column, variant_th=0.003, variant_count_th=10):
             pass
 
         if variant_found.found:
-            insert_detected =  Counter(inserts_fwd).most_common(1)[0][0]
+            insert_detected = Counter(inserts_fwd).most_common(1)[0][0]
             insert_length = len(insert_detected)
             variant_found.sequence = insert_detected
             variant_found.length = insert_length
-            
+
             variant_found.support_count_fwd = Counter(inserts_fwd).most_common(1)[0][1]
             variant_found.support_count_rev = Counter(inserts_rev).most_common(1)[0][1]
 
@@ -126,30 +141,37 @@ def check_snp_indel(pu_column, variant_th=0.003, variant_count_th=10):
     elif deletion_indicator:
         # check same deletion as most prevalent in both directions
         try:
-            if Counter(deletions_fwd).most_common(1)[0][0] == Counter(deletions_rev).most_common(1)[0][0]:
+            if (
+                Counter(deletions_fwd).most_common(1)[0][0]
+                == Counter(deletions_rev).most_common(1)[0][0]
+            ):
                 variant_found.found = True
-                variant_found.type = "deletion"    
+                variant_found.type = "deletion"
         # only support from single direction
         except IndexError:
             pass
 
         if variant_found.found:
-            deletion_detected =  Counter(deletions_fwd).most_common(1)[0][0]
-            deletion_length = int(re.search(r'\d+', deletion_detected).group())
+            deletion_detected = Counter(deletions_fwd).most_common(1)[0][0]
+            deletion_length = int(re.search(r"\d+", deletion_detected).group())
             variant_found.sequence = deletion_detected
             variant_found.length = deletion_length
 
-            variant_found.support_count_fwd = Counter(deletions_fwd).most_common(1)[0][1]
-            variant_found.support_count_rev = Counter(deletions_rev).most_common(1)[0][1]
+            variant_found.support_count_fwd = Counter(deletions_fwd).most_common(1)[0][
+                1
+            ]
+            variant_found.support_count_rev = Counter(deletions_rev).most_common(1)[0][
+                1
+            ]
 
             variant_found.assemby = pu_column.reference_name
             variant_found.start_position = pu_column.pos
 
-    
     if variant_found.found == True:
-        print('')
+        print("")
         print(variant_found)
     return variant_found
+
 
 def extract_nucleotide_count(
     bam,
@@ -159,7 +181,7 @@ def extract_nucleotide_count(
     minimum_base_quality=10,
     add_dels=False,
     high_base_quality_cutoff=80,
-    end_of_amplicon=False
+    end_of_amplicon=False,
 ):
     tags = [
         "DP",
@@ -207,12 +229,11 @@ def extract_nucleotide_count(
         truncate=True,
         max_depth=pileup_depth,
         min_base_quality=minimum_base_quality,
-        stepper = "all" # both the samtools and pysam implementations leave things out.... eg long deletions
+        stepper="all",  # both the samtools and pysam implementations leave things out.... eg long deletions
     )
     #  For indel we need to reference to make the pileup engine behave as expected. eg add: as input to the above function.
     # But we first need to fix the overlapping amplicon issue.
     # fastafile = pysam.Fastafile('/home/dami/Data/references/Homo_sapiens/T2T/chm13v2.0.fa'),
-
 
     for pileupcolumn in positional_pileup:
         # all kinds of counters
@@ -224,7 +245,7 @@ def extract_nucleotide_count(
         alt_base_ratio_fwd = 0
         alt_base_ratio_rev = 0
         ym_ticker = []
-        
+
         # Check for Indels:
         # if not end_of_amplicon:
         #     check_snp_indel(pileupcolumn)
@@ -263,7 +284,7 @@ def extract_nucleotide_count(
                         nucs_fwd.append(nuc)
                     else:
                         nucs_rev.append(nuc)
-        
+
         # Calculate metrics
         hc_count = Counter(hc_nucs)
         if len(hc_count.most_common()) > 1:
@@ -300,7 +321,7 @@ def extract_nucleotide_count(
             continue
 
         else:
-            
+
             data_present = counts_mc[0][1] / total
             non_ref_ratio_filtered = 1 - (counts_mc[0][1] / counted_nucs)
 
@@ -349,24 +370,23 @@ def extract_nucleotide_count(
             tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
             # print(test_var)
 
-
     # create an object to store all gathered data
     var = Variant(
-        DP=total ,
-        DPQ=counted_nucs ,
-        FREQ=data_present ,
-        VAF=non_ref_ratio_filtered ,
-        FWDC=fwd_count ,
-        FWDR=alt_base_ratio_fwd ,
-        REVC=rev_count ,
-        REVR=alt_base_ratio_rev ,
-        TOTC=tot_count   ,
-        TOTR= tot_ratio  ,
-        SAME=(1 if base else  0),
-        OBSR=obs_ratio ,
-        ABQ=alt_base_mean_qual ,
-        OBQ= quals_mean ,
-        HCR=hc_ratio ,
+        DP=total,
+        DPQ=counted_nucs,
+        FREQ=data_present,
+        VAF=non_ref_ratio_filtered,
+        FWDC=fwd_count,
+        FWDR=alt_base_ratio_fwd,
+        REVC=rev_count,
+        REVR=alt_base_ratio_rev,
+        TOTC=tot_count,
+        TOTR=tot_ratio,
+        SAME=(1 if base else 0),
+        OBSR=obs_ratio,
+        ABQ=alt_base_mean_qual,
+        OBQ=quals_mean,
+        HCR=hc_ratio,
     )
     # print(var)
     # print("coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
@@ -551,7 +571,9 @@ def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
 
     for assembly, pos, amplicon_ending in tqdm(create_bed_positions(variants)):
         # print(f"{assembly}:{pos} | {amplicon_ending}")
-        result = extract_nucleotide_count(bam_af, assembly, pos, pileup_depth, end_of_amplicon = amplicon_ending)
+        result = extract_nucleotide_count(
+            bam_af, assembly, pos, pileup_depth, end_of_amplicon=amplicon_ending
+        )
         # print(result)
         # For a vcf file we need to convert 0 index to 1 index
 

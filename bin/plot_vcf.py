@@ -4,11 +4,14 @@ import io
 from typing import List, Tuple
 import pandas as pd
 import numpy as np
+from pathlib import Path
+import json
 
 from bokeh.io import save, output_file
 from bokeh.plotting import figure, show
 from bokeh.layouts import row, column
 from bokeh.models import HoverTool
+from bokeh.embed import components
 
 chromosomal_region = Tuple[str, int, int]
 
@@ -161,10 +164,22 @@ def make_scatter_plots(data, roi):
 
 def main(vcf_file, plot_file):
     data = read_vcf(args.vcf_file)
+    tab_name = "Variants"
+    add_info = {}
+    json_obj = {}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]["name"] = tab_name
+
     if data.empty:
         f = open(plot_file, "w")
         f.write("<h1>No variants found</h1>")
         f.close()
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+            "",
+            "<h1>One of the pileups was not deep enough.</h1>",
+        )
+        with open(Path(args.plot_file).with_suffix(".json"), "w") as f:
+            f.write(json.dumps(json_obj))
         return
 
     roi = get_roi_pileup_df(data)
@@ -172,6 +187,12 @@ def main(vcf_file, plot_file):
     plot = make_scatter_plots(data, roi)
     output_file(args.plot_file, title="variant plots")
     save(plot)
+
+    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
+    json_obj["additional_info"] = add_info
+
+    with open(Path(args.plot_file).with_suffix(".json"), "w") as f:
+        f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":
