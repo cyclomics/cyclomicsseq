@@ -17,6 +17,10 @@ include {
 } from "./modules/bwa"
 
 include {
+    SplitReadsOnAdapterSequence
+} from "./modules/fillet"
+
+include {
     SamtoolsFlagstatsMapPercentage
     RemoveUnmappedReads
     PrimaryMappedFilter
@@ -43,6 +47,7 @@ include {
     MinimapAlignMany
     Minimap2AlignAdaptive
     Minimap2AlignAdaptiveParameterized
+    Minimap2AlignAdaptiveParameterized as MinimapForSplitMap
 } from "./modules/minimap"
 
 include {
@@ -97,6 +102,8 @@ workflow TidehunterBackBoneQual{
         backbone_fasta
         backbone_primer_len
         backbone_name
+        reference_genome_mmi
+
     main:
         // get backbones
         ExtractSpecificRead(backbone_fasta, backbone_name)
@@ -112,14 +119,13 @@ workflow TidehunterBackBoneQual{
         id = id.map(it -> it.split('_')[0])
         jsons = TideHunterQualTableToJson.out.map(it -> it[1]).collect()
         TideHunterQualJsonMerge(id, jsons)
-        // BWaMemSorted(Cutadapt.out, reference_gen)
-        // SambambaSortSam(BwaMemSorted.out)
-        // SamtoolsIndex(SambambaSortSam.out)
-        // RotateByCigar(SamtoolsIndex.out)
+        MinimapForSplitMap(read_fastq, reference_genome_mmi)
+
 
     emit:
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
+        split_bam = MinimapForSplitMap.out
 
 }
 
@@ -130,7 +136,13 @@ workflow CycasConsensus{
         backbone_fasta
     main:
         FilterShortReads(read_fastq)
-        Minimap2AlignAdaptiveParameterized(FilterShortReads.out, reference_genome)
+        if (params.split_on_adapter != "no") {
+            fastq = SplitReadsOnAdapterSequence(FilterShortReads.out)
+        }
+        else {
+            fastq = FilterShortReads
+        }
+        Minimap2AlignAdaptiveParameterized(fastq, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)

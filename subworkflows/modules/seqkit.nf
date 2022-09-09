@@ -90,7 +90,7 @@ process ExtractSpecificRead{
 
 process CountFastqInfo{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
         path(fastq)
