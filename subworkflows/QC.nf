@@ -94,7 +94,6 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        read_info.view()
         PlotMetadataStats(read_info.collect())
 
         roi = FindRegionOfInterest(consensus_bam)

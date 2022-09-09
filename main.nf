@@ -154,7 +154,12 @@ workflow {
     if (params.profile_selected == 'local') {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
-
+    if (params.profile_selected != 'docker') {
+            if (params.consensus_calling == 'tidehunter'){
+                println('Tidehunter only works with docker in this version, due to a bug in the Tidehunter release.')
+                exit(1)
+            }
+        }
 
     // Process inputs:
     // add the trailing slash if its missing 
@@ -186,6 +191,7 @@ workflow {
 ========================================================================================
 */
     if( params.consensus_calling == "tidehunter" ) {
+        
         base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
             reference_genome_indexed,
             backbone_fasta,
