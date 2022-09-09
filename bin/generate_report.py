@@ -134,7 +134,7 @@ def main(args):
     )
 
     tabs = ReportTabCollection([])
-    
+
     for plot_json in glob("*.json"):
         with open(plot_json, "r") as f:
             test_json_content = json.load(f)

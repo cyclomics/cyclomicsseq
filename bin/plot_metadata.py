@@ -36,7 +36,7 @@ cycas_class_mapper = {
     "Unkown": concat_type_colors["Unknown"],
     "SingleInsert": concat_type_colors["I-only"],
     "BackboneDoubleInsert": concat_type_colors["BB-mI"],
-    "MessyAlignment" : concat_type_colors["Unknown"]
+    "MessyAlignment": concat_type_colors["Unknown"],
 }
 
 
@@ -115,9 +115,15 @@ def _plot_donut(
 
 
 def parse_Cycas_metadata(dict_data):
-    print('cycas parsing')
+    print("cycas parsing")
 
-    alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
+    alignment_ratio, repeat_data, raw_lens, segments, classifications = (
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
 
     for read in dict_data.keys():
         data = dict_data[read]
@@ -139,25 +145,31 @@ def parse_Cycas_metadata(dict_data):
         segments.append(segment)
         classifications.append(classification)
 
-    return alignment_ratio,repeat_data, raw_lens, segments, classifications
+    return alignment_ratio, repeat_data, raw_lens, segments, classifications
 
 
 def parse_Tidehunter_metadata(dict_data):
-    print('tidehunter parsing')
-    alignment_ratio,repeat_data, raw_lens, segments, classifications = [],[],[],[],[]
+    print("tidehunter parsing")
+    alignment_ratio, repeat_data, raw_lens, segments, classifications = (
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
 
-    for i,data in enumerate(dict_data):
+    for i, data in enumerate(dict_data):
         if i == 0:
             continue
         print(data)
-        aln_ratio = float(data['baseunit_copies'])*float(data['baseunit_length'])
-        alignment_ratio.append((int(data['raw_length']), aln_ratio))
-        repeat_data.append((data['raw_length'],data['baseunit_copies']))
-        raw_lens.append(data['raw_length'])
-        segments.append(data['baseunit_copies'])
-        classifications.append('Unkown')
+        aln_ratio = float(data["baseunit_copies"]) * float(data["baseunit_length"])
+        alignment_ratio.append((int(data["raw_length"]), aln_ratio))
+        repeat_data.append((data["raw_length"], data["baseunit_copies"]))
+        raw_lens.append(data["raw_length"])
+        segments.append(data["baseunit_copies"])
+        classifications.append("Unkown")
     print(dict_data)
-    return alignment_ratio,repeat_data, raw_lens, segments, classifications
+    return alignment_ratio, repeat_data, raw_lens, segments, classifications
 
 
 def read_jsons_into_plots(json_folder, plot_file):
@@ -166,11 +178,13 @@ def read_jsons_into_plots(json_folder, plot_file):
             print(test_json)
             dict_data = json.load(d)
             if type(dict_data) == dict:
-                alignment_ratio,repeat_data, raw_lens, segments, classifications = parse_Cycas_metadata(dict_data)
+                alignment_ratio, repeat_data, raw_lens, segments, classifications = parse_Cycas_metadata(
+                    dict_data
+                )
             else:
-                alignment_ratio,repeat_data, raw_lens, segments, classifications = parse_Tidehunter_metadata(dict_data)
-
-                
+                alignment_ratio, repeat_data, raw_lens, segments, classifications = parse_Tidehunter_metadata(
+                    dict_data
+                )
 
     X = [x[0] for x in alignment_ratio]
     Y = [x[1] for x in alignment_ratio]
@@ -197,7 +211,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     else:
         raw_lens_subset = raw_lens
         segments_subset = segments
-        
+
     p2.scatter(x=raw_lens_subset, y=segments_subset)
 
     p2.title.text_font_size = "18pt"
@@ -227,12 +241,12 @@ def read_jsons_into_plots(json_folder, plot_file):
     output_file(plot_file, title="metadata plots")
     final_plot = column([donut, p1, p2])
 
-    tab_name = 'metadata'
-    with open(Path(plot_file).with_suffix('.json'), 'w')as f:
-        json_obj ={}
+    tab_name = "metadata"
+    with open(Path(plot_file).with_suffix(".json"), "w") as f:
+        json_obj = {}
         json_obj[tab_name] = {}
-        json_obj[tab_name]['name'] = tab_name
-        json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(final_plot)
+        json_obj[tab_name]["name"] = tab_name
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
         f.write(json.dumps(json_obj))
 
     save(final_plot)

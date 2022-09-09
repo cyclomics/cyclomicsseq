@@ -54,8 +54,10 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.Sample1.apply(
-                    lambda x: self.relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
-                    )
+                    lambda x: self.relaxed_float(x.split(":")[i])
+                    if (x.split(":")[i])
+                    else 0
+                )
 
         return df
 
@@ -65,7 +67,18 @@ class VCF_file:
 
             writeable_vcf = self.vcf.rename(columns={"CHROM": "#CHROM"})
             writeable_vcf = writeable_vcf[
-                ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "Sample1"]
+                [
+                    "#CHROM",
+                    "POS",
+                    "ID",
+                    "REF",
+                    "ALT",
+                    "QUAL",
+                    "FILTER",
+                    "INFO",
+                    "FORMAT",
+                    "Sample1",
+                ]
             ]
             # new_vcf.writelines((x.lstrip() for x in writeable_vcf.to_csv(sep='\t').split('\n')))
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
@@ -77,25 +90,24 @@ class VCF_file:
         min_dqp=1000,
         min_vaf=0.002,
         min_relative_ratio=0.3,
-        min_abq = 70
+        min_abq=70,
     ):
         # nothing to filter
         if self.vcf.empty:
             return
-        
+
         result = []
         for row in self.vcf.iterrows():
-            r = row[1]['REVR']
-            f = row[1]['FWDR']
-            low = min(f,r)
-            high = max(f,r)
+            r = row[1]["REVR"]
+            f = row[1]["FWDR"]
+            low = min(f, r)
+            high = max(f, r)
 
-            if high ==0:
+            if high == 0:
                 result.append(0)
             else:
-                result.append(low/high)
-        self.vcf['RELR'] = result
-
+                result.append(low / high)
+        self.vcf["RELR"] = result
 
         print("pre filter")
         print(self.vcf.shape)

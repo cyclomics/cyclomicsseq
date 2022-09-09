@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import re
 
+
 @dataclass
 class plot_defaults:
     width: int = 1100
@@ -9,8 +10,7 @@ class plot_defaults:
     plot_label_size: str = "12pt"
 
 
-
-def findnth_occurance(input,search,n):
+def findnth_occurance(input, search, n):
     """
     Finding nth occurrence of search in input, zero indexed.
     returns -1 if no nth occurance exists
@@ -24,6 +24,7 @@ def findnth_occurance(input,search,n):
         return inilist[n]
     else:
         return -1
+
 
 def nextflow_params_parser(params_str):
     """
@@ -53,46 +54,46 @@ def nextflow_params_parser(params_str):
 
     # drop containment sqr brackets, remove whitespace before
     params_str = params_str.rstrip()[1:-1]
-    while "," in params_str or '[' in params_str:
+    while "," in params_str or "[" in params_str:
         # get key by finding secondary separator
         next_sep = params_str.find(":")
-        key =  params_str[:next_sep]
+        key = params_str[:next_sep]
 
         # if we find a nested list we rerun this function on the nested list
-        if params_str[next_sep + 1] == '[':
+        if params_str[next_sep + 1] == "[":
             closer_count = 0
-            closer_idx = findnth_occurance(params_str,']', closer_count)
+            closer_idx = findnth_occurance(params_str, "]", closer_count)
 
-            substring = params_str[params_str.find('['):closer_idx+1]
+            substring = params_str[params_str.find("[") : closer_idx + 1]
             # count openers in this substring:
-            opens = substring.count('[')
-            closes = substring.count(']')
+            opens = substring.count("[")
+            closes = substring.count("]")
             while opens != closes:
                 closer_count += 1
-                closer_idx = findnth_occurance(params_str,']',closer_count)
-                substring = params_str[params_str.find('['):closer_idx+1]
-                opens = substring.count('[')
-                closes = substring.count(']')
+                closer_idx = findnth_occurance(params_str, "]", closer_count)
+                substring = params_str[params_str.find("[") : closer_idx + 1]
+                opens = substring.count("[")
+                closes = substring.count("]")
 
             value = nextflow_params_parser(substring)
-            item_end = closer_idx+1
-        
+            item_end = closer_idx + 1
+
         # otherwise we find the next item in the list, and work our way back to find the last comma
         else:
-            next_next_sep = params_str[next_sep + 1:].find(':')
-            item_end = params_str[:next_sep+ next_next_sep].rfind(",")  
-            value = params_str[next_sep+1:item_end]
-        
+            next_next_sep = params_str[next_sep + 1 :].find(":")
+            item_end = params_str[: next_sep + next_next_sep].rfind(",")
+            value = params_str[next_sep + 1 : item_end]
+
         # remove the observed key and value, and save them
-        params_str = params_str[item_end+1:].lstrip()
-        result.update({key:value})
+        params_str = params_str[item_end + 1 :].lstrip()
+        result.update({key: value})
 
     # get the last item if available, not true if nested list with one items
     if params_str:
         next_sep = params_str.find(":")
-        key =  params_str[:next_sep]
-        value = params_str[next_sep+1:]
-        result.update({key:value})
+        key = params_str[:next_sep]
+        value = params_str[next_sep + 1 :]
+        result.update({key: value})
 
     return result
 

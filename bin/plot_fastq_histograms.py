@@ -19,6 +19,7 @@ from bokeh.embed import components
 
 from plotting_defaults import cyclomics_defaults
 
+
 def process_fastqs(fastqs_path):
     overall = Counter()
     lengths = []
@@ -85,7 +86,6 @@ def plot_length_hist(lengths, my_title_len):
     return p
 
 
-
 def main(file_extention, output_file_name, my_title_q, my_title_len, tab_name):
 
     Q_scores, lengths = process_fastqs(f"*.{file_extention}")
@@ -100,18 +100,16 @@ def main(file_extention, output_file_name, my_title_q, my_title_len, tab_name):
     len_hist = plot_length_hist(lengths, my_title_len)
 
     final_plot = column(q_hist, len_hist)
-    
-    with open(Path(output_file_name).with_suffix('.json'), 'w')as f:
-        json_obj ={}
+
+    with open(Path(output_file_name).with_suffix(".json"), "w") as f:
+        json_obj = {}
         json_obj[tab_name] = {}
-        json_obj[tab_name]['name'] = tab_name
-        json_obj[tab_name]['script'], json_obj[tab_name]['div'] = components(final_plot)
-        json_obj['additional_info']= {f'reads{tab_name}':len(lengths)}
+        json_obj[tab_name]["name"] = tab_name
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
+        json_obj["additional_info"] = {f"reads{tab_name}": len(lengths)}
         f.write(json.dumps(json_obj))
 
     save(final_plot)
-
-
 
 
 if __name__ == "__main__":
@@ -123,12 +121,14 @@ if __name__ == "__main__":
 
     parser.add_argument("fastq_regex_suffix")
     parser.add_argument("plot_file")
-    parser.add_argument("tab_name", default='fastq information')
+    parser.add_argument("tab_name", default="fastq information")
     args = parser.parse_args()
 
     my_title_q = f"Q scores relative abundance"
     my_title_len = f"Length distribution"
-    main(args.fastq_regex_suffix, args.plot_file, my_title_q, my_title_len, args.tab_name)
+    main(
+        args.fastq_regex_suffix, args.plot_file, my_title_q, my_title_len, args.tab_name
+    )
 
     # fastq_file_name = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/raw_data/Cyclomics/000014/HC01_CG_001/20220630_1612_MN40283_FAT55621_6a2c8b02/fastq_pass/*13.fastq.gz"
     # my_title_q = f"Q scores in all Fastq files found using {fastq_file_name}"
