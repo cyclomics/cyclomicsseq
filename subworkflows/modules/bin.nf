@@ -82,11 +82,11 @@ process VariantValidate{
 
 
     output:
-        path("${bam.simpleName}_validated.vcf")
+        path("${bam.simpleName}.vcf")
     
     script:
         """
-        determine_vaf.py $validation_bed $bam ${bam.simpleName}_validated.vcf
+        determine_vaf.py $validation_bed $bam ${bam.simpleName}.vcf
         """
 }
 
