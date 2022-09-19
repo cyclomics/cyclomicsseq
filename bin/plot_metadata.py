@@ -33,10 +33,13 @@ concat_type_colors = {
 cycas_class_mapper = {
     "BackboneInsert": concat_type_colors["BB-I"],
     "SingleBackbone": concat_type_colors["BB-only"],
-    "Unkown": concat_type_colors["Unknown"],
+    "Unknown": concat_type_colors["Unknown"],
     "SingleInsert": concat_type_colors["I-only"],
     "BackboneDoubleInsert": concat_type_colors["BB-mI"],
     "MessyAlignment": concat_type_colors["Unknown"],
+    "SingleBackboneUnalignedGaps": "SlateBlue",
+    "SingleBackboneUnalignedGaps": "Red",
+    "LowAlignmentCount" : "LightGray",
 }
 
 
@@ -167,7 +170,7 @@ def parse_Tidehunter_metadata(dict_data):
         repeat_data.append((data["raw_length"], data["baseunit_copies"]))
         raw_lens.append(data["raw_length"])
         segments.append(data["baseunit_copies"])
-        classifications.append("Unkown")
+        classifications.append("Unknown")
     print(dict_data)
     return alignment_ratio, repeat_data, raw_lens, segments, classifications
 
