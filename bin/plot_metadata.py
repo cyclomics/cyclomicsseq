@@ -37,7 +37,7 @@ cycas_class_mapper = {
     "SingleInsert": concat_type_colors["I-only"],
     "BackboneDoubleInsert": concat_type_colors["BB-mI"],
     "MessyAlignment": concat_type_colors["Unknown"],
-    "SingleBackboneUnalignedGaps": "SlateBlue",
+    "SingleInsertUnalignedGaps": "SlateBlue",
     "SingleBackboneUnalignedGaps": "Red",
     "LowAlignmentCount" : "LightGray",
 }
