@@ -119,10 +119,15 @@ class VCF_file:
     @staticmethod
     def ensembl_vep(query: str) -> dict:
         """ Query Ensembl-VEP through API to annotate variants"""
-        response = requests.get(
-            url=query,
-            headers={ "Content-Type" : "application/json"}
-        )
+        try:
+            response = requests.get(
+                url=query,
+                headers={ "Content-Type" : "application/json"}
+            )
+        except requests.exceptions.SSLError:
+            # Any query that doesn't exist in Ensembl will return an SLLError,
+            # e.g. querying variants in a backbone sequence.
+            return
 
         if not response.ok:
             response.raise_for_status()
@@ -147,6 +152,12 @@ class VCF_file:
         sift = None
         polyphen = None
         
+        if not vep_json:
+            # Ensembl-VEP query did not return any response
+            # e.g. because the variant was in a backbone sequence
+            annot_text = '.'
+            return annot_text
+
         # Find relevant annotations in response dict
         variant_class = vep_json.get('variant_class')
         consequence = vep_json.get('most_severe_consequence')
@@ -255,12 +266,12 @@ class VCF_file:
             annotation_text = self.get_annotation_text(vep_json)
             # Add to annotations list
             annotations.append(annotation_text)
-        
+
         # Write annotations to INFO column in VCF output file
         self.vcf["INFO"] = annotations
 
 if __name__ == "__main__":
-    dev = True
+    dev = False
     if not dev:
         import argparse
 

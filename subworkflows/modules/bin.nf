@@ -81,7 +81,7 @@ process FindSNPs{
         tuple val(X), path(validation_bed)
 
     output:
-        path("${bam.simpleName}.vcf")
+        path("${bam.simpleName}.snp.vcf")
     
     script:
         """
