@@ -33,8 +33,8 @@ def create_bed_positions(bed_file, end_warning_length=4):
                 L = L[0].split(" ")
                 L = [x for x in L if x]
 
-            #if not is_intable(L[2]):
-                #logging.critical("error in bed file")
+            # if not is_intable(L[2]):
+            # logging.critical("error in bed file")
 
             for pos in range(int(L[1]), int(L[2])):
                 close_to_end = pos + end_warning_length >= int(L[2])
@@ -51,10 +51,7 @@ def initialize_output_vcf(vcf_path, contigs):
     # Add a "FILTER" value, other than "PASS"
     vcfh.add_meta(
         "FILTER",
-        items=[
-            ("ID", "RF"),
-            ("Description", "Variant failed filter due to low RF")
-        ],
+        items=[("ID", "RF"), ("Description", "Variant failed filter due to low RF")],
     )
     # Add a contig (chromosome 1) to our VCF header
     for contig in contigs:
@@ -203,6 +200,7 @@ def initialize_output_vcf(vcf_path, contigs):
     vcf = pysam.VariantFile(vcf_path, "w", header=vcfh)
     return vcf
 
+
 @dataclass
 class Indel:
     found: bool = False
@@ -221,9 +219,10 @@ class Indel:
     support_count_rev: int = 0
     support_ratio_rev: float = 0.0
 
+
 def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
     """Return most common indel above thresholds for a pileup column
-    
+
     Checks pileupcolumn for indel evidence from
     pysam.PileupColumn.get_query_sequences,
     then chooses most common insert or deletion to call as a variant.
@@ -250,9 +249,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
     # Exclude matches, SNPs or irrelevant characters
     # The remainder should be indels
     excluded_chars = [".", ",", "*", "^", "A", "C", "T", "G", "]"]
-    pu_indel = [
-        x for x in pu if x.upper() not in excluded_chars
-    ]
+    pu_indel = [x for x in pu if x.upper() not in excluded_chars]
 
     inserts = [x for x in pu_indel if x[1] == "+"]
     # remove the directional indicator and make uppercase
@@ -276,10 +273,10 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         new_insert_fwd_count = Counter(inserts_fwd).most_common(1)[0][1]
         new_insert_rev_count = Counter(inserts_rev).most_common(1)[0][1]
         new_insert_count = new_insert_fwd_count + new_insert_rev_count
-    
+
     except IndexError:
         new_insert_count = 0
-        new_insert_fwd, new_insert_rev = '', ''
+        new_insert_fwd, new_insert_rev = "", ""
 
     try:
         new_deletion_fwd = Counter(deletions_fwd).most_common(1)[0][0][1:]
@@ -290,7 +287,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
 
     except IndexError:
         new_deletion_count = 0
-        new_deletion_fwd, new_deletion_rev = '', ''
+        new_deletion_fwd, new_deletion_rev = "", ""
 
     # Decide if we have found either an Insert or a Deletion
     # TODO: inserts and deletions in separate functions, run both
@@ -311,7 +308,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         ):
             # Found an insertion
             insert_indicator = True
-        
+
         elif (
             new_deletion_fwd == new_deletion_rev
             and new_deletion_count > new_insert_count
@@ -322,7 +319,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         ):
             # Found a deletion
             deletion_indicator = True
-        
+
         else:
             # No variant was found.
             # This include the case that there is indel evidence,
@@ -330,7 +327,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
             # evidence found for both and indel and an insert with the
             # same number of supporting reads.
             return variant
-    
+
     except IndexError:
         pass
 
@@ -338,9 +335,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
     if insert_indicator:
         variant.found = True
         variant.type = "insertion"
-        variant.variant_nucleotide = (
-            variant.reference_nucleotide + new_insert_fwd
-        )
+        variant.variant_nucleotide = variant.reference_nucleotide + new_insert_fwd
         variant.length = len(new_insert_fwd)
         variant.support_count = new_insert_count
         variant.support_ratio = new_insert_count / total_q
@@ -348,7 +343,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         variant.support_ratio_fwd = new_insert_fwd_count / total_q
         variant.support_count_rev = new_insert_rev_count
         variant.support_ratio_rev = new_insert_rev_count / total_q
-        
+
     elif deletion_indicator:
         variant.found = True
         variant.type = "deletion"
@@ -368,7 +363,7 @@ def extract_nucleotide_count(
     bam: pysam.AlignmentFile,
     assembly: str,
     reference: pysam.FastaFile,
-    pos : int,
+    pos: int,
     pileup_depth: int,
     minimum_base_quality=10,
     high_base_quality_cutoff=80,
@@ -424,20 +419,15 @@ def extract_nucleotide_count(
         # Check for Indels
         if not end_of_amplicon:
             indel = check_indel(pileupcolumn)
-            if indel.found: 
+            if indel.found:
                 if indel.type == "deletion":
                     # Adjust reference allele to include deleted seq
                     ref_seq = reference.fetch(
-                        reference=assembly,
-                        start=pos,
-                        end=pos+indel.length+1
+                        reference=assembly, start=pos, end=pos + indel.length + 1
                     )
                     alleles = (ref_seq, ref_seq[0])
-                else:    
-                    alleles = (
-                        indel.reference_nucleotide,
-                        indel.variant_nucleotide
-                    )
+                else:
+                    alleles = (indel.reference_nucleotide, indel.variant_nucleotide)
 
                 # Update variant statistics with the found indel
                 indel_type = indel.type
@@ -467,18 +457,13 @@ def extract_nucleotide_count(
         OBSR="N/A",
         ABQ="N/A",
         OBQ="N/A",
-        HCR="N/A",  
-    ) 
-    
+        HCR="N/A",
+    )
+
     return (assembly, alleles, var, indel_type)
 
-def main(
-    bam: Path,
-    bed: Path,
-    fasta: Path,
-    output_path: Path,
-    pileup_depth=1_000_000
-):
+
+def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_000_000):
     """Run indel detection
 
     This will output a separate VCF file only with detected indels.
@@ -490,7 +475,7 @@ def main(
     - Maximum pileup depth (Default=1_000_000)
     """
 
-    #logging.debug("started main")
+    # logging.debug("started main")
     # Open input files and create empty output VCF
     bam_af = pysam.AlignmentFile(bam, "rb")
     reference = pysam.FastaFile(fasta)
@@ -508,21 +493,18 @@ def main(
             reference=reference,
             pos=pos,
             pileup_depth=pileup_depth,
-            end_of_amplicon=amplicon_ending
+            end_of_amplicon=amplicon_ending,
         )
 
         # TODO: for result in results, write to VCF
-        if result[1][0] != '.':
+        if result[1][0] != ".":
             # Reference allele is not '.', then a variant was found
             # The 'start' value is 0-based, 'stop' is 1-based
-            #if result[-1] == 'deletion':
+            # if result[-1] == 'deletion':
             #    pos = pos + len(result[1][0]) - 2
 
             r = vcf.new_record(
-                contig=assembly,
-                start=pos + 1,
-                alleles=result[1],
-                filter="PASS"
+                contig=assembly, start=pos + 1, alleles=result[1], filter="PASS"
             )
 
             # Write found variant as a new entry to VCF output
@@ -547,6 +529,7 @@ def main(
     time.sleep(0.5)
     vcf.close()
 
+
 if __name__ == "__main__":
     import argparse
 
@@ -570,10 +553,10 @@ if __name__ == "__main__":
         bed = Path("tmp/PNK_Rob_custom_GRCh38.bed")
         bam = Path("tmp/PNK_01_GRCh38.p14/FAS12641.taged.bam")
         vcf_out = Path("tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indel.vcf")
-        
+
         # Cyclomics TP53
-        #bed = Path("tmp/TP53_custom.bed")
-        #bam = Path("tmp/0.7.0/FAU48563.taged.bam")
-        #vcf_out = Path("tmp/0.7.0/TP53_000025_indel.vcf")
+        # bed = Path("tmp/TP53_custom.bed")
+        # bam = Path("tmp/0.7.0/FAU48563.taged.bam")
+        # vcf_out = Path("tmp/0.7.0/TP53_000025_indel.vcf")
 
         main(bam, bed, fasta, vcf_out)

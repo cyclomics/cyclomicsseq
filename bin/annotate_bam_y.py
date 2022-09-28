@@ -14,7 +14,7 @@ def process_query_name(name, split_queryname=True, splitter="_"):
     """
     Split a string called name if split_queryname is True based on the splitter provided
     eg:
-    
+
     abc_def with splitter _ will become abc
     abc_def_efg with splitter _ will become abc
     """

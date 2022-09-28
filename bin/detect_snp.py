@@ -13,9 +13,8 @@ import numpy as np
 
 
 def is_intable(value):
-    """
-    Test if the input can be converted to an int.
-    """
+    """Test if the input can be converted to an int"""
+
     try:
         float(value)
         return True
@@ -24,6 +23,8 @@ def is_intable(value):
 
 
 def create_bed_positions(bed_file, end_warning_length=4):
+    """Returns positions on which to pileup reads and find variants"""
+
     with open(bed_file) as f:
         for line in f:
             print(line)
@@ -34,15 +35,13 @@ def create_bed_positions(bed_file, end_warning_length=4):
                 L = L[0].split(" ")
                 L = [x for x in L if x]
 
-            #if not is_intable(L[2]):
-                
-                #logging.critical("error in bed file")
             for pos in range(int(L[1]), int(L[2])):
                 close_to_end = pos + end_warning_length >= int(L[2])
                 yield L[0], pos, close_to_end
 
 
 def initialize_output_vcf(vcf_path, contigs):
+    """Returns pre-formatted VCF file on which to output variants"""
 
     # Create a VCF header
     vcfh = pysam.VariantHeader()
@@ -200,6 +199,7 @@ def initialize_output_vcf(vcf_path, contigs):
     vcf = pysam.VariantFile(vcf_path, "w", header=vcfh)
     return vcf
 
+
 def extract_nucleotide_count(
     bam,
     assembly,
@@ -210,6 +210,8 @@ def extract_nucleotide_count(
     high_base_quality_cutoff=80,
     end_of_amplicon=False,
 ):
+    """Returns found variants in a given pileup position"""
+
     tags = [
         "DP",
         "DPQ",
@@ -274,7 +276,7 @@ def extract_nucleotide_count(
         ym_ticker = []
 
         for pileupread in pileupcolumn.pileups:
-            #if pileupread.indel > 0:
+            # if pileupread.indel > 0:
             #    print("Ah-Ha!")
             readpos = pileupread.query_position
             read = pileupread.alignment
@@ -418,7 +420,16 @@ def extract_nucleotide_count(
 
 
 def main(bam: Path, variants: Path, output_path, pileup_depth=1_000_000):
-    #logging.debug("started main")
+    """Run SNP detection
+
+    This will output a separate VCF file only with detected SNPs.
+    Requires as input:
+    - BAM file with read alignments,
+    - BED file with genomic positions over which to detect SNPs,
+    - Output path to which a VCF result file will be written,
+    - Maximum pileup depth (Default=1_000_000)
+    """
+    # logging.debug("started main")
     bam_af = pysam.AlignmentFile(bam, "rb")
 
     vcf = initialize_output_vcf(output_path, bam_af.references)
@@ -467,7 +478,7 @@ if __name__ == "__main__":
         parser.add_argument("bam", type=Path)
         parser.add_argument("file_out", type=Path)
         args = parser.parse_args()
-        #logging.info(args)
+        # logging.info(args)
 
         main(args.bam, args.variant_bed, args.file_out)
 

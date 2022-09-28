@@ -21,13 +21,13 @@ def get_roi_pileup_df(
 ) -> List[chromosomal_region]:
     """
     Given a dataframe with CHROM and POS columns, find all streches in chromosomes that are less than `distance` appart.
-    reports 
+    reports
 
     """
 
     def get_continous_strech(array: np.array, distance: int):
         """
-        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a 
+        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a
         """
         m = np.concatenate(([True], array[1:] > array[:-1] + distance, [True]))
         idx = np.flatnonzero(m)

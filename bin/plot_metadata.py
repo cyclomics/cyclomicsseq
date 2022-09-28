@@ -178,13 +178,21 @@ def read_jsons_into_plots(json_folder, plot_file):
             print(test_json)
             dict_data = json.load(d)
             if type(dict_data) == dict:
-                alignment_ratio, repeat_data, raw_lens, segments, classifications = parse_Cycas_metadata(
-                    dict_data
-                )
+                (
+                    alignment_ratio,
+                    repeat_data,
+                    raw_lens,
+                    segments,
+                    classifications,
+                ) = parse_Cycas_metadata(dict_data)
             else:
-                alignment_ratio, repeat_data, raw_lens, segments, classifications = parse_Tidehunter_metadata(
-                    dict_data
-                )
+                (
+                    alignment_ratio,
+                    repeat_data,
+                    raw_lens,
+                    segments,
+                    classifications,
+                ) = parse_Tidehunter_metadata(dict_data)
 
     X = [x[0] for x in alignment_ratio]
     Y = [x[1] for x in alignment_ratio]

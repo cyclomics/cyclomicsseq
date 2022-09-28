@@ -10,6 +10,7 @@ import requests
 import sys
 import json
 
+
 class VCF_file:
     def __init__(self, vcf_file):
         self.vcf_file = vcf_file
@@ -18,7 +19,7 @@ class VCF_file:
 
     @staticmethod
     def relaxed_float(x: Any) -> float:
-        """ Return a float, with value error catch"""
+        """Return a float, with value error catch"""
         try:
             my_float = float(x)
         except ValueError:
@@ -26,7 +27,7 @@ class VCF_file:
         return my_float
 
     def read_vcf(self, path: Path) -> pd.DataFrame:
-        """ Read in a VCF file and return it as Pandas DataFrame"""
+        """Read in a VCF file and return it as Pandas DataFrame"""
         with open(path, "r") as f:
             header = []
             lines = []
@@ -64,7 +65,7 @@ class VCF_file:
         return df
 
     def write(self, path: Path):
-        """ Write output VCF file"""
+        """Write output VCF file"""
         with open(path, "w") as new_vcf:
             new_vcf.writelines(self.vcf_header)
 
@@ -88,11 +89,9 @@ class VCF_file:
 
     @staticmethod
     def get_query_positions(
-        ref_allele: str,
-        alt_allele: str,
-        start: int
+        ref_allele: str, alt_allele: str, start: int
     ) -> Tuple[int, int]:
-        """ Determine start and end positions for Ensembl query
+        """Determine start and end positions for Ensembl query
 
         Positions are determined based on reference and alternative
         alleles, which inform if a variant is a SNP, an 1 or a
@@ -113,16 +112,15 @@ class VCF_file:
         elif len(ref_allele) == len(alt_allele):
             # This is a snp (ignoring insdel events)
             end = start
-        
+
         return (start, end)
 
     @staticmethod
     def ensembl_vep(query: str) -> dict:
-        """ Query Ensembl-VEP through API to annotate variants"""
+        """Query Ensembl-VEP through API to annotate variants"""
         try:
             response = requests.get(
-                url=query,
-                headers={ "Content-Type" : "application/json"}
+                url=query, headers={"Content-Type": "application/json"}
             )
 
             json_data = json.loads(response.text)[0]
@@ -137,7 +135,7 @@ class VCF_file:
 
     @staticmethod
     def get_annotation_text(vep_json: dict) -> str:
-        """ Parse VEP response dict and find relevant annotations"""
+        """Parse VEP response dict and find relevant annotations"""
         # Initialize variant annotations
         variant_class = None
         consequence = None
@@ -149,73 +147,74 @@ class VCF_file:
         canonical = None
         sift = None
         polyphen = None
-        
+
         if not vep_json:
             # Ensembl-VEP query did not return any response
             # e.g. because the variant was in a backbone sequence
-            annot_text = '.'
+            annot_text = "."
             return annot_text
 
         # Find relevant annotations in response dict
-        variant_class = vep_json.get('variant_class')
-        consequence = vep_json.get('most_severe_consequence')
+        variant_class = vep_json.get("variant_class")
+        consequence = vep_json.get("most_severe_consequence")
 
         # Try-Except block: cannot always find colocated variants
         # and thus COSMIC IDs
         try:
-            colocated_variants = vep_json.get('colocated_variants')
+            colocated_variants = vep_json.get("colocated_variants")
             mutation_ids = []
             cosmic_legacy_ids = []
             for xref in colocated_variants:
-                mutation_ids.append(xref['id'])
-                if xref['allele_string'] == 'COSMIC_MUTATION':
-                    cosmic_legacy_ids.append(xref['var_synonyms']['COSMIC'][0])
-            
+                mutation_ids.append(xref["id"])
+                if xref["allele_string"] == "COSMIC_MUTATION":
+                    cosmic_legacy_ids.append(xref["var_synonyms"]["COSMIC"][0])
+
             # Join list of found IDs into comma-separated string
-            mutation_ids = ','.join(mutation_ids)
-            cosmic_legacy_ids = ','.join(cosmic_legacy_ids)
+            mutation_ids = ",".join(mutation_ids)
+            cosmic_legacy_ids = ",".join(cosmic_legacy_ids)
         except:
             mutation_ids = "None"
             cosmic_legacy_ids = "None"
 
-        transcript_cons = vep_json.get('transcript_consequences')
+        transcript_cons = vep_json.get("transcript_consequences")
         # Transcript consequences can differ a lot per query
         # If something is not found, will be returned as 'None'
         if transcript_cons:
-            impact = transcript_cons[0].get('impact')
-            biotype = transcript_cons[0].get('biotype')
-            amino_acids = transcript_cons[0].get('amino_acids')
-            canonical = transcript_cons[0].get('canonical')
+            impact = transcript_cons[0].get("impact")
+            biotype = transcript_cons[0].get("biotype")
+            amino_acids = transcript_cons[0].get("amino_acids")
+            canonical = transcript_cons[0].get("canonical")
 
-            sift_prediction = transcript_cons[0].get('sift_prediction')
-            sift_score = transcript_cons[0].get('sift_score')
+            sift_prediction = transcript_cons[0].get("sift_prediction")
+            sift_score = transcript_cons[0].get("sift_score")
             if sift_prediction:
                 sift = f"{sift_prediction}({sift_score})"
 
-            polyphen_prediction = transcript_cons[0].get('polyphen_prediction')
-            polyphen_score = transcript_cons[0].get('polyphen_score')
+            polyphen_prediction = transcript_cons[0].get("polyphen_prediction")
+            polyphen_score = transcript_cons[0].get("polyphen_score")
             if polyphen_prediction:
                 polyphen = f"{polyphen_prediction}({polyphen_score})"
 
         # Merge all annotations into a string to be returned
         # If annotation is None, don't print it
-        annot_dict = OrderedDict({
-            "variant_class": variant_class,
-            "consequence": consequence,
-            "COSMIC": mutation_ids,
-            "COSMIC_legacy": cosmic_legacy_ids,
-            "impact": impact,
-            "biotype": biotype,
-            "amino_acids": amino_acids,
-            "canonical": canonical,
-            "SIFT": sift,
-            "PolyPhen": polyphen
-        })
+        annot_dict = OrderedDict(
+            {
+                "variant_class": variant_class,
+                "consequence": consequence,
+                "COSMIC": mutation_ids,
+                "COSMIC_legacy": cosmic_legacy_ids,
+                "impact": impact,
+                "biotype": biotype,
+                "amino_acids": amino_acids,
+                "canonical": canonical,
+                "SIFT": sift,
+                "PolyPhen": polyphen,
+            }
+        )
 
         annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items() if v])
 
         return annot_text
-    
 
     def annotate_vep(self, server: str):
         """Annotate a set of variants from a VCF file with Ensembl-VEP
@@ -223,13 +222,7 @@ class VCF_file:
         Input: Server URL (string), e.g. "https://rest.ensembl.org"
         """
         # Set API search options
-        params = (
-            "canonical=1"
-            "&variant_class=1"
-            "&hgvs=1"
-            "&vcf_string=1"
-            "&pick=1"
-        )
+        params = "canonical=1" "&variant_class=1" "&hgvs=1" "&vcf_string=1" "&pick=1"
 
         if self.vcf.empty:
             # There are no variants to annotate
@@ -244,11 +237,9 @@ class VCF_file:
             ref_allele = var[1]["REF"]
             alt_allele = var[1]["ALT"]
 
-            start, end = self.get_query_positions(
-                ref_allele, alt_allele, start
-                )
+            start, end = self.get_query_positions(ref_allele, alt_allele, start)
 
-            # Ensembl/Rest API needs reference allele to be '1'    
+            # Ensembl/Rest API needs reference allele to be '1'
             ref_allele = "1"
 
             query = (
@@ -268,6 +259,7 @@ class VCF_file:
         # Write annotations to INFO column in VCF output file
         self.vcf["INFO"] = annotations
 
+
 if __name__ == "__main__":
     dev = False
     if not dev:
@@ -280,18 +272,18 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
         # Can be added to argparse
-        server="https://rest.ensembl.org"
+        server = "https://rest.ensembl.org"
 
         vcf = VCF_file(args.variant_vcf)
         vcf.annotate_vep(server)
         vcf.write(args.file_out)
 
     if dev:
-        #variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indels.vcf"
-        #variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_variants.vcf"
+        # variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indels.vcf"
+        # variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_variants.vcf"
         variant_vcf = "/scratch/nxf_work/rodrigo/a4/a030f4325cb5bf3385a1ceb02f6c3a/FAS12641.merged.vcf"
 
-        server="https://rest.ensembl.org"
+        server = "https://rest.ensembl.org"
 
         vcf = VCF_file(variant_vcf)
         vcf.annotate_vep(server)
