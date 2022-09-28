@@ -124,16 +124,14 @@ class VCF_file:
                 url=query,
                 headers={ "Content-Type" : "application/json"}
             )
-        except requests.exceptions.SSLError:
-            # Any query that doesn't exist in Ensembl will return an SLLError,
-            # e.g. querying variants in a backbone sequence.
-            return
 
-        if not response.ok:
-            response.raise_for_status()
+            json_data = json.loads(response.text)[0]
+
+        except:
+            # Any query that doesn't exist in Ensembl will return an SLLError or HTTPError,
+            # e.g. querying variants in a backbone sequence.
+            # In that case, we return nothing
             return
-            
-        json_data = json.loads(response.text)[0]
 
         return json_data
 
@@ -289,8 +287,9 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indels.vcf"
+        #variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indels.vcf"
         #variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_variants.vcf"
+        variant_vcf = "/scratch/nxf_work/rodrigo/a4/a030f4325cb5bf3385a1ceb02f6c3a/FAS12641.merged.vcf"
 
         server="https://rest.ensembl.org"
 

@@ -97,11 +97,15 @@ process FilterSNPs {
         path(vcf_file)
 
     output:
-        path("${vcf_file.simpleName}_filtered.vcf")
+        tuple path("${vcf_file.simpleName}_filtered.snp.vcf.gz"), path("${vcf_file.simpleName}_filtered.snp.vcf.gz.tbi")
     
     script:
         """
-        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.snp.vcf
+        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.snp.tmp.vcf
+        bcftools sort ${vcf_file.simpleName}_filtered.snp.tmp.vcf -o ${vcf_file.simpleName}_filtered.snp.vcf
+        rm ${vcf_file.simpleName}_filtered.snp.tmp.vcf
+        bgzip ${vcf_file.simpleName}_filtered.snp.vcf
+        tabix ${vcf_file.simpleName}_filtered.snp.vcf.gz
         """
 }
 
@@ -114,11 +118,15 @@ process FindIndels{
         tuple val(X), path(validation_bed)
 
     output:
-        path("${bam.simpleName}.indel.vcf")
+        tuple path("${bam.simpleName}.indel.vcf.gz"), path("${bam.simpleName}.indel.vcf.gz.tbi")
     
     script:
         """
-        detect_indel.py $reference_genome $validation_bed $bam ${bam.simpleName}.indel.vcf
+        detect_indel.py $reference_genome $validation_bed $bam ${bam.simpleName}.indel.tmp.vcf
+        bcftools sort ${bam.simpleName}.indel.tmp.vcf -o ${bam.simpleName}.indel.vcf
+        rm ${bam.simpleName}.indel.tmp.vcf
+        bgzip ${bam.simpleName}.indel.vcf
+        tabix ${bam.simpleName}.indel.vcf.gz
         """
 }
 
@@ -126,16 +134,16 @@ process MergeVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
-        tuple val(X), path(snp_vcf), path(indel_vcf)
+        tuple path(snp_vcf), path(snp_tbi), path(indel_vcf), path(indel_tbi)
 
     output:
-        path("${snp.simpleName}.merged.vcf")
+        path("${indel_vcf.simpleName}.merged.vcf")
     
     script:
         """
-        bcftools concat $snp_vcf $indel_vcf -O v -o ${snp.simpleName}.merged.tmp.vcf
-        bcftools sort ${snp.simpleName}.merged.tmp.vcf -o ${snp.simpleName}.merged.vcf
-        rm ${snp.simpleName}.merged.tmp.vcf
+        bcftools concat -a $snp_vcf $snp_vcf -O v -o ${indel_vcf.simpleName}.merged.tmp.vcf
+        bcftools sort ${indel_vcf.simpleName}.merged.tmp.vcf -o ${indel_vcf.simpleName}.merged.vcf
+        rm ${indel_vcf.simpleName}.merged.tmp.vcf
         """
 }
 
@@ -143,15 +151,15 @@ process AnnotateVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
-        tuple val(X), path(variant_vcf)
+        path(variant_vcf)
 
 
     output:
-        path("${variant_vcf.simpleName}.vep.vcf")
+        path("${variant_vcf.simpleName}_annotated.vcf")
     
     script:
         """
-        python annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
+        annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
         """
 }
 
