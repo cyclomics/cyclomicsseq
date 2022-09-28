@@ -17,8 +17,11 @@ include {
 } from "./modules/bedops"
 
 include {
-    VariantValidate
-    FilterVariants
+    FindSNPs
+    FilterSNPs
+    FindIndels
+    MergeVCF
+    AnnotateVCF
 } from "./modules/bin"
 
 include {
@@ -78,10 +81,14 @@ workflow ValidatePosibleVariantLocations{
             positions = variant_file.map(it -> tuple(it.SimpleName, it))
 
         }
-        VariantValidate(reads_aligned, positions)
-        FilterVariants(VariantValidate.out)
+        FindSNPs(reads_aligned, positions)
+        FilterSNPs(FindSNPs.out)
+        FindIndels(reference, reads_aligned, positions)
+        MergeVCF(FilterSNPs.out.combine(FindIndels.out))
+        AnnotateVCF(MergeVCF.out)
+
 
     emit:
         locations = VariantValidate.out
-        variants = FilterVariants.out
+        variants = AnnotateVCF.out
 }

@@ -72,7 +72,7 @@ process CollectClassificationTypes{
         """
 }
 
-process VariantValidate{
+process FindSNPs{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
@@ -80,17 +80,16 @@ process VariantValidate{
         tuple val(X), path(bam), path(bai)
         tuple val(X), path(validation_bed)
 
-
     output:
         path("${bam.simpleName}.vcf")
     
     script:
         """
-        determine_vaf.py $validation_bed $bam ${bam.simpleName}.vcf
+        detect_snp.py $validation_bed $bam ${bam.simpleName}.snp.vcf
         """
 }
 
-process FilterVariants {
+process FilterSNPs {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
@@ -102,7 +101,57 @@ process FilterVariants {
     
     script:
         """
-        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.vcf
+        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.snp.vcf
+        """
+}
+
+process FindIndels{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        path(reference_genome)
+        tuple val(X), path(bam), path(bai)
+        tuple val(X), path(validation_bed)
+
+    output:
+        path("${bam.simpleName}.indel.vcf")
+    
+    script:
+        """
+        detect_indel.py $reference_genome $validation_bed $bam ${bam.simpleName}.indel.vcf
+        """
+}
+
+process MergeVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        tuple val(X), path(snp_vcf), path(indel_vcf)
+
+    output:
+        path("${snp.simpleName}.merged.vcf")
+    
+    script:
+        """
+        bcftools concat $snp_vcf $indel_vcf -O v -o ${snp.simpleName}.merged.tmp.vcf
+        bcftools sort ${snp.simpleName}.merged.tmp.vcf -o ${snp.simpleName}.merged.vcf
+        rm ${snp.simpleName}.merged.tmp.vcf
+        """
+}
+
+process AnnotateVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        tuple val(X), path(variant_vcf)
+
+
+    output:
+        path("${variant_vcf.simpleName}.vep.vcf")
+    
+    script:
+        """
+        python annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
         """
 }
 
