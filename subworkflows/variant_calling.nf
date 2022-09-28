@@ -89,6 +89,6 @@ workflow ValidatePosibleVariantLocations{
 
 
     emit:
-        locations = VariantValidate.out
+        locations = FindSNPs.out
         variants = AnnotateVCF.out
 }
