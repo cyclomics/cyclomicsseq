@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from collections import Counter, namedtuple
 from pathlib import Path
@@ -218,9 +218,17 @@ class Indel:
     support_ratio_fwd: float = 0.0
     support_count_rev: int = 0
     support_ratio_rev: float = 0.0
+    base_qualities: list = field(default_factory=list)
+    alt_base_qualities: list = field(default_factory=list)
 
 
-def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
+def check_indel(
+    pu_column,
+    depth_th,
+    variant_th=0.003,
+    variant_count_th=10,
+    orientation_ratio_th=0.66,
+):
     """Return most common indel above thresholds for a pileup column
 
     Checks pileupcolumn for indel evidence from
@@ -232,6 +240,9 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
     # Initialize general statistics of this pileup position
     total = pu_column.nsegments
     total_q = pu_column.get_num_aligned()
+
+    query_qualities = pu_column.get_query_qualities()
+
     variant = Indel(None)
     variant.depth = total
     variant.depth_q = total_q
@@ -243,26 +254,31 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         mark_matches=True, mark_ends=True, add_indels=True
     )
 
+    quality_map = list(zip(pu, query_qualities))
+
     # The reference nucleotide should be the most common in this position
-    variant.reference_nucleotide = Counter(pu).most_common(1)[0][0].upper()
+    variant.reference_nucleotide = Counter(pu).most_common(1)[0][0].upper()[0]
 
     # Exclude matches, SNPs or irrelevant characters
     # The remainder should be indels
-    excluded_chars = [".", ",", "*", "^", "A", "C", "T", "G", "]"]
-    pu_indel = [x for x in pu if x.upper() not in excluded_chars]
+    excluded_chars = [".", ",", "*", "^", "A", "C", "T", "G", "]", "$"]
+    # pu_indel = [x for x in quality_map if x[0].upper() not in excluded_chars]
+    pu_indel = [
+        x for x in quality_map if (char not in x[0].upper() for char in excluded_chars)
+    ]
 
-    inserts = [x for x in pu_indel if x[1] == "+"]
+    inserts = [(re.split(r"(\d+)", x[0])[-1], x[1]) for x in pu_indel if "+" in x[0]]
     # remove the directional indicator and make uppercase
     # eg convert A+3TTT' into TTT and A+1a to A
-    inserts_fwd = [x[3:].upper() for x in inserts if x[-1].isupper()]
-    inserts_rev = [x[3:].upper() for x in inserts if x[-1].islower()]
+    inserts_fwd = [x[0].upper() for x in inserts if x[0][-1].isupper()]
+    inserts_rev = [x[0].upper() for x in inserts if x[0][-1].islower()]
 
-    deletions = [x for x in pu_indel if x[1] == "-"]
+    deletions = [(re.split(r"(\d+)", x[0])[-1], x[1]) for x in pu_indel if "-" in x[0]]
     # remove the directional indicator and make uppercase
     # eg G-15NNNNNNNNNNNNNNN g-15nnnnnnnnnnnnnnn turn into
     # 15NN... and 15NN.. in their respective variable
-    deletions_fwd = [x[2:].upper() for x in deletions if x[-1] == "N"]
-    deletions_rev = [x[2:].upper() for x in deletions if x[-1] == "n"]
+    deletions_fwd = [x[0].upper() for x in deletions if x[0][-1] == "N"]
+    deletions_rev = [x[0].upper() for x in deletions if x[0][-1] == "n"]
 
     # If no insert or deletion evidence was found in this position,
     # the 'inserts' list will be empty and the Counter will return
@@ -273,20 +289,30 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         new_insert_fwd_count = Counter(inserts_fwd).most_common(1)[0][1]
         new_insert_rev_count = Counter(inserts_rev).most_common(1)[0][1]
         new_insert_count = new_insert_fwd_count + new_insert_rev_count
+        new_insert_orientation_ratio = min(
+            new_insert_fwd_count / new_insert_rev_count,
+            new_insert_rev_count / new_insert_fwd_count,
+        )
 
     except IndexError:
         new_insert_count = 0
+        new_insert_orientation_ratio = 0
         new_insert_fwd, new_insert_rev = "", ""
 
     try:
-        new_deletion_fwd = Counter(deletions_fwd).most_common(1)[0][0][1:]
-        new_deletion_rev = Counter(deletions_rev).most_common(1)[0][0][1:]
+        new_deletion_fwd = Counter(deletions_fwd).most_common(1)[0][0]
+        new_deletion_rev = Counter(deletions_rev).most_common(1)[0][0]
         new_deletion_fwd_count = Counter(deletions_fwd).most_common(1)[0][1]
         new_deletion_rev_count = Counter(deletions_rev).most_common(1)[0][1]
         new_deletion_count = new_deletion_fwd_count + new_deletion_rev_count
+        new_deletion_orientation_ratio = min(
+            new_deletion_fwd_count / new_deletion_rev_count,
+            new_deletion_rev_count / new_deletion_fwd_count,
+        )
 
     except IndexError:
         new_deletion_count = 0
+        new_deletion_orientation_ratio = 0
         new_deletion_fwd, new_deletion_rev = "", ""
 
     # Decide if we have found either an Insert or a Deletion
@@ -300,6 +326,8 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
 
         elif (
             new_insert_fwd == new_insert_rev
+            and total_q >= depth_th
+            and new_insert_orientation_ratio > orientation_ratio_th
             and new_insert_count > new_deletion_count
             and new_insert_fwd_count / total_q > variant_th
             and new_insert_fwd_count > variant_count_th
@@ -311,6 +339,8 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
 
         elif (
             new_deletion_fwd == new_deletion_rev
+            and total_q >= depth_th
+            and new_deletion_orientation_ratio > orientation_ratio_th
             and new_deletion_count > new_insert_count
             and new_deletion_fwd_count / total_q > variant_th
             and new_deletion_fwd_count > variant_count_th
@@ -335,7 +365,7 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
     if insert_indicator:
         variant.found = True
         variant.type = "insertion"
-        variant.variant_nucleotide = variant.reference_nucleotide + new_insert_fwd
+        variant.variant_nucleotide = new_insert_fwd
         variant.length = len(new_insert_fwd)
         variant.support_count = new_insert_count
         variant.support_ratio = new_insert_count / total_q
@@ -343,6 +373,8 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         variant.support_ratio_fwd = new_insert_fwd_count / total_q
         variant.support_count_rev = new_insert_rev_count
         variant.support_ratio_rev = new_insert_rev_count / total_q
+        variant.base_qualities = quality_map
+        variant.alt_base_qualities = inserts
 
     elif deletion_indicator:
         variant.found = True
@@ -355,6 +387,8 @@ def check_indel(pu_column, variant_th=0.003, variant_count_th=10):
         variant.support_ratio_fwd = new_deletion_fwd_count / total_q
         variant.support_count_rev = new_deletion_rev_count
         variant.support_ratio_rev = new_deletion_rev_count / total_q
+        variant.base_qualities = quality_map
+        variant.alt_base_qualities = deletions
 
     return variant
 
@@ -367,6 +401,7 @@ def extract_nucleotide_count(
     pileup_depth: int,
     minimum_base_quality=10,
     high_base_quality_cutoff=80,
+    cov_window=100,
     end_of_amplicon=False,
 ):
     """Returns found variants in a given pileup position"""
@@ -402,6 +437,16 @@ def extract_nucleotide_count(
     rev_ratio = 0
     total_count = 0
     total_ratio = 0
+    abq = 0
+    obq = 0
+    hcr = 0
+
+    # Calculate minimium coverage to use as threshold
+    # nucleotide_coverage = bam.count_coverage(
+    #     contig=assembly, start=pos, end=pos + cov_window, quality_threshold=10
+    # )
+    # max_avg_coverage = np.mean([max(cov) for cov in nucleotide_coverage])
+    # depth_th = max_avg_coverage * 0.1
 
     # Create a pileup for a given position in the search space
     positional_pileup = bam.pileup(
@@ -418,7 +463,7 @@ def extract_nucleotide_count(
     for pileupcolumn in positional_pileup:
         # Check for Indels
         if not end_of_amplicon:
-            indel = check_indel(pileupcolumn)
+            indel = check_indel(pileupcolumn, depth_th=5000)
             if indel.found:
                 if indel.type == "deletion":
                     # Adjust reference allele to include deleted seq
@@ -427,7 +472,10 @@ def extract_nucleotide_count(
                     )
                     alleles = (ref_seq, ref_seq[0])
                 else:
-                    alleles = (indel.reference_nucleotide, indel.variant_nucleotide)
+                    alleles = (
+                        indel.reference_nucleotide,
+                        str(indel.reference_nucleotide + indel.variant_nucleotide),
+                    )
 
                 # Update variant statistics with the found indel
                 indel_type = indel.type
@@ -439,6 +487,27 @@ def extract_nucleotide_count(
                 fwd_ratio = indel.support_ratio_fwd
                 rev_count = indel.support_count_rev
                 rev_ratio = indel.support_ratio_rev
+
+                abq = np.mean(
+                    [
+                        x[1]
+                        for x in indel.alt_base_qualities
+                        if indel.variant_nucleotide in x[0]
+                    ]
+                )
+
+                obq = np.mean([x[1] for x in indel.base_qualities])
+
+                high_quality_bases = [
+                    x for x in indel.base_qualities if x[1] > high_base_quality_cutoff
+                ]
+                high_quality_alt_bases = [
+                    x
+                    for x in indel.alt_base_qualities
+                    if x[1] > high_base_quality_cutoff
+                    and x[0] == indel.variant_nucleotide
+                ]
+                hcr = len(high_quality_alt_bases) / len(high_quality_bases)
 
     # Return statistics for this position,
     # whether a variant was found or not
@@ -454,10 +523,10 @@ def extract_nucleotide_count(
         TOTC=total_count,
         TOTR=total_ratio,
         SAME=1,
-        OBSR="N/A",
-        ABQ="N/A",
-        OBQ="N/A",
-        HCR="N/A",
+        OBSR=total_ratio,
+        ABQ=abq,
+        OBQ=obq,
+        HCR=hcr,
     )
 
     return (assembly, alleles, var, indel_type)
@@ -500,8 +569,6 @@ def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_00
         if result[1][0] != ".":
             # Reference allele is not '.', then a variant was found
             # The 'start' value is 0-based, 'stop' is 1-based
-            # if result[-1] == 'deletion':
-            #    pos = pos + len(result[1][0]) - 2
 
             r = vcf.new_record(
                 contig=assembly, start=pos + 1, alleles=result[1], filter="PASS"
@@ -548,15 +615,26 @@ if __name__ == "__main__":
         main(args.bam, args.bed, args.fasta, args.vcf_out)
 
     if dev:
-        fasta = Path("tmp/PNK_01_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna")
-        # PNK_01
-        bed = Path("tmp/PNK_Rob_custom_GRCh38.bed")
-        bam = Path("tmp/PNK_01_GRCh38.p14/FAS12641.taged.bam")
-        vcf_out = Path("tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indel.vcf")
+        # TP53
+        # fasta = Path(
+        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/chm13v2.0.fa"
+        # )
+        # bed = Path(
+        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/genomic_positions_T2T.bed"
+        # )
+        # bam = Path(
+        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/consensus_aligned/FAU48563.taged.bam"
+        # )
+        # vcf_out = Path("testindel_TP53.vcf")
 
-        # Cyclomics TP53
-        # bed = Path("tmp/TP53_custom.bed")
-        # bam = Path("tmp/0.7.0/FAU48563.taged.bam")
-        # vcf_out = Path("tmp/0.7.0/TP53_000025_indel.vcf")
+        # EGFR
+        fasta = Path(
+            "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+        )
+        bed = Path("pos_EGFR.bed")
+        bam = Path(
+            "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/consensus_aligned/FAS12641.taged.bam"
+        )
+        vcf_out = Path("testindel_EGFR.vcf")
 
         main(bam, bed, fasta, vcf_out)

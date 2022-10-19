@@ -103,7 +103,7 @@ class VCF_file:
             # -1 to adjust for 0- to 1-based index on start
             # -1 to remove first base of ref which is maintained
             # -1 because nuc in start is included in the deletion
-            end = start + len(ref_allele) - 3
+            end = start + len(ref_allele) - 2
 
         elif len(ref_allele) < len(alt_allele):
             # This is an insertion
@@ -141,6 +141,7 @@ class VCF_file:
         consequence = None
         mutation_ids = None
         cosmic_legacy_ids = None
+        gene = None
         impact = None
         biotype = None
         amino_acids = None
@@ -180,6 +181,7 @@ class VCF_file:
         # Transcript consequences can differ a lot per query
         # If something is not found, will be returned as 'None'
         if transcript_cons:
+            gene = transcript_cons[0].get("gene_symbol")
             impact = transcript_cons[0].get("impact")
             biotype = transcript_cons[0].get("biotype")
             amino_acids = transcript_cons[0].get("amino_acids")
@@ -196,13 +198,13 @@ class VCF_file:
                 polyphen = f"{polyphen_prediction}({polyphen_score})"
 
         # Merge all annotations into a string to be returned
-        # If annotation is None, don't print it
         annot_dict = OrderedDict(
             {
                 "variant_class": variant_class,
                 "consequence": consequence,
                 "COSMIC": mutation_ids,
                 "COSMIC_legacy": cosmic_legacy_ids,
+                "gene": gene,
                 "impact": impact,
                 "biotype": biotype,
                 "amino_acids": amino_acids,
@@ -212,7 +214,9 @@ class VCF_file:
             }
         )
 
-        annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items() if v])
+        annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items()])
+        # If annotation is None, don't print it
+        # annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items() if v])
 
         return annot_text
 
@@ -222,7 +226,7 @@ class VCF_file:
         Input: Server URL (string), e.g. "https://rest.ensembl.org"
         """
         # Set API search options
-        params = "canonical=1" "&variant_class=1" "&hgvs=1" "&vcf_string=1" "&pick=1"
+        params = "canonical=1&variant_class=1&hgvs=1&vcf_string=1&pick=1"
 
         if self.vcf.empty:
             # There are no variants to annotate
@@ -279,12 +283,11 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        # variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_GRCh38.p14.indels.vcf"
-        # variant_vcf = "tmp/PNK_01_GRCh38.p14/PNK_01_variants.vcf"
-        variant_vcf = "/scratch/nxf_work/rodrigo/a4/a030f4325cb5bf3385a1ceb02f6c3a/FAS12641.merged.vcf"
+        # variant_vcf = "/scratch/nxf_work/rodrigo/a4/a030f4325cb5bf3385a1ceb02f6c3a/FAS12641.merged.vcf"
+        variant_vcf = "testindel_EGFR.vcf"
 
         server = "https://rest.ensembl.org"
 
         vcf = VCF_file(variant_vcf)
         vcf.annotate_vep(server)
-        vcf.write("tmp/PNK_01_GRCh38.p14/testout.vcf")
+        vcf.write("testannotate_EGFR.vcf")
