@@ -100,9 +100,8 @@ class VCF_file:
 
         if len(ref_allele) > len(alt_allele):
             # this is a deletion
-            # -1 to adjust for 0- to 1-based index on start
-            # -1 to remove first base of ref which is maintained
-            # -1 because nuc in start is included in the deletion
+            # -1 to adjust for 1- to 0-based index on start
+            # -1 to remove first base of ref which is maintained and not part of the deletion
             end = start + len(ref_allele) - 2
 
         elif len(ref_allele) < len(alt_allele):

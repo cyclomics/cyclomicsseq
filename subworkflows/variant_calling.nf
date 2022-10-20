@@ -20,7 +20,8 @@ include {
     FindSNPs
     FilterSNPs
     FindIndels
-    MergeVCF
+    MergeNoisyVCF
+    MergeFilteredVCF
     AnnotateVCF
 } from "./modules/bin"
 
@@ -84,11 +85,12 @@ workflow ValidatePosibleVariantLocations{
         FindSNPs(reads_aligned, positions)
         FilterSNPs(FindSNPs.out)
         FindIndels(reference, reads_aligned, positions)
-        MergeVCF(FilterSNPs.out.combine(FindIndels.out))
-        AnnotateVCF(MergeVCF.out)
+        MergeNoisyVCF(FindSNPs.out.combine(FindIndels.out))
+        MergeFilteredVCF(FilterSNPs.out.combine(FindIndels.out))
+        AnnotateVCF(MergeFilteredVCF.out)
 
 
     emit:
-        locations = FindSNPs.out
+        locations = MergeNoisyVCF.out
         variants = AnnotateVCF.out
 }

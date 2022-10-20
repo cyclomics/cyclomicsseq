@@ -13,10 +13,8 @@ process AddDepthToJson{
         tuple val(X), path("${X}.depth.json")
 
     script:
-        """
-       
+        """  
         add_depth_info_json.py --global_json $tidehuntertable --depth_json $depth_json --output ${X}.depth.json
-
         """
 }
 
@@ -81,11 +79,13 @@ process FindSNPs{
         tuple val(X), path(validation_bed)
 
     output:
-        path("${bam.simpleName}.snp.vcf")
+        tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.snp.vcf.gz"), path("${bam.simpleName}.snp.vcf.gz.tbi")
     
     script:
         """
         detect_snp.py $validation_bed $bam ${bam.simpleName}.snp.vcf
+        bgzip -c ${bam.simpleName}.snp.vcf > ${bam.simpleName}.snp.vcf.gz
+        tabix ${bam.simpleName}.snp.vcf.gz
         """
 }
 
@@ -94,7 +94,7 @@ process FilterSNPs {
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
-        path(vcf_file)
+        tuple path(vcf_file), path(vcf_gz), path(vcf_tbi)
 
     output:
         tuple path("${vcf_file.simpleName}_filtered.snp.vcf.gz"), path("${vcf_file.simpleName}_filtered.snp.vcf.gz.tbi")
@@ -130,20 +130,37 @@ process FindIndels{
         """
 }
 
-process MergeVCF{
+process MergeNoisyVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
-        tuple path(snp_vcf), path(snp_tbi), path(indel_vcf), path(indel_tbi)
+        tuple path(noisy_snp_vcf), path(noisy_snp_gz), path(noisy_snp_tbi), path(indel_gz), path(indel_tbi)
 
     output:
-        path("${indel_vcf.simpleName}.merged.vcf")
+        path("${indel_gz.simpleName}.noisy_merged.vcf")
     
     script:
         """
-        bcftools concat -a $snp_vcf $snp_vcf -O v -o ${indel_vcf.simpleName}.merged.tmp.vcf
-        bcftools sort ${indel_vcf.simpleName}.merged.tmp.vcf -o ${indel_vcf.simpleName}.merged.vcf
-        rm ${indel_vcf.simpleName}.merged.tmp.vcf
+        bcftools concat -a $noisy_snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.noisy_merged.tmp.vcf
+        bcftools sort ${indel_gz.simpleName}.noisy_merged.tmp.vcf -o ${indel_gz.simpleName}.noisy_merged.vcf
+        rm ${indel_gz.simpleName}.noisy_merged.tmp.vcf
+        """
+}
+
+process MergeFilteredVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        tuple path(snp_gz), path(snp_tbi), path(indel_gz), path(indel_tbi)
+
+    output:
+        path("${indel_gz.simpleName}.merged.vcf")
+    
+    script:
+        """
+        bcftools concat -a $snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.merged.tmp.vcf
+        bcftools sort ${indel_gz.simpleName}.merged.tmp.vcf -o ${indel_gz.simpleName}.merged.vcf
+        rm ${indel_gz.simpleName}.merged.tmp.vcf
         """
 }
 
@@ -214,6 +231,21 @@ process PlotVcf{
         """
 }
 
+process PasteVariantTable{
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+
+    input:
+        path(vcf_file)
+
+    output:
+        path("${vcf_file.simpleName}_table.json")
+    
+    script:
+        """
+        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant Table'
+        """
+}
+
 process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
@@ -257,7 +289,6 @@ process PlotReport{
     
     script:
         """
-        ls
         generate_report.py '${params}' $workflow.manifest.version
         """
 

@@ -16,6 +16,7 @@ include {
     PlotFastqsQUalAndLength as PlotRawFastqHist
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
+    PasteVariantTable
     PlotQScores
     PlotMetadataStats
     PlotReport
@@ -73,7 +74,8 @@ workflow PostQC {
         read_info
         consensus_bam
         quick_results
-        vcf
+        noisy_vcf
+        annotated_vcf
 
     main:
         // dont add the ID to the process
@@ -104,7 +106,8 @@ workflow PostQC {
         PlotQScores(PerbaseBaseDepthSplit.out, PerbaseBaseDepthConsensus.out)
 
         if (params.variant_calling == "validate") {
-            PlotVcf(vcf)
+            PlotVcf(noisy_vcf)
+            PasteVariantTable(annotated_vcf)
         }
         
         SamtoolsQuickcheck(consensus_bam)
@@ -119,7 +122,9 @@ workflow PostQC {
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
             PlotQScores.out).combine(
-            PlotVcf.out))
+            PlotVcf.out).combine(
+            PasteVariantTable.out
+            ))
 }
 
 

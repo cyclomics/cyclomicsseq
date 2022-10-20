@@ -96,15 +96,13 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
-    annotation_df = annotation_df.replace(to_replace=",", value=", ")
+    annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(to_replace=",", value=", ", regex=True)
     annotation_df = annotation_df.replace(to_replace=r"\(\)", value="")
     annotation_df = annotation_df.replace(to_replace=r"None \(None\)", value="N/A")
     annotation_df = annotation_df.replace(to_replace="None", value="N/A")
     annotation_df = annotation_df.replace(to_replace=r"nan \(nan\)", value="N/A")
     annotation_df = annotation_df.replace(to_replace="nan", value="N/A")
     annotation_df = annotation_df.replace(to_replace="NaN", value="N/A")
-
-    annotation_df = annotation_df[annotation_df["Symbol"] == "EGFR"]
 
     return annotation_df
 

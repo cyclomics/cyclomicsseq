@@ -17,10 +17,10 @@ class TestSmokeTest(unittest.TestCase):
 class TestGetQueryPositions(unittest.TestCase):
     def test_deletion(self):
         """Test if deletion positions are correctly parsed before query."""
-        # test_params1 = {'ref_allele':'ATG', 'alt_allele':'A', 'start':1}
-        test_params1_result = tuple([1, 1])
+        # test_params1 = {'ref_allele':'ATG', 'alt_allele':'A', 'start':2}
+        test_params1_result = tuple([2, 3])
         self.assertEqual(
-            target.VCF_file.get_query_positions("ATG", "A", 1), test_params1_result
+            target.VCF_file.get_query_positions("ATG", "A", 2), test_params1_result
         )
 
     def test_insertion(self):
@@ -33,10 +33,10 @@ class TestGetQueryPositions(unittest.TestCase):
 
     def test_snp(self):
         """Test if SNP positions are correctly parsed before query."""
-        # test_params3 = '[ref_allele:ATG, alt_allele:GTA, start:3]'
-        test_params3_result = tuple([3, 3])
+        # test_params3 = '[ref_allele:A, alt_allele:G, start:1]'
+        test_params3_result = tuple([1, 1])
         self.assertEqual(
-            target.VCF_file.get_query_positions("ATG", "GTA", 3), test_params3_result
+            target.VCF_file.get_query_positions("A", "G", 1), test_params3_result
         )
 
 
