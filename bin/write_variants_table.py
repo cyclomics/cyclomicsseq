@@ -41,7 +41,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
-    location = pd.DataFrame([f"{c}:{p}" for c, p in zip(chrom, pos)])
+    location = pd.Series([f"{c}:{p}" for c, p in zip(chrom, pos)])
 
     ref = variants_df["REF"]
     alt = variants_df["ALT"]
