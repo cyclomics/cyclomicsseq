@@ -88,7 +88,7 @@ class VCF_file:
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
 
     @staticmethod
-    def get_query_positions(
+    def get_query_allele_positions(
         ref_allele: str, alt_allele: str, start: int
     ) -> Tuple[int, int]:
         """Determine start and end positions for Ensembl query
@@ -100,19 +100,26 @@ class VCF_file:
 
         if len(ref_allele) > len(alt_allele):
             # this is a deletion
-            # -1 to adjust for 1- to 0-based index on start
-            # -1 to remove first base of ref which is maintained and not part of the deletion
-            end = start + len(ref_allele) - 2
+            # remove first base of ref which is maintained and not part of the deletion
+            end = start + len(ref_allele) - 1
+            start += 1
+            alt_allele = "-"
 
         elif len(ref_allele) < len(alt_allele):
             # This is an insertion
-            end = start - 1
+            end = start
+            # remove first base of ref which is maintained and not part of the deletion
+            start += 1
+            ref_allele = "-"
 
         elif len(ref_allele) == len(alt_allele):
             # This is a snp (ignoring insdel events)
             end = start
 
-        return (start, end)
+        # Ensembl-VEP needs REF to be the strand, which is always forward (1)
+        ref_allele = "1"
+
+        return (start, end, ref_allele, alt_allele)
 
     @staticmethod
     def ensembl_vep(query: str) -> dict:
@@ -240,10 +247,9 @@ class VCF_file:
             ref_allele = var[1]["REF"]
             alt_allele = var[1]["ALT"]
 
-            start, end = self.get_query_positions(ref_allele, alt_allele, start)
-
-            # Ensembl/Rest API needs reference allele to be '1'
-            ref_allele = "1"
+            start, end, ref_allele, alt_allele = self.get_query_allele_positions(
+                ref_allele, alt_allele, start
+            )
 
             query = (
                 f"{server}/vep/human/region/"

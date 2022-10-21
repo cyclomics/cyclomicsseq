@@ -571,7 +571,7 @@ def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_00
             # The 'start' value is 0-based, 'stop' is 1-based
 
             r = vcf.new_record(
-                contig=assembly, start=pos + 1, alleles=result[1], filter="PASS"
+                contig=assembly, start=pos, alleles=result[1], filter="PASS"
             )
 
             # Write found variant as a new entry to VCF output
@@ -616,25 +616,25 @@ if __name__ == "__main__":
 
     if dev:
         # TP53
-        # fasta = Path(
-        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/chm13v2.0.fa"
-        # )
-        # bed = Path(
-        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/genomic_positions_T2T.bed"
-        # )
-        # bam = Path(
-        #     "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/consensus_aligned/FAU48563.taged.bam"
-        # )
-        # vcf_out = Path("testindel_TP53.vcf")
+        fasta = Path(
+            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/chm13v2.0.fa"
+        )
+        bed = Path(
+            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/genomic_positions_T2T.bed"
+        )
+        bam = Path(
+            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/consensus_aligned/FAU48563.taged.bam"
+        )
+        vcf_out = Path("testindel_TP53.vcf")
 
         # EGFR
-        fasta = Path(
-            "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
-        )
-        bed = Path("pos_EGFR.bed")
-        bam = Path(
-            "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/consensus_aligned/FAS12641.taged.bam"
-        )
-        vcf_out = Path("testindel_EGFR.vcf")
+        # fasta = Path(
+        #     "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+        # )
+        # bed = Path("pos_EGFR.bed")
+        # bam = Path(
+        #     "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/consensus_aligned/FAS12641.taged.bam"
+        # )
+        # vcf_out = Path("testindel_EGFR.vcf")
 
         main(bam, bed, fasta, vcf_out)
