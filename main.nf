@@ -292,6 +292,7 @@ workflow {
         reads_aligned,
         params.quick_results,
         locations,
+        variant_vcf,
     )
 }
 

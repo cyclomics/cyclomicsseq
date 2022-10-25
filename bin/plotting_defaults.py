@@ -15,7 +15,7 @@ def findnth_occurance(input, search, n):
     Finding nth occurrence of search in input, zero indexed.
     returns -1 if no nth occurance exists
 
-    abcabcabc, c, 0 -> 2 
+    abcabcabc, c, 0 -> 2
     """
     #
     inilist = [m.start() for m in re.finditer(search, input)]
@@ -31,21 +31,21 @@ def nextflow_params_parser(params_str):
     recursive function to turn the params string from nextflow into a dictionary.
 
     eg turn:
-    [a:b, c:[d:e, f:g, h:[i:j], h2:[i2:[nested:3]]], k:l,m:n] 
+    [a:b, c:[d:e, f:g, h:[i:j], h2:[i2:[nested:3]]], k:l,m:n]
     into a dict like:
     {
-        'a': 'b', 
+        'a': 'b',
         'c': {
-            'd': 'e', 
-            'f': 'g', 
-            'h': {'i': 'j'}, 
+            'd': 'e',
+            'f': 'g',
+            'h': {'i': 'j'},
             'h2': {
                 'i2': {
                     'nested': '3'
                 }
             }
-        }, 
-        'k': 'l', 
+        },
+        'k': 'l',
         'm': 'n'
     }
     """
