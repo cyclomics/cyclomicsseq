@@ -50,19 +50,27 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     vaf = sample1.str[3]
 
     info = variants_df["INFO"].str.split(";")
-    type = info.str[0].str.split("=").str[1]
-    consequence = info.str[1].str.split("=").str[1]
-    symbol = info.str[4].str.split("=").str[1]
-    impact = info.str[5].str.split("=").str[1]
-    biotype = info.str[6].str.split("=").str[1]
-    sift = info.str[9].str.split("=").str[1]
-    polyphen = info.str[10].str.split("=").str[1]
 
-    cosmic_ids = info.str[2].str.split("=").str[1]
-    cosmic_legacy = info.str[3].str.split("=").str[1]
-    cosmic = pd.DataFrame(
-        [f"{id}<br>({leg})" for id, leg in zip(cosmic_ids, cosmic_legacy)]
-    )
+    #  if we only have vcf files with empty INFO columns (eg only backbone variants, or non cosmic mutations)
+    if len(info.shape) == 1:
+        type = pd.Series(["N/A"] * len(location))
+        consequence = pd.Series(["N/A"] * len(location))
+        symbol = pd.Series(["N/A"] * len(location))
+        impact = pd.Series(["N/A"] * len(location))
+        biotype = pd.Series(["N/A"] * len(location))
+        sift = pd.Series(["N/A"] * len(location))
+        polyphen = pd.Series(["N/A"] * len(location))
+        cosmic_ids = pd.Series(["N/A"] * len(location))
+        
+    else:
+        type = info.str[0].str.split("=").str[1]
+        consequence = info.str[1].str.split("=").str[1]
+        symbol = info.str[4].str.split("=").str[1]
+        impact = info.str[5].str.split("=").str[1]
+        biotype = info.str[6].str.split("=").str[1]
+        sift = info.str[9].str.split("=").str[1]
+        polyphen = info.str[10].str.split("=").str[1]
+        cosmic_ids = info.str[2].str.split("=").str[1]
 
     annot_columns = [
         "Location",
@@ -143,7 +151,7 @@ if __name__ == "__main__":
 
     else:
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
-        vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25/variants/FAU48563_annotated.vcf"
+        vcf_file = "ABZ922_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 
