@@ -2,6 +2,7 @@ import statistics
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import lru_cache
+from unittest import result
 
 from loguru import logger
 
@@ -32,6 +33,7 @@ class ClassificationRule(ABC):
     Calculates are a range between 1 an 0
 
     lru cache is used for speed since every classification calls rules.
+    Rules that are applicable will the used executed by the factory.
     """
 
     @abstractmethod
@@ -256,7 +258,7 @@ class CheckNChromosomesPresent(ClassificationRule):
 
     applicable = False
 
-    def __init__(self, chromosome_count=2, minimum_occurrence: int = 2):
+    def __init__(self, chromosome_count=2, minimum_occurrence: int = 1):
         self.minimum_occurrence = minimum_occurrence
         self.chromosome_count = chromosome_count
         logger.debug(
@@ -289,10 +291,6 @@ class Check1ChromosomesPresent(CheckNChromosomesPresent):
     def __init__(self) -> None:
         super().__init__(chromosome_count=1)
 
-    def score(self, group):
-        super_score = super().score(group)
-        return super_score
-
 
 class Check2ChromosomesPresent(CheckNChromosomesPresent):
     """
@@ -303,10 +301,6 @@ class Check2ChromosomesPresent(CheckNChromosomesPresent):
 
     def __init__(self) -> None:
         super().__init__(chromosome_count=2)
-
-    def score(self, group):
-        super_score = super().score(group)
-        return super_score
 
 
 class Check3ChromosomesPresent(CheckNChromosomesPresent):
@@ -319,10 +313,6 @@ class Check3ChromosomesPresent(CheckNChromosomesPresent):
     def __init__(self) -> None:
         super().__init__(chromosome_count=3)
 
-    def score(self, group):
-        super_score = super().score(group)
-        return super_score
-
 
 class Check4ChromosomesPresent(CheckNChromosomesPresent):
     """
@@ -333,10 +323,6 @@ class Check4ChromosomesPresent(CheckNChromosomesPresent):
 
     def __init__(self) -> None:
         super().__init__(chromosome_count=4)
-
-    def score(self, group):
-        super_score = super().score(group)
-        return super_score
 
 
 class CheckMinimumCountAlignments(ClassificationRule):
@@ -640,3 +626,53 @@ class CalculateTripletChromosomes(ClassificationRule):
 #         logger.debug(f"Rule {self.__class__.__name__} is scored at {result}")
 #         raise NotImplementedError
 #         return 1
+
+
+class CheckMinimumUnalignedGap(ClassificationRule):
+    """
+    Check if the minimum unaligned gap between segments is smaller than the target value
+    """
+
+    applicable = True
+
+    def __init__(self, target_value: int = 30):
+        logger.debug(
+            f"Rule {self.__class__.__name__} created, target_value: {target_value}"
+        )
+        self.target_value = target_value
+
+    @lru_cache(maxsize=1)
+    def score(self, group):
+        # result = 1 if group.find_median_unaligned_region() > self.target_value else 0
+        # get all gaps between segments (start and end might be hard to align)
+        inter_segment_gaps = group.find_unaligned_regions()[1:-1]
+        if len(inter_segment_gaps) > 0:
+            minimum_segment_gap = min(inter_segment_gaps)
+        else:
+            minimum_segment_gap = 0
+        if minimum_segment_gap < self.target_value:
+            result = 1
+        else:
+            result = 0
+        logger.debug(f"Rule {self.__class__.__name__} is scored at {result}")
+        return result
+
+
+class CalculateSegmentCountPercentageTenSegments(ClassificationRule):
+    """
+    Check that the Alignments do not overlap each other. overlaps less than `margin` are allowed.
+    """
+
+    applicable = True
+
+    def __init__(self, segments: int = 10):
+        self.segments = segments
+        logger.debug(f"Rule {self.__class__.__name__} created, segments: {segments}")
+
+    @lru_cache(maxsize=1)
+    def score(self, group):
+        if len(group) >= self.segments:
+            result = 1
+        else:
+            result = len(group) / self.segments
+        return result

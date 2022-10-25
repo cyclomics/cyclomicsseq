@@ -2,6 +2,7 @@ import logging
 import re
 import time
 from collections import OrderedDict, defaultdict
+from pathlib import Path
 
 from bokeh.io import output_file, save
 from bokeh.layouts import column
@@ -172,6 +173,13 @@ def create_spagettogram(alignments, title=None):
         for start in aln_starts:
             logger.debug(f"Draw startsite at {start}")
             plt.line((start, start), chrom_minmax[chrom], color="grey")
+        # add start and end lines
+        plt.line(
+            (alignments[0].raw_read_length, alignments[0].raw_read_length),
+            chrom_minmax[chrom],
+            color="black",
+        )
+        plt.line((0, 0), chrom_minmax[chrom], color="black")
 
     timestamp = int(time.time())
     readname = alignments[0].readname
@@ -181,6 +189,8 @@ def create_spagettogram(alignments, title=None):
         spagettogram_filename = f"plots/{timestamp}_spagettogram_{title}.html"
     else:
         spagettogram_filename = f"plots/{timestamp}_spagettogram_{readname}.html"
+
+    Path(spagettogram_filename).parent.mkdir(exist_ok=True)
 
     output_file(filename=spagettogram_filename, title=defined_tile)
     save(column(list(plots.values())))
