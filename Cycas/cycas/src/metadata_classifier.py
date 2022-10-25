@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
-from email.mime import application
-from importlib.metadata import metadata
-from typing import Dict
+from typing import Dict, Union
+import random
 
 from loguru import logger
 
@@ -10,20 +9,27 @@ from src.alignment_processor import AlignmentProcessor
 
 
 METADATA = Dict[str, int]
-UNKOWN_CLASS = "Unkown"
+UNKNOWN_CLASS_LABEL = "Unknown"
 
 
 class BaseMetadataClass(ABC):
     def __init__(self) -> None:
+        # Give all childern access to the default processor.
         self.alignment_processor = AlignmentProcessor()
 
     @property
     @abstractmethod
-    def priority(self) -> bool:
+    def priority(self) -> int:
+        """
+        If two classifiers are both true, the priority defines the classification. Lower is better
+        """
         pass
 
     @abstractmethod
-    def inspect(self) -> bool:
+    def inspect(self) -> Union[bool, str]:
+        """
+        return false if not classified as this type, return name if classified correctly
+        """
         pass
 
     @abstractmethod
@@ -47,122 +53,15 @@ class BaseMetadataClass(ABC):
             return False
 
     @property
+    def color(self) -> str:
+        random_number = random.randint(0, 16777215)
+        hex_number = str(hex(random_number))
+        hex_number = "#" + hex_number[2:]
+        return hex_number
+
+    @property
     def name(self):
         return self.__class__.__name__
-
-
-class BackboneInsert(BaseMetadataClass):
-    applicable = True
-    priority = 1
-
-    def inspect(self, metadata: METADATA) -> str:
-        outcome = False
-        if not metadata["Check1BackBoneInAlignments"]:
-            return outcome
-        if (
-            metadata["Check2ChromosomesPresent"]
-            and not metadata["CheckTwoStartLocationsByOwnLength"]
-        ):
-            return self.__class__.__name__
-
-        return outcome
-
-    def chop_blocks(self, alignments):
-        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
-            alignments
-        )
-
-
-class BackboneDoubleInsert(BaseMetadataClass):
-    applicable = True
-    priority = 1
-
-    def inspect(self, metadata: METADATA) -> str:
-        outcome = False
-        # No or 2 backbones is a fail
-        if not metadata["Check1BackBoneInAlignments"]:
-            return outcome
-        # one backbone and two starting position
-        if (
-            metadata["CheckTwoStartLocationsByOwnLength"]
-            and metadata["Check2ChromosomesPresent"]
-        ):
-            return self.__class__.__name__
-        if metadata["Check3ChromosomesPresent"]:
-            return self.__class__.__name__
-
-        return outcome
-
-    def chop_blocks(self, alignments):
-        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
-            alignments
-        )
-
-
-class SingleBackbone(BaseMetadataClass):
-    applicable = True
-    priority = 10
-
-    def inspect(self, metadata: METADATA) -> str:
-        outcome = False
-        if not metadata["Check1BackBoneInAlignments"]:
-            return outcome
-        if metadata["Check1ChromosomesPresent"]:
-            return self.__class__.__name__
-        return outcome
-
-    def chop_blocks(self, alignments):
-        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
-            alignments
-        )
-
-
-class SingleInsert(BaseMetadataClass):
-    applicable = True
-    priority = 20
-
-    def inspect(self, metadata: METADATA) -> str:
-        outcome = False
-        if not metadata["Check1ChromosomesPresent"]:
-            return outcome
-        if metadata["CheckTwoStartLocationsByOwnLength"]:
-            return outcome
-        if metadata["CheckEqualStartLocations"] > 0.8:
-            return self.__class__.__name__
-
-        return outcome
-
-    def chop_blocks(self, alignments):
-        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
-            alignments
-        )
-
-
-class MessyAlignment(BaseMetadataClass):
-    applicable = True
-    priority = 1000
-
-    def inspect(self, metadata: METADATA) -> bool:
-        if metadata["Check4ChromosomesPresent"]:
-            return self.__class__.__name__
-        if metadata["Check3ChromosomesPresent"]:
-            return self.__class__.__name__
-
-        return False
-
-    def chop_blocks(self, alignments):
-        return []
-
-
-class Unkown(BaseMetadataClass):
-    applicable = True
-    priority = 9999
-
-    def inspect(self, metadata: METADATA) -> bool:
-        return UNKOWN_CLASS
-
-    def chop_blocks(self, alignments):
-        return []
 
 
 class MetadataClassifier:
@@ -184,6 +83,7 @@ class MetadataClassifier:
         """Get all rules that are applicable."""
         rules = self.all_subclasses(self.classifier_base_class)
         rules = [x() for x in rules if x.applicable]
+        # priority is used in sorting
         rules.sort()
         return rules
 
@@ -202,10 +102,17 @@ class MetadataClassifier:
         classifier = [
             x for x in self.classification_options if x.name == classification
         ]
+
         if not len(classifier) == 1:
-            raise RuntimeError(
-                f"Multiple classifiers ({len(classifier)}) found with the same name. Aborting..."
-            )
+            if len(classifier) > 1:
+                raise RuntimeError(
+                    f"Multiple classifiers ({len(classifier)}) found with the same name. Aborting..."
+                )
+            else:
+                # empty list:
+                raise RuntimeError(
+                    f"No classifiers found for name ({classification}). Aborting..."
+                )
 
         classifier = classifier[0]
 
@@ -213,3 +120,192 @@ class MetadataClassifier:
 
     def show_counts(self):
         return Counter([v for v in self.result.values()])
+
+
+class LowAlignmentCount(BaseMetadataClass):
+    applicable = True
+    priority = 11
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        conditions = [metadata["CalculateSegmentCountPercentageTenSegments"] < 0.21]
+        if all(conditions):
+            return self.name
+        else:
+            return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class BackboneInsert(BaseMetadataClass):
+    applicable = True
+    priority = 1
+    color = "#355E3B"
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        conditions = [
+            metadata["Check1BackBoneInAlignments"] == 1,
+            metadata["Check2ChromosomesPresent"] == 1
+            and metadata["CheckTwoStartLocationsByOwnLength"] == 0,
+        ]
+        if all(conditions):
+            return self.name
+        else:
+            return outcome
+
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class BackboneDoubleInsert(BaseMetadataClass):
+    applicable = True
+    priority = 2
+    color = "#228B22"
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        # No or 2 backbones is a fail
+        if not metadata["Check1BackBoneInAlignments"]:
+            return outcome
+        # one backbone and two starting position
+        if (
+            metadata["CheckTwoStartLocationsByOwnLength"]
+            and metadata["Check2ChromosomesPresent"]
+        ):
+            return self.name
+        if metadata["Check3ChromosomesPresent"]:
+            return self.name
+
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class SingleBackboneUnalignedGaps(BaseMetadataClass):
+    applicable = True
+    priority = 9
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        conditions = [
+            metadata["Check1BackBoneInAlignments"] == 1,
+            metadata["CheckMinimumUnalignedGap"] == 1,
+            metadata["CalculateAlternatingChromosomeRatio"] < 0.5,
+            metadata["Check1ChromosomesPresent"] == 0,
+        ]
+
+        if all(conditions):
+            return self.name
+        else:
+            return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class SingleBackbone(BaseMetadataClass):
+    applicable = True
+    priority = 10
+    color = "#dc7633"
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        if not metadata["Check1BackBoneInAlignments"]:
+            return outcome
+        if metadata["Check1ChromosomesPresent"]:
+            return self.name
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class SingleInsertUnalignedGaps(BaseMetadataClass):
+    applicable = True
+    priority = 19
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        conditions = [
+            metadata["Check1ChromosomesPresent"] == 1,
+            metadata["CheckTwoStartLocationsByOwnLength"] == 0,
+            metadata["CalculateAlternatingChromosomeRatio"] < 0.5,
+            metadata["CheckEqualStartLocations"] > 0.8,
+            metadata["CheckMinimumUnalignedGap"] == 0,
+        ]
+
+        if all(conditions):
+            return self.name
+        else:
+            return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class SingleInsert(BaseMetadataClass):
+    applicable = True
+    priority = 20
+    color = "#21618c"
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        if not metadata["Check1ChromosomesPresent"]:
+            return outcome
+        if metadata["CheckTwoStartLocationsByOwnLength"]:
+            return outcome
+        if metadata["CheckEqualStartLocations"] > 0.8:
+            return self.name
+
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class MessyAlignment(BaseMetadataClass):
+    applicable = True
+    priority = 1000
+
+    def inspect(self, metadata: METADATA) -> bool:
+        if metadata["Check4ChromosomesPresent"]:
+            return self.name
+        if metadata["Check3ChromosomesPresent"]:
+            return self.name
+
+        return False
+
+    def chop_blocks(self, alignments):
+        return []
+
+
+class Unknown(BaseMetadataClass):
+    name = UNKNOWN_CLASS_LABEL
+    applicable = True
+    priority = 9999
+    color = "#D3D3D3"
+
+    def inspect(self, metadata: METADATA) -> bool:
+        return UNKNOWN_CLASS_LABEL
+
+    def chop_blocks(self, alignments):
+        return []

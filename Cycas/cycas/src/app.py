@@ -200,9 +200,11 @@ def _process_read(
         )
         full_metadata[read] = metadata
         metadata["classification"] = "Filtered"
-
+    # Create the metadata, contains the outcome of all the rules for this group
     metadata = _create_metadata(group, rules)
+    # group._print_group_properties(4)
 
+    # classify based on the rule outcome
     metadata["classification"] = classifier.classify(metadata)
     logger.debug(f"{read}: {metadata['classification']}")
 
@@ -268,8 +270,9 @@ def create_classifications_consensus(
     # show the count of each class
     logger.info(f"{classifier.show_counts()}")
 
-    with open(metadata_json, "w") as out_json:
-        out_json.write(json.dumps(full_metadata))
+    if metadata_json:
+        with open(metadata_json, "w") as out_json:
+            out_json.write(json.dumps(full_metadata))
 
     if plot_readtypes:
         for read_type in set(classifier.result.values()):

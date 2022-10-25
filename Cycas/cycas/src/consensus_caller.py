@@ -419,7 +419,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             # If we start the consensus string we store the position
-            if alignment_start is 0 and best_nuc != "-":
+            if alignment_start == 0 and best_nuc != "-":
                 alignment_start = i + block.get_start_position()
 
             # TODO: check if two nucleotides have the exact same likelihood.
