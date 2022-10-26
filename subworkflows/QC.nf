@@ -103,7 +103,9 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        
+        SamtoolsQuickcheck(consensus_bam)
+        SamtoolsIdxStats(consensus_bam)
+        CountNonBackboneVariants(annotated_vcf)
         PlotMetadataStats(read_info.collect())
 
         roi = FindRegionOfInterest(consensus_bam)
@@ -117,13 +119,10 @@ workflow PostQC {
             PlotVcf(noisy_vcf)
             PasteVariantTable(annotated_vcf)
         }
-        
-        SamtoolsQuickcheck(consensus_bam)
-        SamtoolsIdxStats(consensus_bam)
 
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
-          
+
         PlotReport(
             PlotRawFastqHist.out.combine(
             PlotConFastqHist.out).combine(
