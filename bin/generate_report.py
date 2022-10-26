@@ -127,9 +127,9 @@ def main(args):
     html_template = get_template(TEMPLATE_STR)
     data = defaultdict(list)
     data["generation_time"] = datetime.now().strftime("%d-%b-%Y (%H:%M:%S)")
-    data["aditional_info"] = {}
-    data["aditional_info"]["git_version"] = args.version
-    data["aditional_info"]["nextflow_params"] = nextflow_params_parser(
+    data["additional_info"] = {}
+    data["additional_info"]["git_version"] = args.version
+    data["additional_info"]["nextflow_params"] = nextflow_params_parser(
         args.nextflow_params
     )
 
@@ -141,25 +141,29 @@ def main(args):
         # print(test_json_content)
         for k, v in test_json_content.items():
             if k == "additional_info":
-                data["aditional_info"].update(v)
+                data["additional_info"].update(v)
             else:
                 try:
                     tabs += v
                 except (ValueError, KeyError) as e:
                     pass
 
-    print(data["aditional_info"])
+    print(data["additional_info"])
     data["bokehscript"] = tabs.get_scripts()
     data["plot_items"] = tabs.generate_tabs()
     for i in [
         ("Sequencing reads", "fa-dna", "readsraw fastq info", "text-succes"),
-        ("Consensus reads", "fa-bacon", "readsconsensus fastq info", "text-succes"),
+        ("Post filtering","fa-filter", "Reference_aligned_with_backbone", "text-succes"),
+        ("Segments found", "fa-bars", "readsconsensus fastq info", "text-succes"),
+        ("Consensus reads", "fa-align-center", "total_reference_mapping_reads", "text-succes"),
+        
+        ("Variants found", "fa-map-marker-alt", "variants_found_non_backbone", "text-succes"),
         ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-succes"),
-        ("Pipeline version", "fa-code-branch", "git_version", "text-primary"),
+        ("Pipeline version", "fa-code-branch", "git_version", "text-succes"),
     ]:
         try:
             data["cards"].append(
-                SummaryCard(i[0], i[1], data["aditional_info"][i[2]], i[3])
+                SummaryCard(i[0], i[1], data["additional_info"][i[2]], i[3])
             )
         except KeyError:
             data["cards"].append(SummaryCard(i[0], i[1], "nan", i[3]))

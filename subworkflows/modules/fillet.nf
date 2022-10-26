@@ -10,10 +10,10 @@ process SplitReadsOnAdapterSequence {
         path(fastq)
 
     output:
-        path("results/${fastq.SimpleName}_split.fastq.gz")
+        tuple path("results/${fastq.SimpleName}_split.fastq.gz")
 
     script:
         """
-        duplex_tools split_on_adapter . results/ Native
+        duplex_tools split_on_adapter . results/ Native 
         """
 } 

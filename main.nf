@@ -202,6 +202,7 @@ workflow {
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
         split_bam = TidehunterBackBoneQual.out.split_bam
+        split_bam_filtered = TidehunterBackBoneQual.out.split_bam_filtered
     }
     else if (params.consensus_calling == "cycas"){
         CycasConsensus( read_fastq.flatten(),
@@ -211,6 +212,7 @@ workflow {
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json
         split_bam = CycasConsensus.out.split_bam
+        split_bam_filtered = CycasConsensus.out.split_bam_filtered
     }
     else if(params.consensus_calling == "medaka" ) {
         CycasMedaka( read_fastq.flatten(),
@@ -287,6 +289,7 @@ workflow {
         PrepareGenome.out.fasta_combi,
         read_fastq,
         split_bam,
+        split_bam_filtered,
         base_unit_reads,
         read_info_json,
         reads_aligned,

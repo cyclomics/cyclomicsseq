@@ -126,7 +126,7 @@ workflow TidehunterBackBoneQual{
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
         split_bam = MinimapForSplitMap.out
-
+        split_bam_filtered = MinimapForSplitMap.out
 }
 
 workflow CycasConsensus{
@@ -154,6 +154,7 @@ workflow CycasConsensus{
         // take the id and json
         json = Cycas.out.map( it -> tuple(it[0], it[2]))
         split_bam = Minimap2AlignAdaptiveParameterized.out
+        split_bam_filtered = MapqAndNMFilter.out
 }
 
 workflow CycasMedaka{

@@ -36,13 +36,19 @@ include {
 } from "./modules/samtools"
 
 include {
-    SamtoolsMergeBams
+    SamtoolsMergeBams as SamtoolsMergeBams
+    SamtoolsMergeBams as SamtoolsMergeBamsFiltered
+    SamtoolsIdxStats
 } from "./modules/samtools"
 
 include {
     PerbaseBaseDepth as PerbaseBaseDepthSplit
     PerbaseBaseDepth as PerbaseBaseDepthConsensus
 } from "./modules/perbase"
+
+include{
+    CountNonBackboneVariants
+} from "./modules/utils"
 
 
 workflow  QC_pycoqc{
@@ -70,6 +76,7 @@ workflow PostQC {
         reference_fasta
         fastq_raw
         split_bam
+        split_bam_filtered
         fastq_consensus
         read_info
         consensus_bam
@@ -96,6 +103,7 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
+        
         PlotMetadataStats(read_info.collect())
 
         roi = FindRegionOfInterest(consensus_bam)
@@ -111,30 +119,21 @@ workflow PostQC {
         }
         
         SamtoolsQuickcheck(consensus_bam)
-        SamtoolsFlagstats(consensus_bam)
-        
-        if (quick_results == true) {
-            SamtoolsQuickcheck.out.view()
-            SamtoolsFlagstats.out.view()
-        }
+        SamtoolsIdxStats(consensus_bam)
+
+        merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
+        SamtoolsFlagstats(merged_split_bam_filtered)
+          
         PlotReport(
             PlotRawFastqHist.out.combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
             PlotQScores.out).combine(
             PlotVcf.out).combine(
-            PasteVariantTable.out
-            ))
+            PasteVariantTable.out).combine(
+            SamtoolsFlagstats.out).combine(
+            CountNonBackboneVariants.out).combine(
+            SamtoolsIdxStats.out
+            )
+            )
 }
-
-
-// workflow CreateAccuracyPlot {
-//     take:
-//         merged_consensus_bam
-//         merged_split_bam
-//         reference_fasta
-
-//     main:
-
-
-// }
