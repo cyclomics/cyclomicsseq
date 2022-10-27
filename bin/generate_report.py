@@ -153,8 +153,8 @@ def main(args):
     data["plot_items"] = tabs.generate_tabs()
     for i in [
         ("Sequencing reads", "fa-dna", "readsraw fastq info", "text-succes"),
-        ("Post filtering","fa-filter", "Reference_aligned_with_backbone", "text-succes"),
-        ("Segments found", "fa-bars", "readsconsensus fastq info", "text-succes"),
+        ("Post read split & QC","fa-filter", "Reference_aligned_with_backbone", "text-succes"),
+        ("Aligning circles", "fa-bars", "readsconsensus fastq info", "text-succes"),
         ("Consensus reads", "fa-align-center", "total_reference_mapping_reads", "text-succes"),
         
         ("Variants found", "fa-map-marker-alt", "variants_found_non_backbone", "text-succes"),

@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 import pandas as pd
 import io
-import re
+
+from plotting_defaults import cyclomics_defaults
 
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
@@ -121,7 +122,10 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
     """ """
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
-    vcf_table = annotation_df.to_html(na_rep="N/A", escape=False)
+    vcf_table = annotation_df.to_html(na_rep="N/A")
+    vcf_table = vcf_table.replace('class="dataframe"', 'class="table table-sm table-hover table-striped"')
+    vcf_table = vcf_table.replace('border="1"',"")
+    # f"width={cyclomics_defaults.width}")
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         json_obj = {}
@@ -129,7 +133,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
         json_obj[tab_name]["div"] = vcf_table
-
+        json_obj[tab_name]["priority"] = 1
         f.write(json.dumps(json_obj))
 
 

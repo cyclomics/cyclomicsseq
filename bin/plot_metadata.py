@@ -14,9 +14,11 @@ from bokeh.plotting import figure
 from bokeh.layouts import column
 from bokeh.io import save, output_file
 from bokeh.transform import cumsum
-from bokeh.models import LabelSet, ColumnDataSource
+from bokeh.models import LabelSet, ColumnDataSource, HoverTool
 from bokeh.embed import components
 
+
+from plotting_defaults import cyclomics_defaults
 
 concat_type_colors = {
     "BB-I": "DodgerBlue",  # perfect
@@ -180,6 +182,7 @@ def read_jsons_into_plots(json_folder, plot_file):
         with open(test_json) as d:
             print(test_json)
             dict_data = json.load(d)
+            
             if type(dict_data) == dict:
                 (
                     alignment_ratio,
@@ -202,7 +205,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     Y_n = [(x[1]) / x[0] for x in alignment_ratio]
     hist, edges = np.histogram(Y_n, density=True, bins=100)
 
-    p1 = figure(plot_height=500, plot_width=1000, title="Normalized Mappability")
+    p1 = figure(plot_height=500,tools="hover", plot_width=cyclomics_defaults.width, title="Normalized Mappability")
     p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
 
     p1.title.text_font_size = "18pt"
@@ -213,7 +216,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     p1.xaxis.major_label_text_font_size = "12pt"
     p1.yaxis.major_label_text_font_size = "12pt"
 
-    p2 = figure(plot_height=500, plot_width=1000, title="Length vs segments identified")
+    p2 = figure(plot_height=500,tools="hover", plot_width=cyclomics_defaults.width, title="Length vs segments identified")
     if len(raw_lens) > 10_000:
         full = list(zip(raw_lens, segments))
         subset = random.sample(full, 10_000)
@@ -249,8 +252,27 @@ def read_jsons_into_plots(json_folder, plot_file):
         "per Read classification based on consensus caller ",
     )
 
+    my_title_segment_hist = "Distribution of Segments identified"
+
+    int_centered_bins = np.arange(0, max(segments) + 1.5) - 0.5
+    hist, edges = np.histogram(segments,density=True, bins=int_centered_bins)
+    density_plot = figure(plot_height=500, plot_width=cyclomics_defaults.width, title=my_title_segment_hist)
+    density_plot.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
+
+    density_plot.y_range.start = 0
+    density_plot.x_range.start = 0
+    density_plot.title.text_font_size = "18pt"
+    density_plot.xaxis.axis_label = "# Segments"
+    density_plot.xaxis.axis_label_text_font_size = "16pt"
+    density_plot.yaxis.axis_label = "Occurence"
+    density_plot.yaxis.axis_label_text_font_size = "16pt"
+    density_plot.xaxis.major_label_text_font_size = "12pt"
+    density_plot.yaxis.major_label_text_font_size = "12pt"
+    hover = HoverTool(tooltips = [('Value', '@top{%0.4f}'),('From','@left'),("Until", "@right")])
+    density_plot.add_tools(hover)
+
     output_file(plot_file, title="metadata plots")
-    final_plot = column([donut, p1, p2])
+    final_plot = column([donut, p1, p2, density_plot])
 
     tab_name = "metadata"
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
@@ -265,14 +287,21 @@ def read_jsons_into_plots(json_folder, plot_file):
 
 if __name__ == "__main__":
     import argparse
+    dev = False
 
-    parser = argparse.ArgumentParser(
-        description="Create hist plot from a regex for fastq and fastq.gz files."
-    )
+    if dev:
+        read_jsons_into_plots(
+            "metadata_dev", 
+            "metadata.html"
+        )
+    else:
+        parser = argparse.ArgumentParser(
+            description="Create hist plot from a regex for fastq and fastq.gz files."
+        )
 
-    parser.add_argument("json_glob_path")
-    parser.add_argument("plot_file")
-    args = parser.parse_args()
+        parser.add_argument("json_glob_path")
+        parser.add_argument("plot_file")
+        args = parser.parse_args()
 
-    read_jsons_into_plots(args.json_glob_path, args.plot_file)
+        read_jsons_into_plots(args.json_glob_path, args.plot_file)
     # read_jsons_into_plots('dummy_json', 'tmp.html')
