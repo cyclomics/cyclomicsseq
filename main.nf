@@ -102,6 +102,10 @@ include {
 } from "./subworkflows/QC"
 
 include {
+    FilterWithAdapterDetection
+} from "./subworkflows/filtering"
+
+include {
     ReverseMapping
     TidehunterBackBoneQual
     CycasConsensus
@@ -188,6 +192,7 @@ workflow {
     
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
+    read_fastq_filtered = FilterWithAdapterDetection(read_fastq.flatten())
 /*
 ========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
@@ -195,7 +200,7 @@ workflow {
 */
     if( params.consensus_calling == "tidehunter" ) {
         
-        base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
+        base_unit_reads = TidehunterBackBoneQual(read_fastq_filtered,
             reference_genome_indexed,
             backbone_fasta,
             params.tidehunter.primer_length,
@@ -208,7 +213,7 @@ workflow {
         split_bam_filtered = TidehunterBackBoneQual.out.split_bam_filtered
     }
     else if (params.consensus_calling == "cycas"){
-        CycasConsensus( read_fastq.flatten(),
+        CycasConsensus( read_fastq_filtered,
             PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
@@ -218,7 +223,7 @@ workflow {
         split_bam_filtered = CycasConsensus.out.split_bam_filtered
     }
     else if(params.consensus_calling == "medaka" ) {
-        CycasMedaka( read_fastq.flatten(),
+        CycasMedaka( read_fastq_filtered,
             PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
@@ -291,6 +296,7 @@ workflow {
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
+        read_fastq_filtered,
         split_bam,
         split_bam_filtered,
         base_unit_reads,

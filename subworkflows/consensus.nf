@@ -135,14 +135,7 @@ workflow CycasConsensus{
         reference_genome
         backbone_fasta
     main:
-        FilterShortReads(read_fastq)
-        if (params.split_on_adapter != "no") {
-            fastq = SplitReadsOnAdapterSequence(FilterShortReads.out)
-        }
-        else {
-            fastq = FilterShortReads
-        }
-        Minimap2AlignAdaptiveParameterized(fastq, reference_genome)
+        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)

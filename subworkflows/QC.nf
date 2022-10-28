@@ -14,6 +14,7 @@ include {
     CollectClassificationTypes
     PlotReadStructure
     PlotFastqsQUalAndLength as PlotRawFastqHist
+    PlotFastqsQUalAndLength as PlotFilteredHist
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
     PasteVariantTable
@@ -75,6 +76,7 @@ workflow PostQC {
     take:
         reference_fasta
         fastq_raw
+        fastq_filtered
         split_bam
         split_bam_filtered
         fastq_consensus
@@ -90,10 +92,14 @@ workflow PostQC {
         first_fq = fastq_raw.first()
         id = first_fq.simpleName
         extension = first_fq.getExtension()
-
         FastqInfoRaw(fastq_raw.collect(),'raw')
         PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"raw fastq info"')
         
+        first_fq = fastq_filtered.first()
+        id = first_fq.simpleName
+        extension = first_fq.getExtension()
+        PlotFilteredHist(fastq_filtered.collect(),extension, id + "filtered", '"filtered fastq info"')
+
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
@@ -126,6 +132,7 @@ workflow PostQC {
 
         PlotReport(
             PlotRawFastqHist.out.combine(
+            PlotFilteredHist.out).combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
             PlotQScores.out).combine(
@@ -136,5 +143,5 @@ workflow PostQC {
             CountNonBackboneVariants.out).combine(
             SamtoolsIdxStats.out
             )
-            )
+        )
 }

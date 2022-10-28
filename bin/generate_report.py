@@ -153,7 +153,7 @@ def main(args):
     data["plot_items"] = tabs.generate_tabs()
     for i in [
         ("Sequencing reads", "fa-dna", "readsraw fastq info", "text-succes"), # count from input material
-        ("Post read split & QC","fa-filter", "Reference_aligned_with_backbone", "text-succes"), 
+        ("Post read split & QC","fa-filter", "readsfiltered fastq info", "text-succes"), 
         ("Aligning circles", "fa-align-center", "Reference_aligned_with_backbone", "text-succes"), # reads aligning in initial alignment
         ("Consensus reads", "fa-bars", "total_reference_mapping_reads", "text-succes"),
         
