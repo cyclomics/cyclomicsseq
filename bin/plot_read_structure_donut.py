@@ -210,7 +210,7 @@ def create_readtype_donuts(
         "mBB-only": "Tomato",  # waste
         "mI-only": "DarkOrchid",  # informing but missing barcode
         "BB-mI": "RoyalBlue",  # OK
-        "mBB-I": "Navi",  # OK
+        "mBB-I": "Navy",  # OK
         "mBB-mI": "SkyBlue",  # OK
         "Unknown": "Gold",  # Waste
     }
@@ -368,7 +368,7 @@ if __name__ == "__main__":
         args.assembly_plot,
         "Segment count per assembly in reference",
         args.donut_plot_readstructure,
-        "Read structure by both read and base count by chromosomal presence per readname",
+        "Read structure based on chromosomal presence per readname",
     )
 
     # split_bam = "/media/dami/cyclomics_003/results/Cyclomics/000012_v4/CycasConsensus/Minimap2AlignAdaptiveParameterized/fastq_runid_4a99bd39c5b5f3262fd50fdb53e15f99baef4b0c_153_0_filtered.bam"

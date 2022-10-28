@@ -17,9 +17,9 @@ dependencies:
   - bwidget=1.9.14=ha770c72_1
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.18.1=h7f98852_0
-  - ca-certificates=2022.6.15=ha878542_0
+  - ca-certificates=2022.9.14=ha878542_0
   - cairo=1.16.0=ha61ee94_1011
-  - certifi=2022.6.15=pyhd8ed1ab_1
+  - certifi=2022.9.14=pyhd8ed1ab_0
   - cffi=1.15.0=py38h3931269_0
   - cfgv=3.3.1=pyhd8ed1ab_0
   - click=8.1.3=py38h578d9bd_0
@@ -27,6 +27,7 @@ dependencies:
   - curl=7.83.1=h7bff187_0
   - distlib=0.3.4=pyhd8ed1ab_0
   - duplex-tools=0.2.11=pyh5e36f6f_0
+  - ensembl-vep=88.9=0
   - expat=2.4.8=h27087fc_0
   - filelock=3.7.1=pyhd8ed1ab_0
   - font-ttf-dejavu-sans-mono=2.37=hab24e00_0
@@ -72,6 +73,7 @@ dependencies:
   - libedit=3.1.20191231=he28a2e2_2
   - libev=4.33=h516909a_1
   - libffi=3.4.2=h7f98852_5
+  - libgcc=7.2.0=h69d50b8_2
   - libgcc-devel_linux-64=10.3.0=he6cfe16_16
   - libgcc-ng=12.1.0=h8d9b700_16
   - libgfortran-ng=12.1.0=h69a702a_16
@@ -102,6 +104,7 @@ dependencies:
   - markupsafe=2.1.1=py38h0a891b7_1
   - minimap2=2.24=h7132678_1
   - mosdepth=0.3.3=h37c5b7d_2
+  - mysql-connector-c=6.1.11=h6eb9d5d_1007
   - natsort=8.1.0=pyhd8ed1ab_0
   - ncurses=6.3=h27087fc_1
   - nodeenv=1.6.0=pyhd8ed1ab_0
@@ -119,6 +122,30 @@ dependencies:
   - pcre2=10.37=h032f7d1_0
   - perbase=0.8.3=h93ac3e5_0
   - perl=5.32.1=2_h7f98852_perl5
+  - perl-bio-db-hts=2.4=0
+  - perl-bioperl=1.6.924=4
+  - perl-cgi=4.22=3
+  - perl-common-sense=3.75=pl5321hdfd78af_0
+  - perl-compress-raw-bzip2=2.201=pl5321h87f3376_1
+  - perl-compress-raw-zlib=2.105=pl5321h87f3376_0
+  - perl-dbd-mysql=4.050=pl5321h9f5acd7_0
+  - perl-dbi=1.643=pl5321hec16e2b_1
+  - perl-devel-checklib=1.14=pl5321hec16e2b_1
+  - perl-encode=3.19=pl5321hec16e2b_1
+  - perl-exporter=5.72=pl5321hdfd78af_2
+  - perl-io-compress=2.201=pl5321h87f3376_0
+  - perl-json=4.09=pl5321hdfd78af_0
+  - perl-json-xs=2.34=pl5321h9f5acd7_5
+  - perl-parent=0.236=pl5321hdfd78af_2
+  - perl-perlio-gzip=0.20=pl5321h7132678_3
+  - perl-scalar-list-utils=1.62=pl5321hec16e2b_1
+  - perl-sereal=4.019=pl5321hdfd78af_0
+  - perl-sereal-decoder=4.025=pl5321hec16e2b_1
+  - perl-sereal-encoder=4.025=pl5321hec16e2b_1
+  - perl-set-intervaltree=0.12=pl5321h87f3376_2
+  - perl-threaded=5.32.1=hdfd78af_1
+  - perl-types-serialiser=1.01=pl5321hdfd78af_0
+  - perl-yaml=1.30=pl5321hdfd78af_0
   - pillow=9.1.1=py38h0ee0e06_1
   - pip=22.1.2=pyhd8ed1ab_0
   - pixman=0.40.0=h36c2ea0_0
@@ -230,6 +257,7 @@ dependencies:
   - tqdm=4.64.0=pyhd8ed1ab_0
   - typing_extensions=4.2.0=pyha770c72_1
   - ukkonen=1.0.1=py38h43d8883_2
+  - unzip=6.0=h7f98852_3
   - varscan=2.4.4=hdfd78af_1
   - virtualenv=20.14.1=py38h578d9bd_0
   - wheel=0.37.1=pyhd8ed1ab_0
@@ -252,8 +280,8 @@ dependencies:
   - zipp=3.8.0=pyhd8ed1ab_0
   - zlib=1.2.12=h166bdaf_0
   - zstd=1.5.2=h8a70e8d_1
-  - requests=2.28.1
   - pip:
     - biopython==1.79
     - edlib==1.3.9
     - more-itertools==8.13.0
+prefix: /home/dami/anaconda3/envs/cyclomics-nf-cyclomicseq

@@ -13,3 +13,5 @@ tidehunter_exec_test
 notebooks/*
 plots/*
 tmp/
+testrun*
+fullrun*

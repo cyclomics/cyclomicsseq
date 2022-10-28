@@ -44,6 +44,9 @@ params.min_repeat_count = 3
 if (params.backbone == "BB41") {
     backbone_file = "$projectDir/backbones/BB41.fasta"
 }
+else if (params.backbone == "BB42") {
+    backbone_file = "$projectDir/backbones/BB42.fasta"
+}
 else if (params.backbone == "BB22") {
     backbone_file = "$projectDir/backbones/BB22.fasta"
 }

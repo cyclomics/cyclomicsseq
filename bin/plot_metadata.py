@@ -28,7 +28,7 @@ concat_type_colors = {
     "mBB-only": "Tomato",  # waste
     "mI-only": "DarkOrchid",  # informing but missing barcode
     "BB-mI": "RoyalBlue",  # OK
-    "mBB-I": "Navi",  # OK
+    "mBB-I": "Navy",  # OK
     "mBB-mI": "SkyBlue",  # OK
     "Unknown": "Gold",  # Waste
 }
@@ -169,54 +169,69 @@ def parse_Tidehunter_metadata(dict_data):
         print(data)
         aln_ratio = float(data["baseunit_copies"]) * float(data["baseunit_length"])
         alignment_ratio.append((int(data["raw_length"]), aln_ratio))
-        repeat_data.append((data["raw_length"], data["baseunit_copies"]))
-        raw_lens.append(data["raw_length"])
-        segments.append(data["baseunit_copies"])
+        repeat_data.append((int(data["raw_length"]), float(data["baseunit_copies"])))
+        raw_lens.append(int(data["raw_length"]))
+        segments.append(float(data["baseunit_copies"]))
         classifications.append("Unknown")
     print(dict_data)
     return alignment_ratio, repeat_data, raw_lens, segments, classifications
 
 
 def read_jsons_into_plots(json_folder, plot_file):
+    print(json_folder)
+    dict_data = None
     for test_json in glob.glob(f"{json_folder}/*.json"):
         with open(test_json) as d:
             print(test_json)
-            dict_data = json.load(d)
-            
-            if type(dict_data) == dict:
-                (
-                    alignment_ratio,
-                    repeat_data,
-                    raw_lens,
-                    segments,
-                    classifications,
-                ) = parse_Cycas_metadata(dict_data)
+            dict_data_json = json.load(d)
+            # If cycas
+            if type(dict_data_json) == dict:
+                if not dict_data:
+                    dict_data = {}
+                dict_data = {**dict_data, **dict_data_json}
+            #Tidehunter
             else:
-                (
-                    alignment_ratio,
-                    repeat_data,
-                    raw_lens,
-                    segments,
-                    classifications,
-                ) = parse_Tidehunter_metadata(dict_data)
+                if not dict_data:
+                    dict_data = []
+                dict_data += dict_data_json
+
+
+    if type(dict_data) == dict:
+        (
+            alignment_ratio,
+            repeat_data,
+            raw_lens,
+            segments,
+            classifications,
+        ) = parse_Cycas_metadata(dict_data)
+    else:
+        (
+            alignment_ratio,
+            repeat_data,
+            raw_lens,
+            segments,
+            classifications,
+        ) = parse_Tidehunter_metadata(dict_data)
 
     X = [x[0] for x in alignment_ratio]
     Y = [x[1] for x in alignment_ratio]
     Y_n = [(x[1]) / x[0] for x in alignment_ratio]
     hist, edges = np.histogram(Y_n, density=True, bins=100)
 
-    p1 = figure(plot_height=500,tools="hover", plot_width=cyclomics_defaults.width, title="Normalized Mappability")
+    p1 = figure(plot_height=500, plot_width=cyclomics_defaults.width, title="Normalized Mappability")
     p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
 
     p1.title.text_font_size = "18pt"
     p1.xaxis.axis_label = "bases/bases mapped"
     p1.xaxis.axis_label_text_font_size = "16pt"
-    p1.yaxis.axis_label = "%"
+    p1.yaxis.axis_label = "Occurence"
     p1.yaxis.axis_label_text_font_size = "16pt"
     p1.xaxis.major_label_text_font_size = "12pt"
     p1.yaxis.major_label_text_font_size = "12pt"
+    hover = HoverTool(tooltips = [('From','@left'),("Until", "@right")])
+    p1.add_tools(hover)
 
-    p2 = figure(plot_height=500,tools="hover", plot_width=cyclomics_defaults.width, title="Length vs segments identified")
+    p2 = figure(plot_height=500, plot_width=cyclomics_defaults.width, title="Length vs segments identified")
     if len(raw_lens) > 10_000:
         full = list(zip(raw_lens, segments))
         subset = random.sample(full, 10_000)
@@ -235,12 +250,14 @@ def read_jsons_into_plots(json_folder, plot_file):
     p2.yaxis.axis_label_text_font_size = "16pt"
     p2.xaxis.major_label_text_font_size = "12pt"
     p2.yaxis.major_label_text_font_size = "12pt"
+    hover = HoverTool(tooltips = [('Segments', '@y'),('length','@x')])
+    p2.add_tools(hover)
 
     classification_count = Counter(classifications)
     _df1 = _calculate_angle_and_color(classification_count, cycas_class_mapper)
 
-    donut_plot_height = 400
-    donut_plot_width = 600
+    donut_plot_height = 500
+    donut_plot_width = cyclomics_defaults.width
     donut_plot_x_range = (-0.6, 1.4)
     donut_plot_y_range = (0, 2)
     donut = _plot_donut(
@@ -249,12 +266,12 @@ def read_jsons_into_plots(json_folder, plot_file):
         donut_plot_width,
         donut_plot_x_range,
         donut_plot_y_range,
-        "per Read classification based on consensus caller ",
+        "Per read classification based on consensus caller ",
     )
 
     my_title_segment_hist = "Distribution of Segments identified"
 
-    int_centered_bins = np.arange(0, max(segments) + 1.5) - 0.5
+    int_centered_bins = np.arange(0, min(100, max(segments)) + 1.5) - 0.5
     hist, edges = np.histogram(segments,density=True, bins=int_centered_bins)
     density_plot = figure(plot_height=500, plot_width=cyclomics_defaults.width, title=my_title_segment_hist)
     density_plot.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
@@ -291,8 +308,8 @@ if __name__ == "__main__":
 
     if dev:
         read_jsons_into_plots(
-            "metadata_dev", 
-            "metadata.html"
+            "metadata_dev2", 
+            "metadata2.html"
         )
     else:
         parser = argparse.ArgumentParser(

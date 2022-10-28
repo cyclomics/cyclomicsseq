@@ -152,10 +152,10 @@ def main(args):
     data["bokehscript"] = tabs.get_scripts()
     data["plot_items"] = tabs.generate_tabs()
     for i in [
-        ("Sequencing reads", "fa-dna", "readsraw fastq info", "text-succes"),
-        ("Post read split & QC","fa-filter", "Reference_aligned_with_backbone", "text-succes"),
-        ("Aligning circles", "fa-bars", "readsconsensus fastq info", "text-succes"),
-        ("Consensus reads", "fa-align-center", "total_reference_mapping_reads", "text-succes"),
+        ("Sequencing reads", "fa-dna", "readsraw fastq info", "text-succes"), # count from input material
+        ("Post read split & QC","fa-filter", "Reference_aligned_with_backbone", "text-succes"), 
+        ("Aligning circles", "fa-align-center", "Reference_aligned_with_backbone", "text-succes"), # reads aligning in initial alignment
+        ("Consensus reads", "fa-bars", "total_reference_mapping_reads", "text-succes"),
         
         ("Variants found", "fa-map-marker-alt", "variants_found_non_backbone", "text-succes"),
         ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-succes"),

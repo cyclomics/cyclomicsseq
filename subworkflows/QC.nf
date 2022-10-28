@@ -106,7 +106,8 @@ workflow PostQC {
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
         CountNonBackboneVariants(annotated_vcf)
-        PlotMetadataStats(read_info.collect())
+        meta_data = read_info.map(it -> it[1]).collect()
+        PlotMetadataStats(meta_data)
 
         roi = FindRegionOfInterest(consensus_bam)
       
@@ -129,6 +130,7 @@ workflow PostQC {
             PlotReadStructure.out).combine(
             PlotQScores.out).combine(
             PlotVcf.out).combine(
+            PlotMetadataStats.out).combine(
             PasteVariantTable.out).combine(
             SamtoolsFlagstats.out).combine(
             CountNonBackboneVariants.out).combine(

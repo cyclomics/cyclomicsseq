@@ -10,7 +10,7 @@ process SplitReadsOnAdapterSequence {
         path(fastq)
 
     output:
-        tuple path("results/${fastq.SimpleName}_split.fastq.gz")
+        path("results/${fastq.SimpleName}_split.fastq.gz")
 
     script:
         """
