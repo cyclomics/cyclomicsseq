@@ -479,7 +479,7 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     else:
         roi = get_roi_pileup_df(df1)
 
-        positional_accuracy = plot_compare_accuracy(roi, [df1, df2])
+        positional_accuracy = plot_compare_accuracy(roi, [df1, df2], 'Variant unaware Q')
         q_score_plot = make_qscore_scatter(
             df1, df2, output_plot_file.with_suffix(".csv")
         )

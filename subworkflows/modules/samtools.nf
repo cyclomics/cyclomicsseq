@@ -166,16 +166,9 @@ process SamtoolsIdxStats{
 
     script:
         """
-        TOTALREFREADS=\$(samtools idxstats $bam_in | grep -v "^BB" | grep -v "^*" | awk -F'\t' '{sum+=\$3;} END{print sum;}')
-        PERASSREADS=\$(samtools idxstats $bam_in | grep -v "^*" | jq -rRs 'split("\n")[0:-1] |
-        map([split("\t")[]|split(",")] | {
-                 "assembly_name": .[0],
-                 "length":.[1],
-                 "reads":.[2]
-             }
-        )')
+        TOTALREFREADS=\$(samtools idxstats $bam_in | grep -v "^BB" | grep -v "^*" | awk -F' ' '{sum+=\$3;} END{print sum;}')
         echo \$TOTALREFREADS
-        TOTALREFREADS=\$TOTALREFREADS PERASSREADS=\$PERASSREADS jq -n '{additional_info:{"total_reference_mapping_reads":env.TOTALREFREADS, "assembly_mapping_info": env.PERASSREADS}}' > ${bam_in.SimpleName}.idxstats_metadata.json
+        TOTALREFREADS=\$TOTALREFREADS jq -n '{additional_info:{"total_reference_mapping_reads":env.TOTALREFREADS,}}' > ${bam_in.SimpleName}.idxstats_metadata.json
 
         """
 }
