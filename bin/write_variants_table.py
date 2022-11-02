@@ -52,8 +52,9 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     info = variants_df["INFO"].str.split(";")
 
+    print(info)
     #  if we only have vcf files with empty INFO columns (eg only backbone variants, or non cosmic mutations)
-    if len(info.shape) == 1:
+    if len(info) == 1:
         type = pd.Series(["N/A"] * len(location))
         consequence = pd.Series(["N/A"] * len(location))
         symbol = pd.Series(["N/A"] * len(location))
@@ -62,7 +63,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         sift = pd.Series(["N/A"] * len(location))
         polyphen = pd.Series(["N/A"] * len(location))
         cosmic_ids = pd.Series(["N/A"] * len(location))
-        
+
     else:
         type = info.str[0].str.split("=").str[1]
         consequence = info.str[1].str.split("=").str[1]

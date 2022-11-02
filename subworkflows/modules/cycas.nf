@@ -17,7 +17,7 @@ process Cycas{
         tuple val(X), path(bam), path(bai)
 
     output:
-        tuple val(X), path("${bam.SimpleName}.consensus.fastq"), path("${bam.SimpleName}.metadata.json"), path ("plots/*")
+        tuple val(X), path("${bam.SimpleName}.consensus.fastq"), path("${bam.SimpleName}.metadata.json"), path ("plots/*"), optional: true
 
     script:
         
