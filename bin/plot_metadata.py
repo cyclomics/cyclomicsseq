@@ -41,7 +41,7 @@ cycas_class_mapper = {
     "MessyAlignment": concat_type_colors["Unknown"],
     "SingleInsertUnalignedGaps": "SlateBlue",
     "SingleBackboneUnalignedGaps": "Red",
-    "LowAlignmentCount" : "LightGray",
+    "LowAlignmentCount": "LightGray",
 }
 
 
@@ -189,12 +189,11 @@ def read_jsons_into_plots(json_folder, plot_file):
                 if not dict_data:
                     dict_data = {}
                 dict_data = {**dict_data, **dict_data_json}
-            #Tidehunter
+            # Tidehunter
             else:
                 if not dict_data:
                     dict_data = []
                 dict_data += dict_data_json
-
 
     if type(dict_data) == dict:
         (
@@ -218,7 +217,11 @@ def read_jsons_into_plots(json_folder, plot_file):
     Y_n = [(x[1]) / x[0] for x in alignment_ratio]
     hist, edges = np.histogram(Y_n, density=True, bins=100)
 
-    p1 = figure(plot_height=500, plot_width=cyclomics_defaults.width, title="Normalized Mappability")
+    p1 = figure(
+        plot_height=500,
+        plot_width=cyclomics_defaults.width,
+        title="Normalized Mappability",
+    )
     p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
 
     p1.title.text_font_size = "18pt"
@@ -228,10 +231,14 @@ def read_jsons_into_plots(json_folder, plot_file):
     p1.yaxis.axis_label_text_font_size = "16pt"
     p1.xaxis.major_label_text_font_size = "12pt"
     p1.yaxis.major_label_text_font_size = "12pt"
-    hover = HoverTool(tooltips = [('From','@left'),("Until", "@right")])
+    hover = HoverTool(tooltips=[("From", "@left"), ("Until", "@right")])
     p1.add_tools(hover)
 
-    p2 = figure(plot_height=500, plot_width=cyclomics_defaults.width, title="Length vs segments identified")
+    p2 = figure(
+        plot_height=500,
+        plot_width=cyclomics_defaults.width,
+        title="Length vs segments identified",
+    )
     if len(raw_lens) > 10_000:
         full = list(zip(raw_lens, segments))
         subset = random.sample(full, 10_000)
@@ -250,7 +257,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     p2.yaxis.axis_label_text_font_size = "16pt"
     p2.xaxis.major_label_text_font_size = "12pt"
     p2.yaxis.major_label_text_font_size = "12pt"
-    hover = HoverTool(tooltips = [('Segments', '@y'),('length','@x')])
+    hover = HoverTool(tooltips=[("Segments", "@y"), ("length", "@x")])
     p2.add_tools(hover)
 
     classification_count = Counter(classifications)
@@ -272,9 +279,15 @@ def read_jsons_into_plots(json_folder, plot_file):
     my_title_segment_hist = "Distribution of Segments identified"
 
     int_centered_bins = np.arange(0, min(100, max(segments)) + 1.5) - 0.5
-    hist, edges = np.histogram(segments,density=True, bins=int_centered_bins)
-    density_plot = figure(plot_height=500, plot_width=cyclomics_defaults.width, title=my_title_segment_hist)
-    density_plot.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white")
+    hist, edges = np.histogram(segments, density=True, bins=int_centered_bins)
+    density_plot = figure(
+        plot_height=500,
+        plot_width=cyclomics_defaults.width,
+        title=my_title_segment_hist,
+    )
+    density_plot.quad(
+        top=hist, bottom=0, left=edges[:-1], right=edges[1:], line_color="white"
+    )
 
     density_plot.y_range.start = 0
     density_plot.x_range.start = 0
@@ -285,7 +298,9 @@ def read_jsons_into_plots(json_folder, plot_file):
     density_plot.yaxis.axis_label_text_font_size = "16pt"
     density_plot.xaxis.major_label_text_font_size = "12pt"
     density_plot.yaxis.major_label_text_font_size = "12pt"
-    hover = HoverTool(tooltips = [('Value', '@top{%0.4f}'),('From','@left'),("Until", "@right")])
+    hover = HoverTool(
+        tooltips=[("Value", "@top{%0.4f}"), ("From", "@left"), ("Until", "@right")]
+    )
     density_plot.add_tools(hover)
 
     output_file(plot_file, title="metadata plots")
@@ -304,13 +319,11 @@ def read_jsons_into_plots(json_folder, plot_file):
 
 if __name__ == "__main__":
     import argparse
+
     dev = False
 
     if dev:
-        read_jsons_into_plots(
-            "metadata_dev2", 
-            "metadata2.html"
-        )
+        read_jsons_into_plots("metadata_dev2", "metadata2.html")
     else:
         parser = argparse.ArgumentParser(
             description="Create hist plot from a regex for fastq and fastq.gz files."

@@ -124,8 +124,10 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
     vcf_table = annotation_df.to_html(na_rep="N/A")
-    vcf_table = vcf_table.replace('class="dataframe"', 'class="table table-sm table-hover table-striped"')
-    vcf_table = vcf_table.replace('border="1"',"")
+    vcf_table = vcf_table.replace(
+        'class="dataframe"', 'class="table table-sm table-hover table-striped"'
+    )
+    vcf_table = vcf_table.replace('border="1"', "")
     # f"width={cyclomics_defaults.width}")
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:

@@ -125,7 +125,10 @@ def make_scatter_plots(data, roi):
         ]
 
         # Pos scatter vaf
-        p_vaf = figure(title=f"Positional VAF {chrom}:{start}-{stop}", width=cyclomics_defaults.width)
+        p_vaf = figure(
+            title=f"Positional VAF {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_vaf.xaxis.axis_label = "Position"
         p_vaf.yaxis.axis_label = "VAF"
         p_vaf.xaxis.formatter.use_scientific = False
@@ -141,7 +144,10 @@ def make_scatter_plots(data, roi):
         p_vaf.yaxis.axis_label_text_font_size = "12pt"
 
         # fwd ratio vs reverse ratio
-        p_ratio = figure(title=f"Support ratio's per direction {chrom}:{start}-{stop}", width=cyclomics_defaults.width)
+        p_ratio = figure(
+            title=f"Support ratio's per direction {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_ratio.xaxis.axis_label = "forward  ratio"
         p_ratio.yaxis.axis_label = "reverse ratio"
 
@@ -160,7 +166,7 @@ def make_scatter_plots(data, roi):
         # Depth
         p_depth = figure(
             title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}",
-            width=cyclomics_defaults.width
+            width=cyclomics_defaults.width,
         )
         p_depth.xaxis.axis_label = "Position"
         p_depth.yaxis.axis_label = "Depth"
