@@ -53,9 +53,15 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     info = variants_df["INFO"].str.split(";")
 
     print(info)
+    # Due to the fact that a list is unhashable we need to do a forloop iso a set.
+    unique = []
+    for x in info:
+        if x not in unique:
+            unique.append(x)
+
     #  if we only have vcf files with empty INFO columns (eg only backbone variants, or non cosmic mutations)
-    if len(info) == 1:
-        type = pd.Series(["N/A"] * len(location))
+    if unique == [["."]]:
+        var_type = pd.Series(["N/A"] * len(location))
         consequence = pd.Series(["N/A"] * len(location))
         symbol = pd.Series(["N/A"] * len(location))
         impact = pd.Series(["N/A"] * len(location))
@@ -65,7 +71,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         cosmic_ids = pd.Series(["N/A"] * len(location))
 
     else:
-        type = info.str[0].str.split("=").str[1]
+        var_type = info.str[0].str.split("=").str[1]
         consequence = info.str[1].str.split("=").str[1]
         symbol = info.str[4].str.split("=").str[1]
         impact = info.str[5].str.split("=").str[1]
@@ -94,7 +100,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         ref,
         alt,
         vaf,
-        type,
+        var_type,
         symbol,
         biotype,
         consequence,
@@ -141,7 +147,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
 
 
 if __name__ == "__main__":
-    dev = False
+    dev = True
     if not dev:
         import argparse
 
@@ -158,7 +164,8 @@ if __name__ == "__main__":
 
     else:
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
-        vcf_file = "ABZ922_annotated.vcf"
+        # vcf_file = "fastq_annotated.vcf"
+        vcf_file = "FAU48563_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 
