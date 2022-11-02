@@ -147,7 +147,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
 
 
 if __name__ == "__main__":
-    dev = True
+    dev = False
     if not dev:
         import argparse
 
