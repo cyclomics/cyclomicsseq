@@ -13,6 +13,8 @@ from bokeh.layouts import row, column
 from bokeh.models import HoverTool
 from bokeh.embed import components
 
+from plotting_defaults import cyclomics_defaults
+
 chromosomal_region = Tuple[str, int, int]
 
 
@@ -21,13 +23,13 @@ def get_roi_pileup_df(
 ) -> List[chromosomal_region]:
     """
     Given a dataframe with CHROM and POS columns, find all streches in chromosomes that are less than `distance` appart.
-    reports 
+    reports
 
     """
 
     def get_continous_strech(array: np.array, distance: int):
         """
-        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a 
+        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a
         """
         m = np.concatenate(([True], array[1:] > array[:-1] + distance, [True]))
         idx = np.flatnonzero(m)
@@ -71,6 +73,7 @@ def read_vcf(path):
         df[fmt] = df.Sample1.apply(
             lambda x: float((x.split(":")[i] if (x.split(":")[i]) else 0))
         )
+
     del df["FORMAT"]
     del df["Sample1"]
     return df
@@ -92,6 +95,7 @@ def make_scatter_plots(data, roi):
     hover = HoverTool(
         tooltips=[
             ("position", "@CHROM : @POS"),
+            ("alleles", "@REF -> @ALT"),
             ("VAF", "@VAF"),
             ("Frequency", "@FREQ"),
             ("forward ratio", "@FWDR"),
@@ -113,23 +117,45 @@ def make_scatter_plots(data, roi):
         data_relevant = data_relevant[data_relevant.POS >= start]
         data_relevant = data_relevant[data_relevant.POS <= stop]
 
+        data_snp = data_relevant[
+            data_relevant.REF.str.len() == data_relevant.ALT.str.len()
+        ]
+        data_indel = data_relevant[
+            data_relevant.REF.str.len() != data_relevant.ALT.str.len()
+        ]
+
         # Pos scatter vaf
-        p_vaf = figure(title=f"Positional VAF {chrom}:{start}-{stop}")
+        p_vaf = figure(
+            title=f"Positional VAF {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_vaf.xaxis.axis_label = "Position"
-        p_vaf.yaxis.axis_label = "VAF ratio"
-        p_vaf.scatter("POS", "VAF", source=data_relevant)
+        p_vaf.yaxis.axis_label = "VAF"
+        p_vaf.xaxis.formatter.use_scientific = False
+
+        p_vaf.scatter("POS", "VAF", source=data_snp, legend_label="SNP")
+        p_vaf.scatter(
+            "POS", "VAF", source=data_indel, color="red", legend_label="InDel"
+        )
+
         p_vaf.add_tools(hover)
         p_vaf.title.text_font_size = "16pt"
         p_vaf.xaxis.axis_label_text_font_size = "12pt"
         p_vaf.yaxis.axis_label_text_font_size = "12pt"
 
-        # show(p_vaf)
-
         # fwd ratio vs reverse ratio
-        p_ratio = figure(title=f"Support ratio's per direction {chrom}:{start}-{stop}")
+        p_ratio = figure(
+            title=f"Support ratio's per direction {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_ratio.xaxis.axis_label = "forward  ratio"
         p_ratio.yaxis.axis_label = "reverse ratio"
-        p_ratio.scatter("FWDR", "REVR", source=data_relevant)
+
+        p_ratio.scatter("FWDR", "REVR", source=data_snp, legend_label="SNP")
+        p_ratio.scatter(
+            "FWDR", "REVR", source=data_indel, color="red", legend_label="InDel"
+        )
+
         p_ratio.add_tools(hover)
         p_ratio.title.text_font_size = "18pt"
         p_ratio.xaxis.axis_label_text_font_size = "16pt"
@@ -139,10 +165,13 @@ def make_scatter_plots(data, roi):
 
         # Depth
         p_depth = figure(
-            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}"
+            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
         )
         p_depth.xaxis.axis_label = "Position"
         p_depth.yaxis.axis_label = "Depth"
+        p_depth.xaxis.formatter.use_scientific = False
+
         p_depth.scatter(
             "POS", "DP", source=data_relevant, color="orange", legend_label="depth"
         )
@@ -157,13 +186,15 @@ def make_scatter_plots(data, roi):
         p_depth.xaxis.major_label_text_font_size = "12pt"
         p_depth.yaxis.major_label_text_font_size = "12pt"
 
-        plots.append(row(p_vaf, p_ratio, p_depth))
+        plots.append(p_vaf)
+        plots.append(p_ratio)
+        plots.append(p_depth)
 
     return column(*plots)
 
 
 def main(vcf_file, plot_file):
-    data = read_vcf(args.vcf_file)
+    data = read_vcf(vcf_file)
     tab_name = "Variants"
     add_info = {}
     json_obj = {}
@@ -178,34 +209,49 @@ def main(vcf_file, plot_file):
             "",
             "<h1>One of the pileups was not deep enough.</h1>",
         )
-        with open(Path(args.plot_file).with_suffix(".json"), "w") as f:
+        with open(Path(plot_file).with_suffix(".json"), "w") as f:
             f.write(json.dumps(json_obj))
         return
 
     roi = get_roi_pileup_df(data)
     # print(data)
     plot = make_scatter_plots(data, roi)
-    output_file(args.plot_file, title="variant plots")
+    output_file(plot_file, title="variant plots")
     save(plot)
 
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
     json_obj["additional_info"] = add_info
 
-    with open(Path(args.plot_file).with_suffix(".json"), "w") as f:
+    with open(Path(plot_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":
-    import argparse
+    dev = False
+    if not dev:
+        import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Create hist plot from a regex for fastq and fastq.gz files."
-    )
+        parser = argparse.ArgumentParser(
+            description="Create hist plot from a regex for fastq and fastq.gz files."
+        )
 
-    parser.add_argument("vcf_file")
-    parser.add_argument("plot_file")
-    args = parser.parse_args()
-    # vcf = '/home/dami/projects/variantcalling/depth/datasets/000010_v4_bb41/2000/potential_vars_1000.vcf'
-    # true_vcf = '/home/dami/projects/variantcalling/depth/datasets_cyclomics/000010_v4_bb41/Native/real_variants.vcf'
+        parser.add_argument("vcf_file")
+        parser.add_argument("plot_file")
+        args = parser.parse_args()
+        # vcf = '/home/dami/projects/variantcalling/depth/datasets/000010_v4_bb41/2000/potential_vars_1000.vcf'
+        # true_vcf = '/home/dami/projects/variantcalling/depth/datasets_cyclomics/000010_v4_bb41/Native/real_variants.vcf'
 
-    main(args.vcf_file, args.plot_file)
+        main(args.vcf_file, args.plot_file)
+
+    else:
+        # PNK
+        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
+        vcf_file = "ABZ922.noisy_merged.vcf"
+        plot_file = "ABZ922.noisy_merged.html"
+
+        # TP53 - T2T
+        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25_T2T/variants/FAU48563_annotated.vcf"
+        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25_T2T/variants/manually_merged.vcf"
+        # plot_file = "vcf_25_T2T.json"
+
+        main(vcf_file, plot_file)

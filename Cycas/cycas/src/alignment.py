@@ -178,6 +178,9 @@ class AlignmentGroup:
         """
         return len(self.alignments)
 
+    def __repr__(self) -> str:
+        return f"AlignmentGroup for {self.read_name} containing {len(self)} Alignments on {self.alignment_chromosomes_present()}"
+
     def get_start_position(self):
         "return the median start position of all alignments in the group, note that it does not take chromosomes into account."
         start = min([x.alignment_chromosome_start for x in self.alignments])

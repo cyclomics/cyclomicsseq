@@ -8,17 +8,15 @@ from bokeh.io import output_file, save
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
 
-
-from src.classifiers import BaseClassifier
+from src.metadata_classifier import BaseMetadataClass
 
 
 # Create a dict of colors for each posible classifier
 CLASS_COLORS = {}
-for v in BaseClassifier.__subclasses__():
-    initialized = v(0)
+for v in BaseMetadataClass.__subclasses__():
+    initialized = v()
     CLASS_COLORS[initialized.name] = initialized.color
-    CLASS_COLORS["Unkown"] = "#D3D3D3"
-    CLASS_COLORS["Filtered"] = "#A9A9A9"
+CLASS_COLORS["Filtered"] = "#A9A9A9"
 
 
 def create_piechart(classes: dict, title: str = "Read classification") -> None:

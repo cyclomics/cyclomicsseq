@@ -13,10 +13,8 @@ process AddDepthToJson{
         tuple val(X), path("${X}.depth.json")
 
     script:
-        """
-       
+        """  
         add_depth_info_json.py --global_json $tidehuntertable --depth_json $depth_json --output ${X}.depth.json
-
         """
 }
 
@@ -72,7 +70,7 @@ process CollectClassificationTypes{
         """
 }
 
-process VariantValidate{
+process FindSNPs{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
@@ -80,29 +78,105 @@ process VariantValidate{
         tuple val(X), path(bam), path(bai)
         tuple val(X), path(validation_bed)
 
-
     output:
-        path("${bam.simpleName}.vcf")
+        tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.snp.vcf.gz"), path("${bam.simpleName}.snp.vcf.gz.tbi")
     
     script:
         """
-        determine_vaf.py $validation_bed $bam ${bam.simpleName}.vcf
+        detect_snp.py $validation_bed $bam ${bam.simpleName}.snp.vcf
+        bgzip -c ${bam.simpleName}.snp.vcf > ${bam.simpleName}.snp.vcf.gz
+        tabix ${bam.simpleName}.snp.vcf.gz
         """
 }
 
-process FilterVariants {
+process FilterSNPs {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
-        path(vcf_file)
+        tuple path(vcf_file), path(vcf_gz), path(vcf_tbi)
 
     output:
-        path("${vcf_file.simpleName}_filtered.vcf")
+        tuple path("${vcf_file.simpleName}_filtered.snp.vcf.gz"), path("${vcf_file.simpleName}_filtered.snp.vcf.gz.tbi")
     
     script:
         """
-        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.vcf
+        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.snp.tmp.vcf
+        bcftools sort ${vcf_file.simpleName}_filtered.snp.tmp.vcf -o ${vcf_file.simpleName}_filtered.snp.vcf
+        rm ${vcf_file.simpleName}_filtered.snp.tmp.vcf
+        bgzip ${vcf_file.simpleName}_filtered.snp.vcf
+        tabix ${vcf_file.simpleName}_filtered.snp.vcf.gz
+        """
+}
+
+process FindIndels{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        path(reference_genome)
+        tuple val(X), path(bam), path(bai)
+        tuple val(X), path(validation_bed)
+
+    output:
+        tuple path("${bam.simpleName}.indel.vcf.gz"), path("${bam.simpleName}.indel.vcf.gz.tbi")
+    
+    script:
+        """
+        detect_indel.py $reference_genome $validation_bed $bam ${bam.simpleName}.indel.tmp.vcf
+        bcftools sort ${bam.simpleName}.indel.tmp.vcf -o ${bam.simpleName}.indel.vcf
+        rm ${bam.simpleName}.indel.tmp.vcf
+        bgzip ${bam.simpleName}.indel.vcf
+        tabix ${bam.simpleName}.indel.vcf.gz
+        """
+}
+
+process MergeNoisyVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        tuple path(noisy_snp_vcf), path(noisy_snp_gz), path(noisy_snp_tbi), path(indel_gz), path(indel_tbi)
+
+    output:
+        path("${indel_gz.simpleName}.noisy_merged.vcf")
+    
+    script:
+        """
+        bcftools concat -a $noisy_snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.noisy_merged.tmp.vcf
+        bcftools sort ${indel_gz.simpleName}.noisy_merged.tmp.vcf -o ${indel_gz.simpleName}.noisy_merged.vcf
+        rm ${indel_gz.simpleName}.noisy_merged.tmp.vcf
+        """
+}
+
+process MergeFilteredVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        tuple path(snp_gz), path(snp_tbi), path(indel_gz), path(indel_tbi)
+
+    output:
+        path("${indel_gz.simpleName}.merged.vcf")
+    
+    script:
+        """
+        bcftools concat -a $snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.merged.tmp.vcf
+        bcftools sort ${indel_gz.simpleName}.merged.tmp.vcf -o ${indel_gz.simpleName}.merged.vcf
+        rm ${indel_gz.simpleName}.merged.tmp.vcf
+        """
+}
+
+process AnnotateVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+
+    input:
+        path(variant_vcf)
+
+
+    output:
+        path("${variant_vcf.simpleName}_annotated.vcf")
+    
+    script:
+        """
+        annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
         """
 }
 
@@ -154,6 +228,23 @@ process PlotVcf{
     script:
         """
         plot_vcf.py $vcf ${vcf.simpleName}.html
+
+        """
+}
+
+process PasteVariantTable{
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+
+    input:
+        path(vcf_file)
+
+    output:
+        path("${vcf_file.simpleName}_table.json")
+    
+    script:
+        """
+        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant Table'
+
         """
 }
 
@@ -179,7 +270,7 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
-        tuple val(x), path(jsons)
+        path(jsons)
 
     output:
         tuple path("metadata_plots.html"), path("metadata_plots.json")
@@ -200,7 +291,6 @@ process PlotReport{
     
     script:
         """
-        ls
         generate_report.py '${params}' $workflow.manifest.version
         """
 

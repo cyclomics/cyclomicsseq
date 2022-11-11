@@ -1,15 +1,27 @@
 
 nextflow.enable.dsl=2
 
+include {
+    FilterShortReads
+} from "./modules/seqkit"
 
-include {DummyProcess as Filtering;
-} from "./modules/dummy.nf"
+include {
+    SplitReadsOnAdapterSequence
+} from "./modules/fillet"
 
-workflow  FilteringBasic{
+workflow FilterWithAdapterDetection{
     take:
         read_fq_ch
-    emit:
-        Filtering.output
+
     main:
-        Filtering(read_fq_ch)
+        if (params.split_on_adapter != "no") {
+            fastq = SplitReadsOnAdapterSequence(read_fq_ch)
+        }
+        else {
+            fastq = read_fq_ch
+        }
+        FilterShortReads(fastq)
+        
+    emit:
+        FilterShortReads.out
 }

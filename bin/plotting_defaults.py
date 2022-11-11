@@ -15,7 +15,7 @@ def findnth_occurance(input, search, n):
     Finding nth occurrence of search in input, zero indexed.
     returns -1 if no nth occurance exists
 
-    abcabcabc, c, 0 -> 2 
+    abcabcabc, c, 0 -> 2
     """
     #
     inilist = [m.start() for m in re.finditer(search, input)]
@@ -31,21 +31,21 @@ def nextflow_params_parser(params_str):
     recursive function to turn the params string from nextflow into a dictionary.
 
     eg turn:
-    [a:b, c:[d:e, f:g, h:[i:j], h2:[i2:[nested:3]]], k:l,m:n] 
+    [a:b, c:[d:e, f:g, h:[i:j], h2:[i2:[nested:3]]], k:l,m:n]
     into a dict like:
     {
-        'a': 'b', 
+        'a': 'b',
         'c': {
-            'd': 'e', 
-            'f': 'g', 
-            'h': {'i': 'j'}, 
+            'd': 'e',
+            'f': 'g',
+            'h': {'i': 'j'},
             'h2': {
                 'i2': {
                     'nested': '3'
                 }
             }
-        }, 
-        'k': 'l', 
+        },
+        'k': 'l',
         'm': 'n'
     }
     """
@@ -156,21 +156,21 @@ TEMPLATE_STR = """
                      <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                         <div class="card-body">
                            <ul class="list-group"> 
-                              <li class="list-group-item">Read directory: {{ aditional_info.nextflow_params.input_read_dir }}</li>
-                              <li class="list-group-item">Read pattern: {{ aditional_info.nextflow_params.read_pattern }}</li>
-                              <li class="list-group-item">Reference: {{ aditional_info.nextflow_params.reference }}</li>
-                              <li class="list-group-item">Backbone: {{ aditional_info.nextflow_params.backbone }}</li>
-                              <li class="list-group-item">Regions: {{  aditional_info.nextflow_params.region_file }}</li>
-                              <li class="list-group-item">Original output: {{  aditional_info.nextflow_params.output_dir }}</li>
+                              <li class="list-group-item">Read directory: {{ additional_info.nextflow_params.input_read_dir }}</li>
+                              <li class="list-group-item">Read pattern: {{ additional_info.nextflow_params.read_pattern }}</li>
+                              <li class="list-group-item">Reference: {{ additional_info.nextflow_params.reference }}</li>
+                              <li class="list-group-item">Backbone: {{ additional_info.nextflow_params.backbone }}</li>
+                              <li class="list-group-item">Regions: {{  additional_info.nextflow_params.region_file }}</li>
+                              <li class="list-group-item">Original output: {{  additional_info.nextflow_params.output_dir }}</li>
                               &nbsp
-                              <li class="list-group-item">QC: {{  aditional_info.nextflow_params.qc }}</li>
-                              <li class="list-group-item">Consensus generation: {{  aditional_info.nextflow_params.consensus_calling }}</li>
-                              <li class="list-group-item">Alignment strategy: {{  aditional_info.nextflow_params.alignment }}</li>
-                              <li class="list-group-item">Variant calling: {{  aditional_info.nextflow_params.variant_calling }}</li>
+                              <li class="list-group-item">QC: {{  additional_info.nextflow_params.qc }}</li>
+                              <li class="list-group-item">Consensus generation: {{  additional_info.nextflow_params.consensus_calling }}</li>
+                              <li class="list-group-item">Alignment strategy: {{  additional_info.nextflow_params.alignment }}</li>
+                              <li class="list-group-item">Variant calling: {{  additional_info.nextflow_params.variant_calling }}</li>
                               &nbsp
-                              <li class="list-group-item">Runtime environment: {{  aditional_info.nextflow_params.profile_selected }}</li>
+                              <li class="list-group-item">Runtime environment: {{  additional_info.nextflow_params.profile_selected }}</li>
                               <li class="list-group-item">generation date: {{ generation_time }}</li>
-                              <li class="list-group-item">Software version: {{ aditional_info.git_version }}</li>
+                              <li class="list-group-item">Software version: {{ additional_info.git_version }}</li>
                            </ul>
                         </div>
                      </div>

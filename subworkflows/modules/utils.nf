@@ -126,3 +126,21 @@ process CollectClassificationTypes{
         for i in \$(ls *.metadata.json); do jq .[].classification \$i; done | sort | uniq -c | sort -k 2 > classification_count.txt
         """
 }
+
+
+process CountNonBackboneVariants{
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        path(vcf)
+
+    output:
+        path("${vcf.SimpleName}.variants.metadata.json")
+
+    script:
+        """
+        VARS=\$(cat $vcf | grep -v "#" | wc -l)
+        NONBBVARS=\$(cat $vcf | grep -v "#" | grep -v "^BB" | wc -l)
+        VARS=\$VARS NONBB=\$NONBBVARS jq -n '{additional_info:{"variants_found":env.VARS, "variants_found_non_backbone": env.NONBB}}' > ${vcf.SimpleName}.variants.metadata.json
+        """
+}

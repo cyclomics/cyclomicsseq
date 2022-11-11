@@ -126,7 +126,7 @@ workflow TidehunterBackBoneQual{
         fastq = TideHunterQualTableToFastq.out
         json = TideHunterQualJsonMerge.out
         split_bam = MinimapForSplitMap.out
-
+        split_bam_filtered = MinimapForSplitMap.out
 }
 
 workflow CycasConsensus{
@@ -135,14 +135,7 @@ workflow CycasConsensus{
         reference_genome
         backbone_fasta
     main:
-        FilterShortReads(read_fastq)
-        if (params.split_on_adapter != "no") {
-            fastq = SplitReadsOnAdapterSequence(FilterShortReads.out)
-        }
-        else {
-            fastq = FilterShortReads
-        }
-        Minimap2AlignAdaptiveParameterized(fastq, reference_genome)
+        Minimap2AlignAdaptiveParameterized(read_fastq, reference_genome)
         SamtoolsIndexWithID(Minimap2AlignAdaptiveParameterized.out)
         PrimaryMappedFilter(SamtoolsIndexWithID.out)
         MapqAndNMFilter(PrimaryMappedFilter.out)
@@ -154,6 +147,7 @@ workflow CycasConsensus{
         // take the id and json
         json = Cycas.out.map( it -> tuple(it[0], it[2]))
         split_bam = Minimap2AlignAdaptiveParameterized.out
+        split_bam_filtered = MapqAndNMFilter.out
 }
 
 workflow CycasMedaka{

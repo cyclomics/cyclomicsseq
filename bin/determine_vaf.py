@@ -55,8 +55,8 @@ class Indel:
 
 
 def check_snp_indel(pu_column, variant_th=0.003, variant_count_th=10):
-    """    
-    
+    """
+
     Information on match, mismatch, indel, strand, mapping
     quality and start and end of a read are all encoded at the
     read base column. At this column, a dot stands for a match
