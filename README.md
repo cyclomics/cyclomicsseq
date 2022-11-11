@@ -19,6 +19,19 @@ Click for installation instructions:
 - Reference genome
 
 
+## Reference genome
+
+The pipeline has been developed with amplicons that map against the provided reference in mind.
+
+We suggest to use Grch38.p14, since this works well with the VEP that is integrated in the pipeline its available via the code snippet below.
+
+``` bash
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
+gunzip GCA_000001405.29_GRCh38.p14_genomic.fna.gz
+```
+
+
+
 ## Usage
 
 In this section we assume that you have docker and nextflow installed on your system, if so running the pipeline is straightforward. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
