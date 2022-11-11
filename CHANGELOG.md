@@ -1,5 +1,13 @@
 # changelog
 
+## 0.7.1
+- Added indel detection
+- Added variant effect prediction for Grch38.
+- Added visual improvements to the report
+- Fixed warning with respect to internal Nextflow tuple
+- Moved filtering into a seperate submodule
+
+
 ## 0.7.0
 - Change output structure
 - Added single page reporting, available in QC/report.html
