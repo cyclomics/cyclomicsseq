@@ -44,6 +44,9 @@ params.min_repeat_count = 3
 if (params.backbone == "BB41") {
     backbone_file = "$projectDir/backbones/BB41.fasta"
 }
+else if (params.backbone == "BB42") {
+    backbone_file = "$projectDir/backbones/BB42.fasta"
+}
 else if (params.backbone == "BB22") {
     backbone_file = "$projectDir/backbones/BB22.fasta"
 }
@@ -97,6 +100,10 @@ include {
     QC_MinionQc
     PostQC
 } from "./subworkflows/QC"
+
+include {
+    FilterWithAdapterDetection
+} from "./subworkflows/filtering"
 
 include {
     ReverseMapping
@@ -185,6 +192,7 @@ workflow {
     
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
+    read_fastq_filtered = FilterWithAdapterDetection(read_fastq.flatten())
 /*
 ========================================================================================
 01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
@@ -192,7 +200,7 @@ workflow {
 */
     if( params.consensus_calling == "tidehunter" ) {
         
-        base_unit_reads = TidehunterBackBoneQual(read_fastq.flatten(),
+        base_unit_reads = TidehunterBackBoneQual(read_fastq_filtered,
             reference_genome_indexed,
             backbone_fasta,
             params.tidehunter.primer_length,
@@ -202,18 +210,20 @@ workflow {
         read_info_json = TidehunterBackBoneQual.out.json
         base_unit_reads = TidehunterBackBoneQual.out.fastq
         split_bam = TidehunterBackBoneQual.out.split_bam
+        split_bam_filtered = TidehunterBackBoneQual.out.split_bam_filtered
     }
     else if (params.consensus_calling == "cycas"){
-        CycasConsensus( read_fastq.flatten(),
+        CycasConsensus( read_fastq_filtered,
             PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
         base_unit_reads = CycasConsensus.out.fastq
         read_info_json = CycasConsensus.out.json
         split_bam = CycasConsensus.out.split_bam
+        split_bam_filtered = CycasConsensus.out.split_bam_filtered
     }
     else if(params.consensus_calling == "medaka" ) {
-        CycasMedaka( read_fastq.flatten(),
+        CycasMedaka( read_fastq_filtered,
             PrepareGenome.out.mmi_combi,
             backbone_fasta,
         )
@@ -286,7 +296,9 @@ workflow {
     PostQC(
         PrepareGenome.out.fasta_combi,
         read_fastq,
+        read_fastq_filtered,
         split_bam,
+        split_bam_filtered,
         base_unit_reads,
         read_info_json,
         reads_aligned,

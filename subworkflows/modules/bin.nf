@@ -228,6 +228,7 @@ process PlotVcf{
     script:
         """
         plot_vcf.py $vcf ${vcf.simpleName}.html
+
         """
 }
 
@@ -243,6 +244,7 @@ process PasteVariantTable{
     script:
         """
         write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant Table'
+
         """
 }
 
@@ -268,7 +270,7 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/QC", mode: 'copy'
 
     input:
-        tuple val(x), path(jsons)
+        path(jsons)
 
     output:
         tuple path("metadata_plots.html"), path("metadata_plots.json")

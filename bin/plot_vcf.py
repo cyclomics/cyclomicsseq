@@ -13,6 +13,8 @@ from bokeh.layouts import row, column
 from bokeh.models import HoverTool
 from bokeh.embed import components
 
+from plotting_defaults import cyclomics_defaults
+
 chromosomal_region = Tuple[str, int, int]
 
 
@@ -123,7 +125,10 @@ def make_scatter_plots(data, roi):
         ]
 
         # Pos scatter vaf
-        p_vaf = figure(title=f"Positional VAF {chrom}:{start}-{stop}")
+        p_vaf = figure(
+            title=f"Positional VAF {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_vaf.xaxis.axis_label = "Position"
         p_vaf.yaxis.axis_label = "VAF"
         p_vaf.xaxis.formatter.use_scientific = False
@@ -139,7 +144,10 @@ def make_scatter_plots(data, roi):
         p_vaf.yaxis.axis_label_text_font_size = "12pt"
 
         # fwd ratio vs reverse ratio
-        p_ratio = figure(title=f"Support ratio's per direction {chrom}:{start}-{stop}")
+        p_ratio = figure(
+            title=f"Support ratio's per direction {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
+        )
         p_ratio.xaxis.axis_label = "forward  ratio"
         p_ratio.yaxis.axis_label = "reverse ratio"
 
@@ -157,7 +165,8 @@ def make_scatter_plots(data, roi):
 
         # Depth
         p_depth = figure(
-            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}"
+            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}",
+            width=cyclomics_defaults.width,
         )
         p_depth.xaxis.axis_label = "Position"
         p_depth.yaxis.axis_label = "Depth"
@@ -177,7 +186,9 @@ def make_scatter_plots(data, roi):
         p_depth.xaxis.major_label_text_font_size = "12pt"
         p_depth.yaxis.major_label_text_font_size = "12pt"
 
-        plots.append(row(p_vaf, p_ratio, p_depth))
+        plots.append(p_vaf)
+        plots.append(p_ratio)
+        plots.append(p_depth)
 
     return column(*plots)
 
@@ -235,8 +246,8 @@ if __name__ == "__main__":
     else:
         # PNK
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
-        vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/manually_merged.vcf"
-        plot_file = "vcf_PNK_01.json"
+        vcf_file = "ABZ922.noisy_merged.vcf"
+        plot_file = "ABZ922.noisy_merged.html"
 
         # TP53 - T2T
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25_T2T/variants/FAU48563_annotated.vcf"

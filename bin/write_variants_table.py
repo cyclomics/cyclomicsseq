@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 import pandas as pd
 import io
-import re
+
+from plotting_defaults import cyclomics_defaults
 
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
@@ -50,19 +51,33 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     vaf = sample1.str[3]
 
     info = variants_df["INFO"].str.split(";")
-    type = info.str[0].str.split("=").str[1]
-    consequence = info.str[1].str.split("=").str[1]
-    symbol = info.str[4].str.split("=").str[1]
-    impact = info.str[5].str.split("=").str[1]
-    biotype = info.str[6].str.split("=").str[1]
-    sift = info.str[9].str.split("=").str[1]
-    polyphen = info.str[10].str.split("=").str[1]
 
-    cosmic_ids = info.str[2].str.split("=").str[1]
-    cosmic_legacy = info.str[3].str.split("=").str[1]
-    cosmic = pd.DataFrame(
-        [f"{id}<br>({leg})" for id, leg in zip(cosmic_ids, cosmic_legacy)]
-    )
+    # Due to the fact that a list is unhashable we need to do a forloop iso a set.
+    unique = []
+    for x in info:
+        if x not in unique:
+            unique.append(x)
+
+    #  if we only have vcf files with empty INFO columns (eg only backbone variants, or non cosmic mutations)
+    if unique == [["."]]:
+        var_type = pd.Series(["N/A"] * len(location))
+        consequence = pd.Series(["N/A"] * len(location))
+        symbol = pd.Series(["N/A"] * len(location))
+        impact = pd.Series(["N/A"] * len(location))
+        biotype = pd.Series(["N/A"] * len(location))
+        sift = pd.Series(["N/A"] * len(location))
+        polyphen = pd.Series(["N/A"] * len(location))
+        cosmic_ids = pd.Series(["N/A"] * len(location))
+
+    else:
+        var_type = info.str[0].str.split("=").str[1]
+        consequence = info.str[1].str.split("=").str[1]
+        symbol = info.str[4].str.split("=").str[1]
+        impact = info.str[5].str.split("=").str[1]
+        biotype = info.str[6].str.split("=").str[1]
+        sift = info.str[9].str.split("=").str[1]
+        polyphen = info.str[10].str.split("=").str[1]
+        cosmic_ids = info.str[2].str.split("=").str[1]
 
     annot_columns = [
         "Location",
@@ -84,7 +99,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         ref,
         alt,
         vaf,
-        type,
+        var_type,
         symbol,
         biotype,
         consequence,
@@ -113,7 +128,12 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
     """ """
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
-    vcf_table = annotation_df.to_html(na_rep="N/A", escape=False)
+    vcf_table = annotation_df.to_html(na_rep="N/A")
+    vcf_table = vcf_table.replace(
+        'class="dataframe"', 'class="table table-sm table-hover table-striped"'
+    )
+    vcf_table = vcf_table.replace('border="1"', "")
+    # f"width={cyclomics_defaults.width}")
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         json_obj = {}
@@ -121,7 +141,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
         json_obj[tab_name]["div"] = vcf_table
-
+        json_obj[tab_name]["priority"] = 1
         f.write(json.dumps(json_obj))
 
 
@@ -143,7 +163,8 @@ if __name__ == "__main__":
 
     else:
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
-        vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25/variants/FAU48563_annotated.vcf"
+        # vcf_file = "fastq_annotated.vcf"
+        vcf_file = "FAU48563_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 

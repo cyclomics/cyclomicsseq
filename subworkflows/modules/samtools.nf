@@ -145,11 +145,31 @@ process SamtoolsFlagstats{
         tuple val(X), path(bam_in), path(bai_in)
     
     output:
-        stdout
+        path("${bam_in.SimpleName}.flagstats_metadata.json")
+
+    script:
+        // TODO: get all parameters available
+        """
+        samtools flagstat -O json $bam_in > ${bam_in.SimpleName}.flagstats.json 
+        jq '.["QC-passed reads"] | {additional_info: {"Reference_aligned_with_backbone":."primary mapped"}}' ${bam_in.SimpleName}.flagstats.json > ${bam_in.SimpleName}.flagstats_metadata.json
+        """
+}
+process SamtoolsIdxStats{
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(X), path(bam_in), path(bai_in)
+    
+    output:
+        path("${bam_in.SimpleName}.idxstats_metadata.json")
 
     script:
         """
-        samtools flagstat $bam_in
+        TOTALREFREADS=\$(samtools idxstats $bam_in | grep -v "^BB" | grep -v "^*" | awk -F' ' '{sum+=\$3;} END{print sum;}')
+        echo \$TOTALREFREADS
+        TOTALREFREADS=\$TOTALREFREADS jq -n '{additional_info:{"total_reference_mapping_reads":env.TOTALREFREADS,}}' > ${bam_in.SimpleName}.idxstats_metadata.json
+
         """
 }
 
@@ -164,12 +184,11 @@ process SamtoolsFlagstatsMapPercentage{
         tuple val(X), stdout
 
     script:
-    //         samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1
-
+        // samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1
         """
         set -e -o pipefail
         samtools flagstat $bam | grep % | cut -d '(' -f 2 | cut -d '%' -f1 | head -n 1
-        """ 
+        """
 }
 
 process SamtoolsMergeTuple{

@@ -14,6 +14,6 @@ process SplitReadsOnAdapterSequence {
 
     script:
         """
-        duplex_tools split_on_adapter . results/ Native
+        duplex_tools split_on_adapter . results/ Native 
         """
 } 

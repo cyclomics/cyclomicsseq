@@ -156,21 +156,21 @@ TEMPLATE_STR = """
                      <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                         <div class="card-body">
                            <ul class="list-group"> 
-                              <li class="list-group-item">Read directory: {{ aditional_info.nextflow_params.input_read_dir }}</li>
-                              <li class="list-group-item">Read pattern: {{ aditional_info.nextflow_params.read_pattern }}</li>
-                              <li class="list-group-item">Reference: {{ aditional_info.nextflow_params.reference }}</li>
-                              <li class="list-group-item">Backbone: {{ aditional_info.nextflow_params.backbone }}</li>
-                              <li class="list-group-item">Regions: {{  aditional_info.nextflow_params.region_file }}</li>
-                              <li class="list-group-item">Original output: {{  aditional_info.nextflow_params.output_dir }}</li>
+                              <li class="list-group-item">Read directory: {{ additional_info.nextflow_params.input_read_dir }}</li>
+                              <li class="list-group-item">Read pattern: {{ additional_info.nextflow_params.read_pattern }}</li>
+                              <li class="list-group-item">Reference: {{ additional_info.nextflow_params.reference }}</li>
+                              <li class="list-group-item">Backbone: {{ additional_info.nextflow_params.backbone }}</li>
+                              <li class="list-group-item">Regions: {{  additional_info.nextflow_params.region_file }}</li>
+                              <li class="list-group-item">Original output: {{  additional_info.nextflow_params.output_dir }}</li>
                               &nbsp
-                              <li class="list-group-item">QC: {{  aditional_info.nextflow_params.qc }}</li>
-                              <li class="list-group-item">Consensus generation: {{  aditional_info.nextflow_params.consensus_calling }}</li>
-                              <li class="list-group-item">Alignment strategy: {{  aditional_info.nextflow_params.alignment }}</li>
-                              <li class="list-group-item">Variant calling: {{  aditional_info.nextflow_params.variant_calling }}</li>
+                              <li class="list-group-item">QC: {{  additional_info.nextflow_params.qc }}</li>
+                              <li class="list-group-item">Consensus generation: {{  additional_info.nextflow_params.consensus_calling }}</li>
+                              <li class="list-group-item">Alignment strategy: {{  additional_info.nextflow_params.alignment }}</li>
+                              <li class="list-group-item">Variant calling: {{  additional_info.nextflow_params.variant_calling }}</li>
                               &nbsp
-                              <li class="list-group-item">Runtime environment: {{  aditional_info.nextflow_params.profile_selected }}</li>
+                              <li class="list-group-item">Runtime environment: {{  additional_info.nextflow_params.profile_selected }}</li>
                               <li class="list-group-item">generation date: {{ generation_time }}</li>
-                              <li class="list-group-item">Software version: {{ aditional_info.git_version }}</li>
+                              <li class="list-group-item">Software version: {{ additional_info.git_version }}</li>
                            </ul>
                         </div>
                      </div>

@@ -14,6 +14,7 @@ include {
     CollectClassificationTypes
     PlotReadStructure
     PlotFastqsQUalAndLength as PlotRawFastqHist
+    PlotFastqsQUalAndLength as PlotFilteredHist
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
     PasteVariantTable
@@ -36,13 +37,19 @@ include {
 } from "./modules/samtools"
 
 include {
-    SamtoolsMergeBams
+    SamtoolsMergeBams as SamtoolsMergeBams
+    SamtoolsMergeBams as SamtoolsMergeBamsFiltered
+    SamtoolsIdxStats
 } from "./modules/samtools"
 
 include {
     PerbaseBaseDepth as PerbaseBaseDepthSplit
     PerbaseBaseDepth as PerbaseBaseDepthConsensus
 } from "./modules/perbase"
+
+include{
+    CountNonBackboneVariants
+} from "./modules/utils"
 
 
 workflow  QC_pycoqc{
@@ -69,7 +76,9 @@ workflow PostQC {
     take:
         reference_fasta
         fastq_raw
+        fastq_filtered
         split_bam
+        split_bam_filtered
         fastq_consensus
         read_info
         consensus_bam
@@ -83,10 +92,14 @@ workflow PostQC {
         first_fq = fastq_raw.first()
         id = first_fq.simpleName
         extension = first_fq.getExtension()
-
         FastqInfoRaw(fastq_raw.collect(),'raw')
         PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"raw fastq info"')
         
+        first_fq = fastq_filtered.first()
+        id = first_fq.simpleName
+        extension = first_fq.getExtension()
+        PlotFilteredHist(fastq_filtered.collect(),extension, id + "filtered", '"filtered fastq info"')
+
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
@@ -96,7 +109,11 @@ workflow PostQC {
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
-        PlotMetadataStats(read_info.collect())
+        SamtoolsQuickcheck(consensus_bam)
+        SamtoolsIdxStats(consensus_bam)
+        CountNonBackboneVariants(annotated_vcf)
+        meta_data = read_info.map(it -> it[1]).collect()
+        PlotMetadataStats(meta_data)
 
         roi = FindRegionOfInterest(consensus_bam)
       
@@ -109,32 +126,22 @@ workflow PostQC {
             PlotVcf(noisy_vcf)
             PasteVariantTable(annotated_vcf)
         }
-        
-        SamtoolsQuickcheck(consensus_bam)
-        SamtoolsFlagstats(consensus_bam)
-        
-        if (quick_results == true) {
-            SamtoolsQuickcheck.out.view()
-            SamtoolsFlagstats.out.view()
-        }
+
+        merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
+        SamtoolsFlagstats(merged_split_bam_filtered)
+
         PlotReport(
             PlotRawFastqHist.out.combine(
+            PlotFilteredHist.out).combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
             PlotQScores.out).combine(
             PlotVcf.out).combine(
-            PasteVariantTable.out
-            ))
+            PlotMetadataStats.out).combine(
+            PasteVariantTable.out).combine(
+            SamtoolsFlagstats.out).combine(
+            CountNonBackboneVariants.out).combine(
+            SamtoolsIdxStats.out
+            )
+        )
 }
-
-
-// workflow CreateAccuracyPlot {
-//     take:
-//         merged_consensus_bam
-//         merged_split_bam
-//         reference_fasta
-
-//     main:
-
-
-// }
