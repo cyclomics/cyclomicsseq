@@ -52,7 +52,6 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     info = variants_df["INFO"].str.split(";")
 
-    print(info)
     # Due to the fact that a list is unhashable we need to do a forloop iso a set.
     unique = []
     for x in info:
