@@ -53,6 +53,12 @@ else if (params.backbone == "BB22") {
 else if (params.backbone == "BB25") {
     backbone_file = "$projectDir/backbones/BB25.fasta"
 }
+else if (params.backbone == "BBCS") {
+    backbone_file = "$projectDir/backbones/BBCS.fasta"
+}
+else if (params.backbone == "BBCR") {
+    backbone_file = "$projectDir/backbones/BBCR.fasta"
+}
 else {
     backbone_file = params.backbone
 }
