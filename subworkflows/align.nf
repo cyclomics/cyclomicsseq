@@ -7,6 +7,7 @@ include {
 } from "./modules/bin.nf"
 
 include {
+    BwaIndex
     BwaMemSorted
 } from "./modules/bwa.nf"
 
@@ -99,14 +100,35 @@ workflow PrepareGenome {
         fasta_ref = reference_genome
 }
 
-workflow AlignBWA{
+workflow BWAAlign{
     take:
-        read_fq_ch
+        reads
         reference_genome
+        jsons
+        consensus_calling
+
     main:
-        BwaMemSorted(read_fq_ch, reference_genome)
+        BwaIndex(reference_genome)
+
+        id = reads.first().map( it -> it[0])
+        id = id.map(it -> it.split('_')[0])
+        reads.view()
+        BwaMemSorted(reads, BwaIndex.out.collect())
+
+        if (consensus_calling == "cycas") {
+            // For now we only do Y tag addition for cycas
+            metadata_pairs = BwaMemSorted.out.join(jsons)
+            AnnotateBamYTags(metadata_pairs)
+            bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
+        }
+        else {
+            bams= Minimap2AlignAdaptive.out
+        }
+
+        SamtoolsMergeBams(id, bams)
+
     emit:
-        BwaMemSorted.out
+        bam = SamtoolsMergeBams.out
 }
 
 workflow Minimap2Align{

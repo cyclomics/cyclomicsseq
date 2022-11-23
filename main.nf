@@ -114,6 +114,7 @@ include {
 
 include {
     Minimap2Align
+    BWAAlign
     AnnotateFilter
     PrepareGenome
 } from "./subworkflows/align"
@@ -245,6 +246,10 @@ workflow {
     if( params.alignment == "minimap" ) {
         Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json, params.consensus_calling)
         reads_aligned = Minimap2Align.out.bam
+    }
+    else if( params.alignment == "bwamem" ) {
+        BWAAlign(base_unit_reads, reference_genome, read_info_json, params.consensus_calling)
+        reads_aligned = BWAAlign.out.bam
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"

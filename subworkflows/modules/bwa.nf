@@ -34,7 +34,7 @@ process BwaMem{
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
         """
         REF=\$(ls | grep -E "${sampleId}.(fasta\$|fa\$)")
-        bwa mem -M -t ${task.cpus} -c 100 \$REF $fasta > ${fasta.simpleName}.sam
+        bwa mem -M -t ${task.cpus} -c 100 -L  \$REF $fasta > ${fasta.simpleName}.sam
         """
 }
 
@@ -65,21 +65,21 @@ process BwaMemSorted{
     container 'mgibio/dna-alignment:1.0.0'
     
     input:
-        each path(fasta)
-        tuple val(sampleId), file(reference)
+        tuple val(X), path(fastq)
+        file(reference)
 
     output:
-        path "${fasta.simpleName}.bam"
+        path "${fastq.simpleName}.bam"
         
     script:
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
         // piplefail for better control over failures
         """
-        REF=\$(ls | grep -E "${sampleId}.(fasta\$|fa\$)")
+        REF=\$(ls | grep -E "*.(fasta\$|fa\$)")
         set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c 100 \$REF $fasta | \
+        bwa mem -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
         sambamba view -S -f bam /dev/stdin | \
-        sambamba sort -t ${task.cpus} /dev/stdin -o "${fasta.simpleName}.bam"
+        sambamba sort -t ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
         """
 }
 
