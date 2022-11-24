@@ -70,7 +70,7 @@ process SamtoolsDepth{
 process SamtoolsDepthToTSV{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // the slim version of buster is missing ps, which is needed for nextflow
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
     input:
         path(input_bed)
