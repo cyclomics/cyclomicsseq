@@ -112,13 +112,16 @@ workflow BWAAlign{
 
         id = reads.first().map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        reads.view()
         BwaMemSorted(reads, BwaIndex.out.collect())
-
-        if (consensus_calling == "cycas") {
+        //println(params.consensus_calling)
+        //reads.view()
+        //jsons.view()
+	//BwaMemSorted.out.view()
+        if (params.consensus_calling == "cycas") {
             // For now we only do Y tag addition for cycas
             metadata_pairs = BwaMemSorted.out.join(jsons)
-            AnnotateBamYTags(metadata_pairs)
+            //metadata_pairs.view()
+	    AnnotateBamYTags(metadata_pairs)
             bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
         }
         else {

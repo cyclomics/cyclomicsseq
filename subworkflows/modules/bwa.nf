@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process BwaIndex{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'biocontainers/bwa:v0.7.17_cv1'
+    container 'mgibio/dna-alignment:1.0.0'
     
     input:
         path reference_genome
@@ -69,13 +69,13 @@ process BwaMemSorted{
         file(reference)
 
     output:
-        path "${fastq.simpleName}.bam"
+        tuple val(X), path("${fastq.simpleName}.bam")
         
     script:
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
         // piplefail for better control over failures
         """
-        REF=\$(ls | grep -E "*.(fasta\$|fa\$)")
+        REF=\$(ls | grep -E "*.(fasta\$|fa\$|fna\$)")
         set -euxo pipefail
         bwa mem -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
         sambamba view -S -f bam /dev/stdin | \
