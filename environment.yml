@@ -1,4 +1,4 @@
-name: cyclomics-nf-cyclomicseq-two
+name: cyclomics-nf-cyclomicseq
 channels:
   - conda-forge
   - bioconda
