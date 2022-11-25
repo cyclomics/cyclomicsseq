@@ -1,5 +1,10 @@
 # changelog
 
+## 0.7.2
+- Added bwa as option in post consensus alignment step
+- fixed issues with Conda enviroment in some cases.
+- standardized the process labels
+
 ## 0.7.1
 - Added indel detection
 - Added variant effect prediction for Grch38.
