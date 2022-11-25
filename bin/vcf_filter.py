@@ -83,6 +83,15 @@ class VCF_file:
             # new_vcf.writelines((x.lstrip() for x in writeable_vcf.to_csv(sep='\t').split('\n')))
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
 
+    def calculate_min_depth(self):
+        return max(self.vcf["DPQ"]) * 0.20
+
+    def calculate_min_vaf(self):
+        # Calculate per position
+        # based on key: value pairs in dict
+        # value can be a tuple (e.g. interval)
+        return
+
     def filter(
         self,
         min_dir_ratio=0.001,
