@@ -22,7 +22,7 @@ process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
 
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
     input:
         tuple val(X), path(bam), path(bai)

@@ -5,7 +5,7 @@ process Tidehunter{
     // _tide_consensus.fasta in ConCall
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
     input:
         path fasta
@@ -23,7 +23,7 @@ process TidehunterLongest{
     // _tide_consensus.fasta in ConCall
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'quay.io/biocontainers/tidehunter:1.5.3--h2e03b76_0'
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
     input:
         path fasta
