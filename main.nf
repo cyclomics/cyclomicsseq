@@ -53,6 +53,12 @@ else if (params.backbone == "BB22") {
 else if (params.backbone == "BB25") {
     backbone_file = "$projectDir/backbones/BB25.fasta"
 }
+else if (params.backbone == "BBCS") {
+    backbone_file = "$projectDir/backbones/BBCS.fasta"
+}
+else if (params.backbone == "BBCR") {
+    backbone_file = "$projectDir/backbones/BBCR.fasta"
+}
 else {
     backbone_file = params.backbone
 }
@@ -114,6 +120,7 @@ include {
 
 include {
     Minimap2Align
+    BWAAlign
     AnnotateFilter
     PrepareGenome
 } from "./subworkflows/align"
@@ -182,14 +189,13 @@ workflow {
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
     // read_fastq.view()
-    seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: false)
+    seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: true)
     backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     read_info_json = ""
-    
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
 
     read_fastq_filtered = FilterWithAdapterDetection(read_fastq.flatten())
@@ -245,6 +251,10 @@ workflow {
     if( params.alignment == "minimap" ) {
         Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json, params.consensus_calling)
         reads_aligned = Minimap2Align.out.bam
+    }
+    else if( params.alignment == "bwamem" ) {
+        BWAAlign(base_unit_reads, reference_genome, read_info_json, params.consensus_calling)
+        reads_aligned = BWAAlign.out.bam
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
