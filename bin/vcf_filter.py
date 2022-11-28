@@ -98,7 +98,7 @@ class VCF_file:
         min_dir_count=5,
         min_dqp=1000,
         min_vaf=0.002,
-        min_relative_ratio=0.3,
+        min_rel_ratio=0.3,
         min_abq=70,
     ):
         # nothing to filter
@@ -143,7 +143,7 @@ class VCF_file:
         self.vcf = self.vcf[self.vcf["REVR"] > min_dir_ratio]
         print("REVR filter")
         print(self.vcf.shape)
-        self.vcf = self.vcf[self.vcf["RELR"] > min_relative_ratio]
+        self.vcf = self.vcf[self.vcf["RELR"] > min_rel_ratio]
         print("relative ratio filter")
         print(self.vcf.shape)
 
@@ -155,12 +155,25 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Filter a vcf")
 
-    parser.add_argument("variant_vcf", type=Path)
-    parser.add_argument("file_out", type=Path)
+    parser.add_argument("-i", "--input-vcf", type=Path, required=True, help="")
+    parser.add_argument("-o", "--output-vcf", type=Path,)
+    parser.add_argument("--min-dir-ratio", type=float, required=False, help="")
+    parser.add_argument("--min-dir-count", type=float, required=False, help="")
+    parser.add_argument("--min-dpq", type=float, required=False, help="")
+    parser.add_argument("--min-vaf", type=float, required=False, help="")
+    parser.add_argument("--min-rel-ratio", type=float, required=False, help="")
+    parser.add_argument("--min-abq", type=float, required=False, help="")
     args = parser.parse_args()
 
-    vcf = VCF_file(args.variant_vcf)
-    vcf.filter()
+    vcf = VCF_file(args.output_vcf)
+    vcf.filter(
+        min_dir_ratio=0.001,
+        min_dir_count=5,
+        min_dqp=1000,
+        min_vaf=0.002,
+        min_rel_ratio=0.3,
+        min_abq=70,
+    )
     vcf.write(args.file_out)
 
     # vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')

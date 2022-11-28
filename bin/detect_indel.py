@@ -1,15 +1,13 @@
 #!/usr/bin/env python
-
-from dataclasses import dataclass, field
-import logging
-from collections import Counter, namedtuple
-from pathlib import Path
-import time
 import re
+from collections import Counter
+from dataclasses import dataclass, field, fields
+from pathlib import Path
+from typing import Tuple
 
-import pysam
-from tqdm import tqdm
 import numpy as np
+import pysam
+from vcf_tools import VCF_entry
 
 
 @dataclass
@@ -34,23 +32,34 @@ class Indel:
 
 
 def check_indel(
-    pu_column,
-    depth_th,
-    variant_th=0.003,
-    variant_count_th=10,
-    orientation_ratio_th=0.66,
-):
-    """Return most common indel above thresholds for a pileup column
+    pu_column: pysam.PileupColumn,
+    variant_count_th: int = 10,
+) -> Indel:
+    """
+    Choose most common Indel evidence in a given position.
 
-    Checks pileupcolumn for indel evidence from
-    pysam.PileupColumn.get_query_sequences,
-    then chooses most common insert or deletion to call as a variant.
+    Args:
+        pu_column: Pysam pileup column at a given position.
+        variant_count_th: Minimum count of an indel for it to be considered.
+            (Default = 10)
+
+
+    Returns:
+        Indel object encoding information at this position.
     """
 
     # TODO: Check homopolymer status
     # Initialize general statistics of this pileup position
     total = pu_column.nsegments
     total_q = pu_column.get_num_aligned()
+
+    fwd_count = 0
+    rev_count = 0
+    for pu_read in pu_column.pileups:
+        if pu_read.alignment.is_forward:
+            fwd_count += 1
+        elif pu_read.alignment.is_reverse:
+            rev_count += 1
 
     query_qualities = pu_column.get_query_qualities()
 
@@ -95,6 +104,7 @@ def check_indel(
     # the 'inserts' list will be empty and the Counter will return
     # an IndexError, which can be understood as 'no evidence'.
     try:
+        # new insert needs to be at least 50% of inserts_fwd
         new_insert_fwd = Counter(inserts_fwd).most_common(1)[0][0]
         new_insert_rev = Counter(inserts_rev).most_common(1)[0][0]
         new_insert_fwd_count = Counter(inserts_fwd).most_common(1)[0][1]
@@ -137,12 +147,8 @@ def check_indel(
 
         elif (
             new_insert_fwd == new_insert_rev
-            and total_q >= depth_th
-            and new_insert_orientation_ratio > orientation_ratio_th
             and new_insert_count > new_deletion_count
-            and new_insert_fwd_count / total_q > variant_th
             and new_insert_fwd_count > variant_count_th
-            and new_insert_rev_count / total_q > variant_th
             and new_insert_rev_count > variant_count_th
         ):
             # Found an insertion
@@ -150,12 +156,8 @@ def check_indel(
 
         elif (
             new_deletion_fwd == new_deletion_rev
-            and total_q >= depth_th
-            and new_deletion_orientation_ratio > orientation_ratio_th
             and new_deletion_count > new_insert_count
-            and new_deletion_fwd_count / total_q > variant_th
             and new_deletion_fwd_count > variant_count_th
-            and new_deletion_rev_count / total_q > variant_th
             and new_deletion_rev_count > variant_count_th
         ):
             # Found a deletion
@@ -181,9 +183,9 @@ def check_indel(
         variant.support_count = new_insert_count
         variant.support_ratio = new_insert_count / total_q
         variant.support_count_fwd = new_insert_fwd_count
-        variant.support_ratio_fwd = new_insert_fwd_count / total_q
+        variant.support_ratio_fwd = new_insert_fwd_count / fwd_count
         variant.support_count_rev = new_insert_rev_count
-        variant.support_ratio_rev = new_insert_rev_count / total_q
+        variant.support_ratio_rev = new_insert_rev_count / rev_count
         variant.base_qualities = quality_map
         variant.alt_base_qualities = inserts
 
@@ -195,9 +197,9 @@ def check_indel(
         variant.support_count = new_deletion_count
         variant.support_ratio = new_deletion_count / total_q
         variant.support_count_fwd = new_deletion_fwd_count
-        variant.support_ratio_fwd = new_deletion_fwd_count / total_q
+        variant.support_ratio_fwd = new_deletion_fwd_count / fwd_count
         variant.support_count_rev = new_deletion_rev_count
-        variant.support_ratio_rev = new_deletion_rev_count / total_q
+        variant.support_ratio_rev = new_deletion_rev_count / rev_count
         variant.base_qualities = quality_map
         variant.alt_base_qualities = deletions
 
@@ -205,155 +207,117 @@ def check_indel(
 
 
 def extract_indel_evidence(
-    bam: pysam.AlignmentFile,
+    pileupcolumn: pysam.PileupColumn,
     assembly: str,
     reference: pysam.FastaFile,
     pos: int,
-    pileup_depth: int,
-    minimum_base_quality=10,
     high_base_quality_cutoff=80,
-    cov_window=100,
     end_of_amplicon=False,
-):
-    """Returns found variants in a given pileup position"""
+) -> Tuple[str, Tuple[str, str], VCF_entry]:
+    """
+    Find Indel in a given pileup position.
 
-    # Initialize VCF tags
-    tags = [
-        "DP",
-        "DPQ",
-        "FREQ",
-        "VAF",
-        "FWDC",
-        "FWDR",
-        "REVC",
-        "REVR",
-        "TOTC",
-        "TOTR",
-        "SAME",
-        "OBSR",
-        "ABQ",
-        "OBQ",
-        "HCR",
-    ]
+    Args:
+        pileupcolumn: Pysam pileup column at a given position.
+        assembly: Reference/contig name.
+        reference: Reference genome or sequence, FASTA.
+        pos: Position in the alignment pileup to check for variants.
+        high_base_quality_cutoff: Cutoff to calculate ratios on high base
+            quality nucleotides only (Default = 80).
+        end_of_amplicon: Flag to determine if we are reaching
+            the end of the amplicon, based on positions in BED file.
 
-    # Initialize the position with no variant
-    Variant = namedtuple("Variant", tags)
+    Returns:
+        A tuple with reference name, reference and alternative alleles,
+        and a VCF_entry object with variant information.
+    """
+
+    vcf_entry = VCF_entry(None)
     alleles = (".", ".")
-    indel_type = ""
-    depth = 0
-    depth_q = 0
-    fwd_count = 0
-    fwd_ratio = 0
-    rev_count = 0
-    rev_ratio = 0
-    total_count = 0
-    total_ratio = 0
-    abq = 0
-    obq = 0
-    hcr = 0
 
-    # Calculate minimium coverage to use as threshold
-    # nucleotide_coverage = bam.count_coverage(
-    #     contig=assembly, start=pos, end=pos + cov_window, quality_threshold=10
-    # )
-    # max_avg_coverage = np.mean([max(cov) for cov in nucleotide_coverage])
-    # depth_th = max_avg_coverage * 0.1
-
-    # Create a pileup for a given position in the search space
-    positional_pileup = bam.pileup(
-        assembly,
-        pos,
-        pos + 1,
-        truncate=True,
-        max_depth=pileup_depth,
-        min_base_quality=minimum_base_quality,
-        stepper="all",
-    )
-
-    # Each positional pileup will have 1 pileup column
-    for pileupcolumn in positional_pileup:
-        # Check for Indels
-        if not end_of_amplicon:
-            indel = check_indel(pileupcolumn, depth_th=5000)
-            if indel.found:
-                if indel.type == "deletion":
-                    # Adjust reference allele to include deleted seq
-                    ref_seq = reference.fetch(
-                        reference=assembly, start=pos, end=pos + indel.length + 1
-                    )
-                    alleles = (ref_seq, ref_seq[0])
-                else:
-                    alleles = (
-                        indel.reference_nucleotide,
-                        str(indel.reference_nucleotide + indel.variant_nucleotide),
-                    )
-
-                # Update variant statistics with the found indel
-                indel_type = indel.type
-                depth = indel.depth
-                depth_q = indel.depth_q
-                total_count = indel.support_count
-                total_ratio = indel.support_ratio
-                fwd_count = indel.support_count_fwd
-                fwd_ratio = indel.support_ratio_fwd
-                rev_count = indel.support_count_rev
-                rev_ratio = indel.support_ratio_rev
-
-                abq = np.mean(
-                    [
-                        x[1]
-                        for x in indel.alt_base_qualities
-                        if indel.variant_nucleotide in x[0]
-                    ]
+    if not end_of_amplicon:
+        indel = check_indel(pileupcolumn)
+        if indel.found:
+            if indel.type == "deletion":
+                # Adjust reference allele to include deleted seq
+                ref_seq = reference.fetch(
+                    reference=assembly, start=pos, end=pos + indel.length + 1
+                )
+                alleles = (ref_seq, ref_seq[0])
+            else:
+                alleles = (
+                    indel.reference_nucleotide,
+                    str(indel.reference_nucleotide + indel.variant_nucleotide),
                 )
 
-                obq = np.mean([x[1] for x in indel.base_qualities])
+            # Update variant statistics with the found indel
+            indel_type = indel.type
+            depth = indel.depth
+            depth_q = indel.depth_q
+            total_count = indel.support_count
+            total_ratio = indel.support_ratio
+            fwd_count = indel.support_count_fwd
+            fwd_ratio = indel.support_ratio_fwd
+            rev_count = indel.support_count_rev
+            rev_ratio = indel.support_ratio_rev
 
-                high_quality_bases = [
-                    x for x in indel.base_qualities if x[1] > high_base_quality_cutoff
-                ]
-                high_quality_alt_bases = [
-                    x
+            abq = np.mean(
+                [
+                    x[1]
                     for x in indel.alt_base_qualities
-                    if x[1] > high_base_quality_cutoff
-                    and x[0] == indel.variant_nucleotide
+                    if indel.variant_nucleotide in x[0]
                 ]
-                hcr = len(high_quality_alt_bases) / len(high_quality_bases)
+            )
 
-    # Return statistics for this position,
-    # whether a variant was found or not
-    var = Variant(
-        DP=depth,
-        DPQ=depth_q,
-        FREQ=total_ratio,
-        VAF=total_ratio,
-        FWDC=fwd_count,
-        FWDR=fwd_ratio,
-        REVC=rev_count,
-        REVR=rev_ratio,
-        TOTC=total_count,
-        TOTR=total_ratio,
-        SAME=1,
-        OBSR=total_ratio,
-        ABQ=abq,
-        OBQ=obq,
-        HCR=hcr,
-    )
+            obq = np.mean([x[1] for x in indel.base_qualities])
 
-    return (assembly, alleles, var, indel_type)
+            high_quality_bases = [
+                x for x in indel.base_qualities if x[1] > high_base_quality_cutoff
+            ]
+            high_quality_alt_bases = [
+                x
+                for x in indel.alt_base_qualities
+                if x[1] > high_base_quality_cutoff and x[0] == indel.variant_nucleotide
+            ]
+            hcr = len(high_quality_alt_bases) / len(high_quality_bases)
+
+            # Return statistics for this position,
+            # whether a variant was found or not
+            vcf_entry.DP = depth
+            vcf_entry.DPQ = depth_q
+            vcf_entry.FREQ = total_ratio
+            vcf_entry.VAF = total_ratio
+            vcf_entry.FWDC = fwd_count
+            vcf_entry.FWDR = fwd_ratio
+            vcf_entry.REVC = rev_count
+            vcf_entry.REVR = rev_ratio
+            vcf_entry.TOTC = total_count
+            vcf_entry.TOTR = total_ratio
+            vcf_entry.SAME = 1
+            vcf_entry.OBSR = total_ratio
+            vcf_entry.ABQ = abq
+            vcf_entry.OBQ = obq
+            vcf_entry.HCR = hcr
+
+    return (assembly, alleles, vcf_entry)
 
 
 def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_000_000):
-    """Run indel detection
-
-    This will output a separate VCF file only with detected indels.
-    Requires as input:
-    - BAM file with read alignments,
-    - BED file with genomic positions over which to detect indels,
-    - FASTA file with the reference genome used for read alignment,
-    - Output path to which a VCF result file will be written,
-    - Maximum pileup depth (Default=1_000_000)
     """
+    Run Indel detection over given positions.
+
+    Args:
+        bam: Read alignments, BAM.
+        bed: Genomic locations, BED.
+        fasta: Reference genome or sequence, FASTA.
+        output_path: Output path for Indels, VCF.
+        pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
+    """
+
+    import time
+
+    from tqdm import tqdm
+    from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
 
     # logging.debug("started main")
     # Open input files and create empty output VCF
@@ -362,47 +326,54 @@ def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_00
     vcf = initialize_output_vcf(output_path, bam_af.references)
 
     # Iterate over positions in search space indicated in BED file
-    for assembly, pos, amplicon_ending in tqdm(create_bed_positions(bed)):
+    for contig, pos, amplicon_ending in tqdm(create_bed_positions(bed)):
         # Check statistics for this position,
         # potentially finding a new variant
 
-        # TODO: results is a list
-        result = extract_nucleotide_count(
-            bam=bam_af,
-            assembly=assembly,
-            reference=reference,
-            pos=pos,
-            pileup_depth=pileup_depth,
-            end_of_amplicon=amplicon_ending,
+        positional_pileup = bam_af.pileup(
+            contig,
+            pos,
+            pos + 1,
+            truncate=True,
+            max_depth=pileup_depth,
+            min_base_quality=10,
+            stepper="all",
         )
 
-        # TODO: for result in results, write to VCF
-        if result[1][0] != ".":
-            # Reference allele is not '.', then a variant was found
-            # The 'start' value is 0-based, 'stop' is 1-based
-
-            r = vcf.new_record(
-                contig=assembly, start=pos, alleles=result[1], filter="PASS"
+        for pileupcolumn in positional_pileup:
+            result = extract_indel_evidence(
+                pileupcolumn=pileupcolumn,
+                assembly=contig,
+                reference=reference,
+                pos=pos,
+                end_of_amplicon=amplicon_ending,
             )
 
-            # Write found variant as a new entry to VCF output
-            for fld in result[2]._fields:
-                fld_value = getattr(result[2], fld)
-                if type(fld_value) in [float, np.float64, np.float32]:
-                    fld_entry = str(f"{getattr(result[2], fld):.6f}")
-                elif type(fld_value) == int:
-                    fld_entry = str(f"{getattr(result[2], fld)}")
-                else:
-                    fld_entry = str(fld_value)
+            if result[1][0] != ".":
+                # Reference allele is not '.', then a variant was found
+                # The 'start' value is 0-based, 'stop' is 1-based
+                r = vcf.new_record(
+                    contig=contig, start=pos, alleles=result[1], filter="PASS"
+                )
 
-                r.samples["Sample1"][fld] = fld_entry
+                # Write found variant as a new entry to VCF output
+                for fld in fields(result[2]):
+                    fld_value = getattr(result[2], fld.name)
+                    if type(fld_value) in [float, np.float64, np.float32]:
+                        fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
+                    elif type(fld_value) == int:
+                        fld_entry = str(f"{getattr(result[2], fld.name)}")
+                    else:
+                        fld_entry = str(fld_value)
 
-            vcf.write(r)
+                    r.samples["Sample1"][fld.name] = fld_entry
 
-        else:
-            # Reference allele is '.', then no variant was found
-            # Don't write anthing to VCF output file
-            continue
+                vcf.write(r)
+
+            else:
+                # Reference allele is '.', then no variant was found
+                # Don't write anthing to VCF output file
+                continue
 
     time.sleep(0.5)
     vcf.close()
@@ -426,26 +397,16 @@ if __name__ == "__main__":
         main(args.bam, args.bed, args.fasta, args.vcf_out)
 
     if dev:
-        # TP53
-        fasta = Path(
-            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/chm13v2.0.fa"
-        )
-        bed = Path(
-            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/references/genomic_positions_T2T.bed"
-        )
-        bam = Path(
-            "/scratch/projects/ROD_0908_63_variantcalling/10102022_TP53_falseIndels/data/consensus_aligned/FAU48563.taged.bam"
-        )
-        vcf_out = Path("testindel_TP53.vcf")
-
         # EGFR
-        # fasta = Path(
-        #     "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
-        # )
-        # bed = Path("pos_EGFR.bed")
-        # bam = Path(
-        #     "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/consensus_aligned/FAS12641.taged.bam"
-        # )
-        # vcf_out = Path("testindel_EGFR.vcf")
+        fasta = Path(
+            "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+        )
+        bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
+        bam = Path(
+            "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
+        )
+        vcf_out = Path(
+            "/data/projects/ROD_1125_variant_improvements/testindel_EGFR.vcf"
+        )
 
         main(bam, bed, fasta, vcf_out)

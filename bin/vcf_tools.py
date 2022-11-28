@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, fields
 
 import numpy as np
 import pysam
@@ -21,7 +21,7 @@ class VCF_entry:
     OBSR: float = 0.0
     ABQ: float = 0.0
     OBQ: float = 0.0
-    HC: int = 0
+    HCR: int = 0
 
 
 def is_intable(value):
@@ -58,16 +58,16 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
         contig=contig, start=pos, stop=pos + 1, alleles=vcf_entry[1], filter="PASS"
     )
 
-    for fld in vcf_entry[2]._fields:
-        fld_value = getattr(vcf_entry[2], fld)
+    for fld in fields(vcf_entry[2]):
+        fld_value = getattr(vcf_entry[2], fld.name)
         if type(fld_value) in [float, np.float64, np.float32]:
-            fld_entry = str(f"{getattr(vcf_entry[2], fld):.6f}")
+            fld_entry = str(f"{getattr(vcf_entry[2], fld.name):.6f}")
         elif type(fld_value) == int:
-            fld_entry = str(f"{getattr(vcf_entry[2], fld)}")
+            fld_entry = str(f"{getattr(vcf_entry[2], fld.name)}")
         else:
             fld_entry = str(fld_value)
 
-        r.samples["Sample1"][fld] = fld_entry
+        r.samples["Sample1"][fld.name] = fld_entry
 
     vcf.write(r)
 
