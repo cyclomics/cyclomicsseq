@@ -4,7 +4,8 @@ nextflow.enable.dsl=2
 process BwaIndex{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
-    
+    label 'many_med_cpu_huge_mem'
+
     input:
         path reference_genome
 
@@ -20,6 +21,7 @@ process BwaIndex{
 process BwaMem{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
+    label 'many_med_cpu_huge_mem'
 
     cpus = 2
 
@@ -41,6 +43,7 @@ process BwaMem{
 process BwaMemReferenceNamedBam{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
+label 'many_med_cpu_huge_mem'
 
     cpus = 1
 
@@ -63,7 +66,8 @@ process BwaMemReferenceNamedBam{
 process BwaMemSorted{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
-    
+    label 'many_med_cpu_huge_mem'
+
     input:
         tuple val(X), path(fastq)
         file(reference)
@@ -86,9 +90,9 @@ process BwaMemSorted{
 process BwaMem16c{
     // Run bwa with sam output using 16 cores
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // Legacy process
     container 'mgibio/dna-alignment:1.0.0'
-    
-    cpus = 3
+    label 'many_med_cpu_huge_mem'
 
     input:
         each path(fasta)
