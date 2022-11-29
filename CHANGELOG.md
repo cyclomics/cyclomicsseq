@@ -1,5 +1,8 @@
 # changelog
 
+## 0.7.3
+- Added correct labels to BWA processes to prevent 137 errors in conda runs.
+
 ## 0.7.2
 - Added bwa as option in post consensus alignment step
 - fixed issues with Conda enviroment in some cases.
