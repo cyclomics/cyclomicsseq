@@ -87,7 +87,7 @@ workflow ValidatePosibleVariantLocations{
         }
         FindVariants(reference, reads_aligned, positions)
 
-        PerbaseBaseDepth(reads_aligned.combine(reference), positions, 'consensus.tsv')
+        PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
 
         FilterVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
         MergeNoisyVCF(FindVariants.out)

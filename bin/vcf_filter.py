@@ -13,76 +13,76 @@ def parse_arguments():
 
     parser.add_argument(
         "-i",
-        "--input-vcf",
+        "--input_vcf",
         type=Path,
         required=True,
         help="Input VCF file with variant evidence to filter.",
     )
     parser.add_argument(
         "-o",
-        "--output-vcf",
+        "--output_vcf",
         type=Path,
         required=True,
         help="Output VCF file to which passed variants will be written.",
     )
     parser.add_argument(
         "-p",
-        "--perbase-table",
+        "--perbase_table",
         type=Path,
         required=True,
         help="Input Perbase TSV table with positional depths.",
     )
     parser.add_argument(
-        "--min-dir-ratio",
+        "--min_dir_ratio",
         type=float,
         required=False,
         default=0.001,
         help="Minimum ratio of variant-supporting reads in each direction (default: 0.001).",
     )
     parser.add_argument(
-        "--min-dir-count",
+        "--min_dir_count",
         type=float,
         required=False,
         default=50,
         help="Minimum number of variant-supporting reads in each direction (default: 50).",
     )
     parser.add_argument(
-        "--min-dpq",
+        "--min_dpq",
         type=float,
         required=False,
         default=1_000,
         help="Minimum positional depth after Q filtering (default: 1_000).",
     )
     parser.add_argument(
-        "--min-dpq-n",
+        "--min_dpq_n",
         type=int,
         required=False,
         default=4,
         help="Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 4).",
     )
     parser.add_argument(
-        "--min-dpq-ratio",
+        "--min_dpq_ratio",
         type=float,
         required=False,
         default=0.3,
         help="Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3).",
     )
     parser.add_argument(
-        "--min-vaf",
+        "--min_vaf",
         type=float,
         required=False,
         default=0.002,
         help="Minimum variant allele frequency (default: 0.002).",
     )
     parser.add_argument(
-        "--min-rel-ratio",
+        "--min_rel_ratio",
         type=float,
         required=False,
         default=0.3,
         help="Minimum relative ratio between forward and reverse variant-supporting reads (default: 0.3).",
     )
     parser.add_argument(
-        "--min-abq",
+        "--min_abq",
         type=float,
         required=False,
         default=70,

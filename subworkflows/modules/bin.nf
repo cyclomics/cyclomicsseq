@@ -71,8 +71,7 @@ process CollectClassificationTypes{
 }
 
 process FindVariants{
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         path(reference_genome)
@@ -89,8 +88,7 @@ process FindVariants{
 }
 
 process FilterVariants{
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
@@ -100,14 +98,30 @@ process FilterVariants{
     
     script:
         """
-        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf -p $perbase_table $params.snp_filters
-        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf -p $perbase_table $params.indel_filters
+        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf -p $perbase_table \
+        --min_dir_ratio $params.snp_filters.min_dir_ratio \
+        --min_dir_count $params.snp_filters.min_dir_count \
+        --min_dpq $params.snp_filters.min_dpq \
+        --min_dpq_n $params.snp_filters.min_dpq_n \
+        --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
+        --min_vaf $params.snp_filters.min_vaf \
+        --min_rel_ratio $params.snp_filters.min_rel_ratio \
+        --min_abq $params.snp_filters.min_abq
+
+        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf -p $perbase_table \
+        --min_dir_ratio $params.indel_filters.min_dir_ratio \
+        --min_dir_count $params.indel_filters.min_dir_count \
+        --min_dpq $params.indel_filters.min_dpq \
+        --min_dpq_n $params.indel_filters.min_dpq_n \
+        --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
+        --min_vaf $params.indel_filters.min_vaf \
+        --min_rel_ratio $params.indel_filters.min_rel_ratio \
+        --min_abq $params.indel_filters.min_abq
         """
 }
 
 process MergeNoisyVCF{
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
@@ -133,8 +147,7 @@ process MergeNoisyVCF{
 }
 
 process MergeFilteredVCF{
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
 
     input:
         tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
