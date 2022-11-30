@@ -23,6 +23,18 @@ params.backbone                   = "BB41"
 params.backbone_name              = ""
 params.region_file                = "auto"
 
+// Variant filtering
+// params.min_dir_ratio = 0.001
+// params.min_dir_count = 5
+// params.min_dqp = 1000
+// params.min_dpq_n = 4
+// params.min_dpq_ratio = 0.3
+// params.min_vaf = 0.002
+// params.min_rel_ratio = 0.3
+// params.min_abq = 70
+params.snp_filters = "--min-dir-ratio 0.001 --min-dir-count 5 --min-dpq-n 4 --min-dpq-ratio 0.3 --min-vaf 0.002 --min-rel-ratio 0.3 --min-abq 70"
+params.indel_filters = "--min-dir-ratio 0.003 --min-dir-count 5 --min-dpq-n 4 --min-dpq-ratio 0.3 --min-vaf 0.004 --min-rel-ratio 0.3 --min-abq 70"
+
 params.reference = ""
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/Data/CyclomicsSeq"

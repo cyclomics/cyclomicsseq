@@ -4,8 +4,8 @@ import time
 from pathlib import Path
 
 import pysam
-from detect_indel2 import extract_indel_evidence
-from detect_snp2 import extract_snp_evidence
+from detect_indel import extract_indel_evidence
+from detect_snp import extract_snp_evidence
 from tqdm import tqdm
 from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
 
@@ -104,7 +104,9 @@ def main(
     snp_vcf = initialize_output_vcf(snp_output_path, bam_af.references)
     indel_vcf = initialize_output_vcf(indel_output_path, bam_af.references)
 
-    for contig, pos, amplicon_ending in tqdm(create_bed_positions(bed)):
+    for contig, pos, amplicon_ending in tqdm(
+        create_bed_positions(bed, end_warning_length=4)
+    ):
         write_variants(
             reference,
             contig,

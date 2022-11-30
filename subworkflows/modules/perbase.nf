@@ -6,7 +6,7 @@ process PerbaseBaseDepth {
     label 'few_very_memory_intensive'
 
     input:
-        tuple val(X), path(input_bam_file),path(input_bai_file), path(reference)
+        tuple val(X), path(input_bam_file), path(input_bai_file), path(reference)
         tuple val(X_bed), path(bed)
         val(output_name)
 

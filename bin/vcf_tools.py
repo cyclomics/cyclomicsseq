@@ -226,6 +226,15 @@ def initialize_output_vcf(vcf_path, contigs):
             ("Description", "high quality ratio"),
         ],
     )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "END"),
+            ("Number", 1),
+            ("Type", "Integer"),
+            ("Description", "Stop position of the interval"),
+        ],
+    )
 
     vcf = pysam.VariantFile(vcf_path, "w", header=vcfh)
     return vcf

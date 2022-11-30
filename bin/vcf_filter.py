@@ -1,10 +1,100 @@
 #!/usr/bin/env python
 
-from abc import abstractmethod
-from pathlib import Path
-from typing import Any
-import pandas as pd
+import argparse
 import io
+from pathlib import Path
+from typing import Any, List
+
+import pandas as pd
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Filter a VCF")
+
+    parser.add_argument(
+        "-i",
+        "--input-vcf",
+        type=Path,
+        required=True,
+        help="Input VCF file with variant evidence to filter.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-vcf",
+        type=Path,
+        required=True,
+        help="Output VCF file to which passed variants will be written.",
+    )
+    parser.add_argument(
+        "-p",
+        "--perbase-table",
+        type=Path,
+        required=True,
+        help="Input Perbase TSV table with positional depths.",
+    )
+    parser.add_argument(
+        "--min-dir-ratio",
+        type=float,
+        required=False,
+        default=0.001,
+        help="Minimum ratio of variant-supporting reads in each direction (default: 0.001).",
+    )
+    parser.add_argument(
+        "--min-dir-count",
+        type=float,
+        required=False,
+        default=50,
+        help="Minimum number of variant-supporting reads in each direction (default: 50).",
+    )
+    parser.add_argument(
+        "--min-dpq",
+        type=float,
+        required=False,
+        default=1_000,
+        help="Minimum positional depth after Q filtering (default: 1_000).",
+    )
+    parser.add_argument(
+        "--min-dpq-n",
+        type=int,
+        required=False,
+        default=4,
+        help="Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 4).",
+    )
+    parser.add_argument(
+        "--min-dpq-ratio",
+        type=float,
+        required=False,
+        default=0.3,
+        help="Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3).",
+    )
+    parser.add_argument(
+        "--min-vaf",
+        type=float,
+        required=False,
+        default=0.002,
+        help="Minimum variant allele frequency (default: 0.002).",
+    )
+    parser.add_argument(
+        "--min-rel-ratio",
+        type=float,
+        required=False,
+        default=0.3,
+        help="Minimum relative ratio between forward and reverse variant-supporting reads (default: 0.3).",
+    )
+    parser.add_argument(
+        "--min-abq",
+        type=float,
+        required=False,
+        default=70,
+        help="Minimum average base quality (default: 70).",
+    )
+
+    return parser.parse_args()
+
+
+def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
+    df = pd.read_table(perbase_tsv, sep="\t")
+    return df[["POS", "DEPTH"]]
 
 
 class VCF_file:
@@ -83,23 +173,49 @@ class VCF_file:
             # new_vcf.writelines((x.lstrip() for x in writeable_vcf.to_csv(sep='\t').split('\n')))
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
 
-    def calculate_min_depth(self):
-        return max(self.vcf["DPQ"]) * 0.20
+    def apply_min_depth(
+        self, depth_table: pd.DataFrame, n: int = 4, ratio: float = 0.3
+    ) -> List[bool]:
+        """
+        Apply a minimum depth filter based on local maxima.
 
-    def calculate_min_vaf(self):
-        # Calculate per position
-        # based on key: value pairs in dict
-        # value can be a tuple (e.g. interval)
-        return
+        Args:
+            n: Number of positions to the left and to the right, which will
+                be used to calculate local depth maxima (default = 4).
+            ratio: Ratio of the local depth maxima that will determine the
+                minimum depth at each position (default = 0.3).
+
+        Returns:
+            List of booleans, with size equal to the number of VCF entries,
+                flagging whether a VCF entry passes or fails this filter.
+        """
+
+        min_depth = []
+        for row in self.vcf.iterrows():
+            pos = row[1]["POS"]
+            pos_depth = int(depth_table[depth_table["POS"] == pos]["DEPTH"])
+
+            # Calculate local maximum
+            depth_range = depth_table.loc[
+                depth_table["POS"].between(pos - n, pos + n), "DEPTH"
+            ]
+            local_max = max(depth_range) * ratio
+
+            min_depth.append(pos_depth >= local_max)
+
+        return min_depth
 
     def filter(
         self,
-        min_dir_ratio=0.001,
-        min_dir_count=5,
-        min_dqp=1000,
-        min_vaf=0.002,
-        min_rel_ratio=0.3,
-        min_abq=70,
+        depth_table: pd.DataFrame,
+        min_dir_ratio: float = 0.001,
+        min_dir_count: int = 5,
+        min_dpq: int = 1_000,
+        min_dpq_n: int = 4,
+        min_dpq_ratio: float = 0.3,
+        min_vaf: float = 0.002,
+        min_rel_ratio: float = 0.3,
+        min_abq: int = 70,
     ):
         # nothing to filter
         if self.vcf.empty:
@@ -125,7 +241,8 @@ class VCF_file:
         self.vcf = self.vcf[self.vcf["ABQ"] > min_abq]
         print("ABQ filter")
         print(self.vcf.shape)
-        self.vcf = self.vcf[self.vcf["DPQ"] > min_dqp]
+        # self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
+        self.vcf = self.vcf[vcf.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)]
         print("DPQ filter")
         print(self.vcf.shape)
         self.vcf = self.vcf[self.vcf["VAF"] > min_vaf]
@@ -151,30 +268,23 @@ class VCF_file:
 
 
 if __name__ == "__main__":
-    import argparse
+    args = parse_arguments()
 
-    parser = argparse.ArgumentParser(description="Filter a vcf")
+    depth_table = get_depth_table(args.perbase_table)
 
-    parser.add_argument("-i", "--input-vcf", type=Path, required=True, help="")
-    parser.add_argument("-o", "--output-vcf", type=Path,)
-    parser.add_argument("--min-dir-ratio", type=float, required=False, help="")
-    parser.add_argument("--min-dir-count", type=float, required=False, help="")
-    parser.add_argument("--min-dpq", type=float, required=False, help="")
-    parser.add_argument("--min-vaf", type=float, required=False, help="")
-    parser.add_argument("--min-rel-ratio", type=float, required=False, help="")
-    parser.add_argument("--min-abq", type=float, required=False, help="")
-    args = parser.parse_args()
-
-    vcf = VCF_file(args.output_vcf)
+    vcf = VCF_file(args.input_vcf)
     vcf.filter(
-        min_dir_ratio=0.001,
-        min_dir_count=5,
-        min_dqp=1000,
-        min_vaf=0.002,
-        min_rel_ratio=0.3,
-        min_abq=70,
+        depth_table,
+        args.min_dir_ratio,
+        args.min_dir_count,
+        args.min_dpq,
+        args.min_dpq_n,
+        args.min_dpq_ratio,
+        args.min_vaf,
+        args.min_rel_ratio,
+        args.min_abq,
     )
-    vcf.write(args.file_out)
+    vcf.write(args.output_vcf)
 
     # vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')
     # vcf.filter()

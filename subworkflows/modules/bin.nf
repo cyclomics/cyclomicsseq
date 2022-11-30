@@ -70,47 +70,9 @@ process CollectClassificationTypes{
         """
 }
 
-process FindSNPs{
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/variants", mode: 'copy'
-
-    input:
-        tuple val(X), path(bam), path(bai)
-        tuple val(X), path(validation_bed)
-
-    output:
-        tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.snp.vcf.gz"), path("${bam.simpleName}.snp.vcf.gz.tbi")
-    
-    script:
-        """
-        detect_snp.py $validation_bed $bam ${bam.simpleName}.snp.vcf
-        bgzip -c ${bam.simpleName}.snp.vcf > ${bam.simpleName}.snp.vcf.gz
-        tabix ${bam.simpleName}.snp.vcf.gz
-        """
-}
-
-process FilterSNPs {
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/variants", mode: 'copy'
-
-    input:
-        tuple path(vcf_file), path(vcf_gz), path(vcf_tbi)
-
-    output:
-        tuple path("${vcf_file.simpleName}_filtered.snp.vcf.gz"), path("${vcf_file.simpleName}_filtered.snp.vcf.gz.tbi")
-    
-    script:
-        """
-        vcf_filter.py $vcf_file ${vcf_file.simpleName}_filtered.snp.tmp.vcf
-        bcftools sort ${vcf_file.simpleName}_filtered.snp.tmp.vcf -o ${vcf_file.simpleName}_filtered.snp.vcf
-        rm ${vcf_file.simpleName}_filtered.snp.tmp.vcf
-        bgzip ${vcf_file.simpleName}_filtered.snp.vcf
-        tabix ${vcf_file.simpleName}_filtered.snp.vcf.gz
-        """
-}
-
-process FindIndels{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+process FindVariants{
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
         path(reference_genome)
@@ -118,49 +80,82 @@ process FindIndels{
         tuple val(X), path(validation_bed)
 
     output:
-        tuple path("${bam.simpleName}.indel.vcf.gz"), path("${bam.simpleName}.indel.vcf.gz.tbi")
+        tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.indel.vcf")
     
     script:
         """
-        detect_indel.py $reference_genome $validation_bed $bam ${bam.simpleName}.indel.tmp.vcf
-        bcftools sort ${bam.simpleName}.indel.tmp.vcf -o ${bam.simpleName}.indel.vcf
-        rm ${bam.simpleName}.indel.tmp.vcf
-        bgzip ${bam.simpleName}.indel.vcf
-        tabix ${bam.simpleName}.indel.vcf.gz
+        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf
+        """
+}
+
+process FilterVariants{
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
+    input:
+        tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
+
+    output:
+        tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
+    
+    script:
+        """
+        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf -p $perbase_table $params.snp_filters
+        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf -p $perbase_table $params.indel_filters
         """
 }
 
 process MergeNoisyVCF{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple path(noisy_snp_vcf), path(noisy_snp_gz), path(noisy_snp_tbi), path(indel_gz), path(indel_tbi)
+        tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
 
     output:
-        path("${indel_gz.simpleName}.noisy_merged.vcf")
+        path("${noisy_snp_vcf.simpleName}.noisy_merged.vcf")
     
     script:
         """
-        bcftools concat -a $noisy_snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.noisy_merged.tmp.vcf
-        bcftools sort ${indel_gz.simpleName}.noisy_merged.tmp.vcf -o ${indel_gz.simpleName}.noisy_merged.vcf
-        rm ${indel_gz.simpleName}.noisy_merged.tmp.vcf
+        bcftools sort $noisy_snp_vcf -o ${noisy_snp_vcf.simpleName}.sorted.snp.vcf
+        bgzip ${noisy_snp_vcf.simpleName}.sorted.snp.vcf
+        tabix ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz
+
+        bcftools sort $noisy_indel_vcf -o ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
+        bgzip ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
+        tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
+
+        bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
+        -O v -o ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
+        bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf
+        rm ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
         """
 }
 
 process MergeFilteredVCF{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
 
     input:
-        tuple path(snp_gz), path(snp_tbi), path(indel_gz), path(indel_tbi)
+        tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
 
     output:
-        path("${indel_gz.simpleName}.merged.vcf")
+        path("${filtered_snp_vcf.simpleName}.filtered_merged.vcf")
     
     script:
         """
-        bcftools concat -a $snp_gz $indel_gz -O v -o ${indel_gz.simpleName}.merged.tmp.vcf
-        bcftools sort ${indel_gz.simpleName}.merged.tmp.vcf -o ${indel_gz.simpleName}.merged.vcf
-        rm ${indel_gz.simpleName}.merged.tmp.vcf
+        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
+        bgzip ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
+        tabix ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz
+
+        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
+        bgzip ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
+        tabix ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz
+
+        bcftools concat -a ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
+        -O v -o ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
+        bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf
+        rm ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
         """
 }
 
