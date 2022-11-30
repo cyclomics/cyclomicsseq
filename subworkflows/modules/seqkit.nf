@@ -105,7 +105,7 @@ process CountFastqInfo{
     script:
         """
         seqkit stats -T $fastq | tee ${ID}_overview.txt | awk 'BEGIN{fs = "\t"} { sum+=\$4} END{print sum}' > ${ID}_read_count.txt
-        cat overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > ${ID}_base_count.txt
+        cat ${ID}_overview.txt | tr -d \\, | awk 'BEGIN{fs = "\t"} { sum+=\$5} END{print sum}' > ${ID}_base_count.txt
         """
 }
 
