@@ -16,6 +16,6 @@ process PerbaseBaseDepth {
     script:
     """
     samtools faidx $reference
-    perbase base-depth -F 256 -D 1000000 -z -b $bed --ref-fasta $reference $input_bam_file > $output_name
+    perbase base-depth -F 256 -D 1000000 --keep-zeros -z -b $bed --ref-fasta $reference $input_bam_file > $output_name
     """
 }

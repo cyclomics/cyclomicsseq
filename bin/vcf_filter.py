@@ -93,7 +93,11 @@ def parse_arguments():
 
 
 def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
-    df = pd.read_table(perbase_tsv, sep="\t")
+    try:
+        df = pd.read_table(perbase_tsv, sep="\t")
+    except pd.errors.EmptyDataError:  # what error?
+        # df = pd.DataFrame({})
+        return None
     return df[["POS", "DEPTH"]]
 
 
@@ -242,9 +246,12 @@ class VCF_file:
         print("ABQ filter")
         print(self.vcf.shape)
         # self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
-        self.vcf = self.vcf[vcf.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)]
-        print("DPQ filter")
-        print(self.vcf.shape)
+        if depth_table:
+            self.vcf = self.vcf[
+                vcf.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)
+            ]
+            print("DPQ filter")
+            print(self.vcf.shape)
         self.vcf = self.vcf[self.vcf["VAF"] > min_vaf]
         print("VAF filter")
         print(self.vcf.shape)
