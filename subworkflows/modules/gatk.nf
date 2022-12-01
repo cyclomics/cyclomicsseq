@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 process CreateRererenceDict {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
 
     input:
@@ -22,7 +22,7 @@ process CreateRererenceDict {
 process GatkAddOrReplaceReadGroups {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'broadinstitute/gatk:4.2.3.0'
-    label 'many_cpu_intensive'
+    label 'many_med_cpu_huge_mem'
 
 
     input:

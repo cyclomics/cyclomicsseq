@@ -264,3 +264,4 @@ dependencies:
   - pip:
     - biopython==1.79
     - more-itertools==8.13.0
+prefix: /home/dami/anaconda3/envs/cyclomics-nf-cyclomicseq-two
