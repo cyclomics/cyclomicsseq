@@ -98,7 +98,7 @@ def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
     except pd.errors.EmptyDataError:  # what error?
         # df = pd.DataFrame({})
         return None
-    return df[["POS", "DEPTH"]]
+    return df[["REF", "POS", "DEPTH"]]
 
 
 class VCF_file:
@@ -197,11 +197,13 @@ class VCF_file:
         min_depth = []
         for row in self.vcf.iterrows():
             pos = row[1]["POS"]
-            pos_depth = int(depth_table[depth_table["POS"] == pos]["DEPTH"])
+            chrom = row[1]["CHROM"]
+            chr_depth_table = depth_table[depth_table["REF"] == chrom]
+            pos_depth = int(chr_depth_table[chr_depth_table["POS"] == pos]["DEPTH"])
 
             # Calculate local maximum
-            depth_range = depth_table.loc[
-                depth_table["POS"].between(pos - n, pos + n), "DEPTH"
+            depth_range = chr_depth_table.loc[
+                chr_depth_table["POS"].between(pos - n, pos + n), "DEPTH"
             ]
             local_max = max(depth_range) * ratio
 
@@ -246,7 +248,7 @@ class VCF_file:
         print("ABQ filter")
         print(self.vcf.shape)
         # self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
-        if depth_table:
+        if depth_table is not None:
             self.vcf = self.vcf[
                 vcf.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)
             ]
