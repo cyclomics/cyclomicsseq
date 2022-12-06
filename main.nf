@@ -23,6 +23,7 @@ params.backbone                   = "BB41"
 params.backbone_name              = ""
 params.region_file                = "auto"
 
+
 params.reference = ""
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/Data/CyclomicsSeq"
