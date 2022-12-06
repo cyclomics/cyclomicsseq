@@ -43,21 +43,21 @@ def parse_arguments():
         "--min_dir_count",
         type=float,
         required=False,
-        default=50,
+        default=5,
         help="Minimum number of variant-supporting reads in each direction (default: 50).",
     )
     parser.add_argument(
         "--min_dpq",
         type=float,
         required=False,
-        default=1_000,
+        default=5_000,
         help="Minimum positional depth after Q filtering (default: 1_000).",
     )
     parser.add_argument(
         "--min_dpq_n",
         type=int,
         required=False,
-        default=4,
+        default=25,
         help="Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 4).",
     )
     parser.add_argument(
@@ -71,7 +71,7 @@ def parse_arguments():
         "--min_vaf",
         type=float,
         required=False,
-        default=0.002,
+        default=0.003,
         help="Minimum variant allele frequency (default: 0.002).",
     )
     parser.add_argument(
@@ -95,8 +95,7 @@ def parse_arguments():
 def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
     try:
         df = pd.read_table(perbase_tsv, sep="\t")
-    except pd.errors.EmptyDataError:  # what error?
-        # df = pd.DataFrame({})
+    except pd.errors.EmptyDataError:
         return None
     return df[["REF", "POS", "DEPTH"]]
 
@@ -198,12 +197,12 @@ class VCF_file:
         for row in self.vcf.iterrows():
             pos = row[1]["POS"]
             chrom = row[1]["CHROM"]
-            chr_depth_table = depth_table[depth_table["REF"] == chrom]
-            pos_depth = int(chr_depth_table[chr_depth_table["POS"] == pos]["DEPTH"])
+            chr_depth = depth_table[depth_table["REF"] == chrom]
+            pos_depth = int(chr_depth[chr_depth["POS"] == pos]["DEPTH"])
 
             # Calculate local maximum
-            depth_range = chr_depth_table.loc[
-                chr_depth_table["POS"].between(pos - n, pos + n), "DEPTH"
+            depth_range = chr_depth.loc[
+                chr_depth["POS"].between(pos - n, pos + n), "DEPTH"
             ]
             local_max = max(depth_range) * ratio
 
@@ -216,10 +215,10 @@ class VCF_file:
         depth_table: pd.DataFrame,
         min_dir_ratio: float = 0.001,
         min_dir_count: int = 5,
-        min_dpq: int = 1_000,
-        min_dpq_n: int = 4,
+        min_dpq: int = 5_000,
+        min_dpq_n: int = 25,
         min_dpq_ratio: float = 0.3,
-        min_vaf: float = 0.002,
+        min_vaf: float = 0.003,
         min_rel_ratio: float = 0.3,
         min_abq: int = 70,
     ):
@@ -247,13 +246,13 @@ class VCF_file:
         self.vcf = self.vcf[self.vcf["ABQ"] > min_abq]
         print("ABQ filter")
         print(self.vcf.shape)
-        # self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
+        self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
         if depth_table is not None:
             self.vcf = self.vcf[
-                vcf.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)
+                self.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)
             ]
-            print("DPQ filter")
-            print(self.vcf.shape)
+        print("DPQ filter")
+        print(self.vcf.shape)
         self.vcf = self.vcf[self.vcf["VAF"] > min_vaf]
         print("VAF filter")
         print(self.vcf.shape)
