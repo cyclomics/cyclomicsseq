@@ -1,5 +1,11 @@
 # changelog
 
+## 0.8.0
+- Major overhaul of variant calling, with new default parameters that are also settable by user.
+- Changed Default post consensus alignment strategy to BWA mem.
+- FIxed bug where count.txt files where empty.
+- minor changes to CI pipeline.
+
 ## 0.7.3
 - Added correct labels to BWA processes to prevent 137 errors in conda runs.
 
