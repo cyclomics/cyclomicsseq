@@ -23,6 +23,7 @@ params.backbone                   = "BB41"
 params.backbone_name              = ""
 params.region_file                = "auto"
 
+
 params.reference = ""
 // reference indexes are expected to be in reference folder
 params.output_dir = "$HOME/Data/CyclomicsSeq"
@@ -31,7 +32,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 // method selection
 params.qc                   = "simple" // simple or skip
 params.consensus_calling    = "cycas" // simple or skip
-params.alignment            = "minimap"  // BWA, Latal, Lastal-trained or skip
+params.alignment            = "bwamem"  // BWA, Latal, Lastal-trained or skip
 params.variant_calling      = "validate"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"

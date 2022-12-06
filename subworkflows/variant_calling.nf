@@ -17,9 +17,8 @@ include {
 } from "./modules/bedops"
 
 include {
-    FindSNPs
-    FilterSNPs
-    FindIndels
+    FindVariants
+    FilterVariants
     MergeNoisyVCF
     MergeFilteredVCF
     AnnotateVCF
@@ -28,6 +27,10 @@ include {
 include {
     FindRegionOfInterest
 } from "./modules/samtools"
+
+include {
+    PerbaseBaseDepth as PerbaseBaseDepthConsensus
+} from "./modules/perbase"
 
 workflow FreebayesSimple{
     take:
@@ -82,11 +85,13 @@ workflow ValidatePosibleVariantLocations{
             positions = variant_file.map(it -> tuple(it.SimpleName, it))
 
         }
-        FindSNPs(reads_aligned, positions)
-        FilterSNPs(FindSNPs.out)
-        FindIndels(reference, reads_aligned, positions)
-        MergeNoisyVCF(FindSNPs.out.combine(FindIndels.out))
-        MergeFilteredVCF(FilterSNPs.out.combine(FindIndels.out))
+        FindVariants(reference, reads_aligned, positions)
+
+        PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
+
+        FilterVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
+        MergeNoisyVCF(FindVariants.out)
+        MergeFilteredVCF(FilterVariants.out)
         AnnotateVCF(MergeFilteredVCF.out)
 
 

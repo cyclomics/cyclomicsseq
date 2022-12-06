@@ -45,7 +45,6 @@ jobs:
           --read_pattern '/fastq_pass/*.fastq' \
           --backbone_fasta 'tests/informed/backbone_test.fa' \
           --reference 'tests/informed/tp53.fasta' \
-          --varscan.min_support_reads 1 --varscan.min_var_freq 0.2 --varscan.min_coverge 1 \
           --economy_mode -profile ${{ matrix.nf_profile }}
 
   RunPipelineVariantValidation:
