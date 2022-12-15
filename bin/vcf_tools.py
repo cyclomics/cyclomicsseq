@@ -8,6 +8,10 @@ import pysam
 
 @dataclass
 class VCF_entry:
+    """
+    Stores variant evidence annotations for a new VCF entry.
+    """
+
     DP: int = 0
     DPQ: int = 0
     FREQ: float = 0.0
@@ -37,6 +41,9 @@ def is_intable(value):
 
 
 def create_bed_positions(bed_file, end_warning_length=4):
+    """
+    Takes a BED file and yields a list of positions between the start and stop of each entry.
+    """
     with open(bed_file) as f:
         for line in f:
             print(line)
@@ -55,6 +62,16 @@ def create_bed_positions(bed_file, end_warning_length=4):
 
 
 def write_vcf_entry(vcf, contig, pos, vcf_entry):
+    """
+    Writes variant evidence as an entry to a VCF file.
+
+    Args:
+        vcf: A pysam.VariantFile to write evidence variants to.
+        contig: Contig name to write to VCF entry, column "CHROM", str.
+        pos: Position in reference where the variant occurs, column "POS", int.
+        vcf_entry: A tuple containing  the contig name, a tuple with reference and
+            alternative alleles, and a VCF_entry object with variant annotations to add.
+    """
     r = vcf.new_record(
         contig=contig, start=pos, stop=pos + 1, alleles=vcf_entry[1], filter="PASS"
     )
@@ -74,7 +91,17 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
 
 
 def initialize_output_vcf(vcf_path, contigs):
+    """
+    Initializes the VCF file where variant evidence will be written to.
 
+    Args:
+        vcf_path: Path, including file name, where the new VCF file will be created.
+        contigs: Contig names, i.e. pysam references, where variants will be found,
+            to be headed to VCF header.
+
+    Returns:
+        A writable pysam.VariantFile where variants evidence can be written.
+    """
     # Create a VCF header
     vcfh = pysam.VariantHeader()
     # Add a sample named "ahstram" to our VCF header

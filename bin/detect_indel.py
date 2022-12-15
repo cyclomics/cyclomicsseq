@@ -12,6 +12,10 @@ from vcf_tools import VCF_entry
 
 @dataclass
 class Indel:
+    """
+    Object to store Indel evidence information.
+    """
+
     found: bool = False
     depth: int = 0
     depth_q: int = 0

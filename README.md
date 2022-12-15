@@ -48,7 +48,7 @@ Fill in your PAT when promted for it.
 
 ### Singularity
 
-If docker is not an option, singularity(or Apptainer as it is called since Q2 2022) is a good alternative that does not require root access and therefor used in shared compute environments.
+If docker is not an option, singularity (or Apptainer, as it is called since Q2 2022) is a good alternative that does not require root access and therefor used in shared compute environments.
 
 The command becomes:
 
@@ -73,15 +73,24 @@ this file is located in the repo, the pipeline needs to know where this file is 
 
 ### Flag descriptions
 
-|flag                           | info  |
-|-------------------------------|---|
+| flag                          | info  |
+|-------------------------------|-------|
 |--input_read_dir               | Directory where the output of Guppy is located, e.g.: "/data/guppy/exp001/".|
-|--read_pattern                 | Regex pattern to look for fastq's in the read directory, defaults to: "fastq_pass/**.{fq,fastq}".|
+|--read_pattern                 | Regex pattern to look for fastq's in the read directory, defaults to: "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}".|
 |--sequencing_quality_summary   | Regex pattern for the summary file, default: "sequencing_summary*.txt".|
 |--backbone                     | Path to the fasta file containing backbone sequences.|
-|--backbone_name                | Name of the sequence to extract from the backbone fasta excluding the starting ">", e.g.:"BB22". |
+|--backbone_name                | Name of the sequence to extract from the backbone fasta excluding the starting ">", e.g.:"BB42". |
 |--reference                    | Path to the reference genome to use, will ingest all index files in the same directory.|
 |--output_dir                   | Directory path where the results, including intermediate files, are stored. |
+|--snp_filters.min_dir_ratio, --indel_filters.min_dir_ratio | Minimum ratio of variant-supporting reads in each direction (default: 0.001 (SNP); 0.002 (Indel)).|
+|--snp_filters.min_dir_count, --indel_filters.min_dir_count | Minimum number of variant-supporting reads in each direction (default: 5).|
+|--snp_filters.min_dpq, --indel_filters.min_dpq             | Minimum positional depth after Q filtering (default: 5_000).|
+|--snp_filters.min_dpq_n, --indel_filters.min_dpq_n         | Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 25).|
+|--snp_filters.min_dpq_ratio, --indel_filters.min_dpq_ratio | Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3).|
+|--snp_filters.min_vaf, --indel_filters.min_vaf             | Minimum variant allele frequency (default: 0.003 (SNP); 0.004 (Indel)).|
+|--snp_filters.min_rel_ratio, --indel_filters.min_rel_ratio | Minimum relative ratio between forward and reverse variant-supporting reads (default: 0.3 (SNP); 0.4 (Indel)).|
+|--snp_filters.min_abq, --indel_filters.min_abq             | Minimum average base quality (default: 70).|
+
 
 ## Using alternative Backbones
 
@@ -92,23 +101,17 @@ The following defaults are available by default in the pipeline, you can enable 
 |--------|-------|-------|
 |BB22 | --backbone BB22 | |
 |BB25 | --backbone BB25 | |
-|BB41 | --backbone BB41 |X|
+|BB41 | --backbone BB41 | |
+|BB42 | --backbone BB42 |X|
+|BBCS | --backbone BBCS | |
+|BBCR | --backbone BBCR | |
 
 
 
 ## Roadmap / Todo:
  
- ### Usability:
- 1. Implement warning when the backbone is not present in the data
- 1. give warning when user sets backbone and its not used
-
- ### Reporting:
- 1. convert to single report
-
  ### Performance:
- 1. Improve pre consensus mapping
- 1. Split reads to increase sensitivity
-
+ 1. Multi-threaded variant calling
 
 ## changelog
 

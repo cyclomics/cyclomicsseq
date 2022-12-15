@@ -1,5 +1,38 @@
 # changelog
 
+## 0.8.1
+- Default minimum VAF filter for SNPs was lowered to 0.003.
+- Docstrings added to variant calling/filtering/reporting functions as needed.
+- Documentation on new variant calling user arguments added to README.
+- Removed workflows folder.
+
+## 0.8.0
+- Major overhaul of variant calling, with new default parameters that are also settable by user.
+- Changed Default post consensus alignment strategy to BWA mem.
+- FIxed bug where count.txt files where empty.
+- minor changes to CI pipeline.
+
+## 0.7.3
+- Added correct labels to BWA processes to prevent 137 errors in conda runs.
+
+## 0.7.2
+- Added bwa as option in post consensus alignment step
+- fixed issues with Conda enviroment in some cases.
+- standardized the process labels
+
+## 0.7.1
+- Added indel detection
+- Added variant effect prediction for Grch38.
+- Added visual improvements to the report
+- Fixed warning with respect to internal Nextflow tuple
+- Moved filtering into a seperate submodule
+
+
+## 0.7.0
+- Change output structure
+- Added single page reporting, available in QC/report.html
+- Added readsplitting
+
 ## 0.6.1
 - fix bug in reference genome info generator
 - fix conda environment parser
@@ -7,7 +40,6 @@
 - Update README.md
 
 ## 0.6.0
-
 - Update cycas version for consensus generation
 - Alter variant calling parameters
 - Pass vcf parameters to final file
