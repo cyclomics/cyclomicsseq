@@ -9,6 +9,9 @@ import pandas as pd
 
 
 def parse_arguments():
+    """
+    Argument parser.
+    """
     parser = argparse.ArgumentParser(description="Filter a VCF")
 
     parser.add_argument(
@@ -93,6 +96,9 @@ def parse_arguments():
 
 
 def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
+    """
+    Read in a perbase table and returns it as a pandas DataFrame with reference, position and depth.
+    """
     try:
         df = pd.read_table(perbase_tsv, sep="\t")
     except pd.errors.EmptyDataError:
@@ -101,6 +107,10 @@ def get_depth_table(perbase_tsv: Path) -> pd.DataFrame:
 
 
 class VCF_file:
+    """
+    VCF file object where filters will be applied to.
+    """
+
     def __init__(self, vcf_file):
         self.vcf_file = vcf_file
         self.vcf_header = ""
@@ -109,7 +119,7 @@ class VCF_file:
     @staticmethod
     def relaxed_float(x: Any) -> float:
         """
-        Try except wrapper with value error catch for non floatable objects
+        Try except wrapper with value error catch for non floatable objects.
         """
         try:
             my_float = float(x)
@@ -118,6 +128,9 @@ class VCF_file:
         return my_float
 
     def read_vcf(self, path: Path) -> pd.DataFrame:
+        """
+        Read in a VCF file and a return it as a pandas DataFrame.
+        """
         with open(path, "r") as f:
             header = []
             lines = []
@@ -155,6 +168,9 @@ class VCF_file:
         return df
 
     def write(self, path):
+        """
+        Write filtered VCF_file object as a new VCF file to path.
+        """
         with open(path, "w") as new_vcf:
             new_vcf.writelines(self.vcf_header)
 
@@ -173,11 +189,11 @@ class VCF_file:
                     "Sample1",
                 ]
             ]
-            # new_vcf.writelines((x.lstrip() for x in writeable_vcf.to_csv(sep='\t').split('\n')))
+
             new_vcf.writelines(writeable_vcf.to_csv(sep="\t", index=False))
 
     def apply_min_depth(
-        self, depth_table: pd.DataFrame, n: int = 4, ratio: float = 0.3
+        self, depth_table: pd.DataFrame, n: int = 25, ratio: float = 0.3
     ) -> List[bool]:
         """
         Apply a minimum depth filter based on local maxima.
@@ -222,6 +238,27 @@ class VCF_file:
         min_rel_ratio: float = 0.3,
         min_abq: int = 70,
     ):
+        """
+        Filters the VCF DataFrame based on parsed or default parameters.
+
+        Args:
+            depth_table: Perbase depth table as a pandas DataFrame, used with
+                min_dpq_n and min_dpq_ratio to calculate local depth maxima and
+                apply a minimum depth filter based on local maxima.
+            min_dir_ratio: Minimum ratio of variant-supporting reads in
+                each direction (default: 0.001).
+            min_dir_count: Minimum number of variant-supporting reads in
+                each direction (default: 5).
+            min_dpq: Minimum positional depth after Q filtering (default: 5_000).
+            min_dpq_n: Number of flanking nucleotides to the each position that will
+                determine the window size for local maxima calculation (default: 25).
+            min_dpq_ratio: Ratio of local depth maxima that will determine the
+                minimum depth at each position (default: 0.3).
+            min_vaf: Minimum variant allele frequency (default: 0.003).
+            min_rel_ratio: Minimum relative ratio between forward and reverse
+                variant-supporting reads (default: 0.3).
+            min_abq: Minimum average base quality (default: 70).
+        """
         # nothing to filter
         if self.vcf.empty:
             return

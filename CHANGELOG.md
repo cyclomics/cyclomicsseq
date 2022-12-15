@@ -1,5 +1,11 @@
 # changelog
 
+## 0.8.1
+- Default minimum VAF filter for SNPs was lowered to 0.003.
+- Docstrings added to variant calling/filtering/reporting functions as needed.
+- Documentation on new variant calling user arguments added to README.
+- Removed workflows folder.
+
 ## 0.8.0
 - Major overhaul of variant calling, with new default parameters that are also settable by user.
 - Changed Default post consensus alignment strategy to BWA mem.

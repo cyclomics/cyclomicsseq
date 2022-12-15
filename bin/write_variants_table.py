@@ -125,7 +125,15 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
-    """ """
+    """
+    Write variants in VCF file to a JSON file to be loaded into the HTML report.
+
+    Args:
+        vcf_file: Path to the VCF file containing the variant information.
+        variant_table_file: Name of the variant_table JSON file to write to
+            from a pandas DataFrame.
+        tab_name: Name of the variant table tab to add to the report, str.
+    """
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
     vcf_table = annotation_df.to_html(na_rep="N/A")
