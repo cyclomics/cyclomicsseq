@@ -276,61 +276,56 @@ class VCF_file:
                 result.append(low / high)
         self.vcf["RELR"] = result
 
-        print("pre filter")
-        print(self.vcf.shape)
+        print(f"pre filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["SAME"] > 0.9]
-        print("SAME filter")
+        print(f"SAME filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["ABQ"] > min_abq]
-        print("ABQ filter")
-        print(self.vcf.shape)
+        print(f"ABQ filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["DPQ"] > min_dpq]
-        if depth_table is not None:
+        if not self.vcf.empty and depth_table is not None:
             self.vcf = self.vcf[
                 self.apply_min_depth(depth_table, min_dpq_n, min_dpq_ratio)
             ]
-        print("DPQ filter")
-        print(self.vcf.shape)
+        print(f"DPQ filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["VAF"] > min_vaf]
-        print("VAF filter")
-        print(self.vcf.shape)
+        print(f"VAF filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["REVC"] > min_dir_count]
-        print("REVC filter")
-        print(self.vcf.shape)
+        print(f"REVC filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["FWDC"] > min_dir_count]
-        print("FWDC filter")
-        print(self.vcf.shape)
+        print(f"FWDC filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["FWDR"] > min_dir_ratio]
-        print("FWDR filter")
-        print(self.vcf.shape)
+        print(f"FWDR filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["REVR"] > min_dir_ratio]
-        print("REVR filter")
-        print(self.vcf.shape)
+        print(f"REVR filter: {self.vcf.shape}")
         self.vcf = self.vcf[self.vcf["RELR"] > min_rel_ratio]
-        print("relative ratio filter")
-        print(self.vcf.shape)
+        print(f"RELR filter: {self.vcf.shape}")
 
         print(self.vcf)
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    dev = False
+    if not dev:
+        args = parse_arguments()
 
-    depth_table = get_depth_table(args.perbase_table)
+        depth_table = get_depth_table(args.perbase_table)
 
-    vcf = VCF_file(args.input_vcf)
-    vcf.filter(
-        depth_table,
-        args.min_dir_ratio,
-        args.min_dir_count,
-        args.min_dpq,
-        args.min_dpq_n,
-        args.min_dpq_ratio,
-        args.min_vaf,
-        args.min_rel_ratio,
-        args.min_abq,
-    )
-    vcf.write(args.output_vcf)
+        vcf = VCF_file(args.input_vcf)
+        vcf.filter(
+            depth_table,
+            args.min_dir_ratio,
+            args.min_dir_count,
+            args.min_dpq,
+            args.min_dpq_n,
+            args.min_dpq_ratio,
+            args.min_vaf,
+            args.min_rel_ratio,
+            args.min_abq,
+        )
+        vcf.write(args.output_vcf)
 
-    # vcf = VCF_file('/home/dami/Software/cycloseq/tmp.vcf')
-    # vcf.filter()
-    # print('loaded')
+    if dev:
+        depth_table = get_depth_table("debug/consensus.tsv")
+        vcf = VCF_file("debug/AJV906.snp.vcf")
+        vcf.filter(depth_table)
+        vcf.write("debug/AJV906_filtered.snp.vcf")
