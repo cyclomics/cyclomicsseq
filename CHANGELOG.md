@@ -1,5 +1,8 @@
 # changelog
 
+## 0.8.2
+- Fixed issue where variant filtering throwed an error when variant dataframe becomes empty before DPQ filtering.
+
 ## 0.8.1
 - Default minimum VAF filter for SNPs was lowered to 0.003.
 - Docstrings added to variant calling/filtering/reporting functions as needed.
