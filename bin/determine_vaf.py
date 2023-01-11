@@ -107,6 +107,7 @@ def main(
     for contig, pos, amplicon_ending in tqdm(
         create_bed_positions(bed, end_warning_length=4)
     ):
+        # TODO: split detection and writing, so that we can multiprocess the detection
         write_variants(
             reference,
             contig,
