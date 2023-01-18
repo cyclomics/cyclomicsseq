@@ -132,7 +132,7 @@ def extract_snp_evidence(
 
     # empty position:
     if counted_nucs == 0 or total == 0:
-        return
+        return vcf_entry
 
     else:
         data_present = counts_mc[0][1] / total
@@ -238,10 +238,7 @@ def main(bam: Path, bed: Path, output_path: Path, pileup_depth=1_000_000):
         )
 
         for pileupcolumn in positional_pileup:
-            result = extract_snp_evidence(
-                pileupcolumn=pileupcolumn,
-                assembly=contig,
-            )
+            result = extract_snp_evidence(pileupcolumn=pileupcolumn, assembly=contig)
 
             if result:
                 # Reference allele is not '.', then a variant was found
