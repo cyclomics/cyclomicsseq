@@ -14,7 +14,7 @@ from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
 def process_pileup_column(
     contig: str,
     pos: int,
-    bam:str,
+    bam: str,
     reference_fasta: str,
     amplicon_ending=False,
     pileup_depth=1_000_000,
