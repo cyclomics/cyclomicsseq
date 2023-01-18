@@ -12,17 +12,29 @@ from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
 
 
 def process_pileup_column(
-    contig,
-    pos,
-    bam,
-    fasta,
+    contig: str,
+    pos: int,
+    bam:str,
+    reference_fasta: str,
     amplicon_ending=False,
     pileup_depth=1_000_000,
     minimum_base_quality=10,
 ):
+    """
+    Function to process a single location in a genome alignment. Used to multiprocess the variant calling
+
+    Args:
+        contig: Reference genome contig name.
+        pos: Genomic locations within the contig.
+        bam: path to the bam file, BAM.
+        fasta: path to the reference genome, Fasta.
+        amplicon_ending: Bolean to indicate if the amplicon is about to end, used in indel calling.
+        pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
+        minimum_base_quality: minimum base quality at a given position in a read to be considered, integer.
+    """
     logging.debug(f"process column {contig} | {pos}")
     bam_af = pysam.AlignmentFile(bam, "r")
-    reference = pysam.FastaFile(fasta)
+    reference = pysam.FastaFile(reference_fasta)
 
     iteration = 0
     # create enteties for when no forloop event happens

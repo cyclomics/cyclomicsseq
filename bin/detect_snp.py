@@ -132,7 +132,7 @@ def extract_snp_evidence(
 
     # empty position:
     if counted_nucs == 0 or total == 0:
-        return vcf_entry
+        return (assembly, alleles, vcf_entry)
 
     else:
         data_present = counts_mc[0][1] / total
