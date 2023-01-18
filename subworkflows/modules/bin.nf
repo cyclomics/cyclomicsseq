@@ -22,7 +22,7 @@ process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
 
-    label 'many_med_cpu_huge_mem'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -73,6 +73,8 @@ process CollectClassificationTypes{
 process FindVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
 
+    label 'max_performance'
+
     input:
         path(reference_genome)
         tuple val(X), path(bam), path(bai)
@@ -83,7 +85,7 @@ process FindVariants{
     
     script:
         """
-        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf
+        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf --threads ${task.cpus} 
         """
 }
 
