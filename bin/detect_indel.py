@@ -35,10 +35,7 @@ class Indel:
     alt_base_qualities: list = field(default_factory=list)
 
 
-def check_indel(
-    pu_column: pysam.PileupColumn,
-    variant_count_th: int = 10,
-) -> Indel:
+def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> Indel:
     """
     Choose most common Indel evidence in a given position.
 

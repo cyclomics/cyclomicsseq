@@ -6,9 +6,85 @@ from pathlib import Path
 import pysam
 from detect_indel import extract_indel_evidence
 from detect_snp import extract_snp_evidence
-from vcf_tools import create_bed_lines, initialize_output_vcf, write_vcf_entry
+from tqdm import tqdm
+from vcf_tools import (
+    create_bed_positions,
+    create_bed_lines,
+    initialize_output_vcf,
+    write_vcf_entry,
+)
 
 from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
+from multiprocessing import Pool
+
+
+def write_variants(
+    reference: pysam.FastaFile,
+    contig: str,
+    pos: int,
+    bam_af: pysam.AlignmentFile,
+    snp_vcf: Path,
+    indel_vcf: Path,
+    pileup_depth: int,
+    minimum_base_quality: int = 10,
+    high_base_quality_cutoff: int = 80,
+    end_of_amplicon: bool = False,
+):
+    """
+    Identify SNPs and Indels in a given pileup position.
+    Results are written to VCF output files.
+
+    Args:
+        reference: Reference genome or sequence, FASTA.
+        contig: Reference sequence name.
+        pos: Position in the alignment pileup to check for variants.
+        bam_af: Read alignments, BAM.
+        snp_vcf: Output path for SNPs, VCF.
+        indel_vcf: Output path for Indels, VCF.
+        pileup_depth: Maximum pileup depth, integer (Default=1_000_000).
+        minimum_base_quality: Minimum base quality to consider for
+            variant calling.
+        high_base_quality_cutoff: Cutoff to calculate ratios on high base
+            quality nucleotides only (Default = 80).
+        end_of_amplicon: (Not used) Flag to determine if we are reaching
+            the end of the amplicon, based on positions in BED file.
+    """
+
+    positional_pileup = bam_af.pileup(
+        contig,
+        pos,
+        pos + 1,
+        truncate=True,
+        max_depth=pileup_depth,
+        min_base_quality=minimum_base_quality,
+        stepper="all",
+    )
+
+    # list of jobs TODO: contig:position
+    # based on contig:position, do snp + indel
+    # multiprocessing.pool, run all positions in parallel
+    for pileupcolumn in positional_pileup:
+
+        # positional_pileup only has 1 element
+        snv_evidence = extract_snp_evidence(
+            pileupcolumn, contig, high_base_quality_cutoff
+        )
+
+        # TODO: filter here, write immediately to vcf
+        # later merge with indels
+        write_vcf_entry(snp_vcf, contig, pos, snv_evidence)
+
+        indel_evidence = extract_indel_evidence(
+            pileupcolumn,
+            contig,
+            reference,
+            pos,
+            high_base_quality_cutoff,
+            end_of_amplicon,
+        )
+        if indel_evidence[1][0] != ".":
+            # if reference allele is not '.', then an indel was found
+            write_vcf_entry(indel_vcf, contig, pos, indel_evidence)
 
 
 def process_pileup_column(
@@ -25,10 +101,6 @@ def process_pileup_column(
     reference = pysam.FastaFile(fasta)
 
     iteration = 0
-    # create enteties for when no forloop event happens
-    snv_evidence = None
-    indel_evidence = None
-
     for pu_column in bam_af.pileup(
         contig,
         pos,
@@ -42,14 +114,12 @@ def process_pileup_column(
         indel_evidence = extract_indel_evidence(
             pu_column, contig, reference, pos, minimum_base_quality, amplicon_ending
         )
-        if iteration > 0:
-            logging.critical("Single thread worker recieved multiple locations.")
-
         if indel_evidence[1][0] == "." and indel_evidence[1][1] == ".":
             indel_evidence = None
-
-        logging.debug(f"done process column {contig} | {pos}")
-        return (contig, pos, snv_evidence, indel_evidence)
+        if iteration > 0:
+            logging.critical("Single thread worker recieved multiple locations.")
+    logging.debug(f"done process column {contig} | {pos}")
+    return (contig, pos, snv_evidence, indel_evidence)
 
 
 def main(
@@ -116,16 +186,12 @@ def main(
     indel_vcf = initialize_output_vcf(indel_output_path, bam_af.references)
 
     for result in results:
-        if not result:
-            continue
         contig = result[0]
         position = result[1]
         snp_results = result[2]
         indel_results = result[3]
 
-        if snp_results:
-            write_vcf_entry(snp_vcf, contig, position, snp_results)
-
+        write_vcf_entry(snp_vcf, contig, position, snp_results)
         if indel_results:
             write_vcf_entry(indel_vcf, contig, position, indel_results)
 
@@ -138,7 +204,7 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
@@ -147,7 +213,6 @@ if __name__ == "__main__":
         parser.add_argument("bam", type=Path)
         parser.add_argument("snp_vcf_out", type=Path)
         parser.add_argument("indel_vcf_out", type=Path)
-        parser.add_argument("-t", "--threads", default=16, type=int)
         args = parser.parse_args()
         logging.info(args)
 
