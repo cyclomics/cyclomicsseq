@@ -118,7 +118,8 @@ workflow BWAAlign{
         
         id = reads.first().map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        BwaMemSorted(reads, reference_genome, reference_genome_indexes.collect() )
+        reads_fastq = reads.map(it -> it[1])
+        BwaMemSorted(id, reads_fastq, reference_genome, reference_genome_indexes.collect() )
 
         if (params.consensus_calling == "cycas") {
             // For now we only do Y tag addition for cycas
@@ -130,7 +131,7 @@ workflow BWAAlign{
             bams= Minimap2AlignAdaptive.out
         }
 
-        SamtoolsMergeBams(id, bams)
+        SamtoolsMergeBams(id, bams.collect())
 
     emit:
         bam = SamtoolsMergeBams.out

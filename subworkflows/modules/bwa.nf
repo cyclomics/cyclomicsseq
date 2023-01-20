@@ -69,7 +69,8 @@ process BwaMemSorted{
     label 'many_med_cpu_huge_mem'
 
     input:
-        tuple val(X), path(fastq)
+        val(X)
+        each path(fastq)
         file(reference)
         file(reference_indexes)
 
