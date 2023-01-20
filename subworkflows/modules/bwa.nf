@@ -71,6 +71,7 @@ process BwaMemSorted{
     input:
         tuple val(X), path(fastq)
         file(reference)
+        file(reference_indexes)
 
     output:
         tuple val(X), path("${fastq.simpleName}.bam")
