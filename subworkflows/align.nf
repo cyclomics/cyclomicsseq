@@ -106,7 +106,6 @@ workflow BWAAlign{
         reference_genome
         reference_genome_indexes
         jsons
-        consensus_calling
 
     main:
         bwa_index_file_count = 5
@@ -119,12 +118,12 @@ workflow BWAAlign{
         id = reads.first().map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
         reads_fastq = reads.map(it -> it[1])
-        BwaMemSorted(id, reads_fastq, reference_genome, reference_genome_indexes.collect() )
+        BwaMemSorted(reads_fastq, reference_genome, reference_genome_indexes.collect() )
 
         if (params.consensus_calling == "cycas") {
             // For now we only do Y tag addition for cycas
             metadata_pairs = BwaMemSorted.out.join(jsons)
-	    AnnotateBamYTags(metadata_pairs)
+	        AnnotateBamYTags(metadata_pairs)
             bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
         }
         else {

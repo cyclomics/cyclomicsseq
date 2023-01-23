@@ -69,13 +69,12 @@ process BwaMemSorted{
     label 'many_med_cpu_huge_mem'
 
     input:
-        val(X)
         each path(fastq)
         file(reference)
         file(reference_indexes)
 
     output:
-        tuple val(X), path("${fastq.simpleName}.bam")
+        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}.bam")
         
     script:
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
