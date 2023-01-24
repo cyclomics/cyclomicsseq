@@ -90,12 +90,12 @@ workflow PrepareGenome {
         }
         MergeFasta(genome, backbones_fasta)
         IndexCombined(MergeFasta.out)
-        IndexReference(genome)
+        // IndexReference(genome)
         Reference_info(MergeFasta.out)
         
     emit:
         mmi_combi = IndexCombined.out
-        mmi_ref = IndexReference.out
+        // mmi_ref = IndexReference.out
         fasta_combi = MergeFasta.out
         fasta_ref = reference_genome
 }
@@ -104,31 +104,33 @@ workflow BWAAlign{
     take:
         reads
         reference_genome
+        reference_genome_indexes
         jsons
-        consensus_calling
 
     main:
-        BwaIndex(reference_genome)
-
+        bwa_index_file_count = 5
+        // We do a smaller than since there might be a .fai file as well!
+        if (reference_genome_indexes.size < bwa_index_file_count){
+            println "Warning! BWA index files are missing for the reference genome, This will slowdown execution in a major way."
+            reference_genome_indexes = BwaIndex(reference_genome)
+        }
+        
         id = reads.first().map( it -> it[0])
         id = id.map(it -> it.split('_')[0])
-        BwaMemSorted(reads, BwaIndex.out.collect())
-        //println(params.consensus_calling)
-        //reads.view()
-        //jsons.view()
-	//BwaMemSorted.out.view()
+        reads_fastq = reads.map(it -> it[1])
+        BwaMemSorted(reads_fastq, reference_genome, reference_genome_indexes.collect() )
+
         if (params.consensus_calling == "cycas") {
             // For now we only do Y tag addition for cycas
             metadata_pairs = BwaMemSorted.out.join(jsons)
-            //metadata_pairs.view()
-	    AnnotateBamYTags(metadata_pairs)
+	        AnnotateBamYTags(metadata_pairs)
             bams = AnnotateBamYTags.out.map(it -> it[1]).collect()
         }
         else {
             bams= Minimap2AlignAdaptive.out
         }
 
-        SamtoolsMergeBams(id, bams)
+        SamtoolsMergeBams(id, bams.collect())
 
     emit:
         bam = SamtoolsMergeBams.out
