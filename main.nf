@@ -255,7 +255,7 @@ workflow {
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "bwamem" ) {
-        BWAAlign(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json, params.consensus_calling)
+        BWAAlign(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
         reads_aligned = BWAAlign.out.bam
     }
     else if( params.alignment == "skip" ) {
