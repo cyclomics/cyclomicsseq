@@ -3,7 +3,7 @@ nextflow.enable.dsl = 2
 
 process PerbaseBaseDepth {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    label 'few_very_memory_intensive'
+    label 'many_low_cpu_huge_mem'
 
     input:
         tuple val(X), path(input_bam_file), path(input_bai_file), path(reference)

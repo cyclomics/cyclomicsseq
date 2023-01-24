@@ -5,7 +5,6 @@ process SplitReadsOnAdapterSequence {
 
      label 'many_low_cpu_low_mem'
 
-
     input:
         path(fastq)
 

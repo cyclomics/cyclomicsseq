@@ -40,25 +40,31 @@ def is_intable(value):
         return False
 
 
-def create_bed_positions(bed_file, end_warning_length=4):
+def create_bed_lines(bed_file):
     """
-    Takes a BED file and yields a list of positions between the start and stop of each entry.
+    Given a bedfile yield the line as an array.
     """
     with open(bed_file) as f:
         for line in f:
-            print(line)
             # bed should be tab delimited
             L = line.strip().split("\t")
             # try space splitting
             if len(L) == 1:
                 L = L[0].split(" ")
                 L = [x for x in L if x]
+            yield L
 
-            if not is_intable(L[2]):
-                logging.critical("error in bed file")
-            for pos in range(int(L[1]), int(L[2])):
-                close_to_end = pos + end_warning_length >= int(L[2])
-                yield L[0], pos, close_to_end
+
+def create_bed_positions(bed_file, end_warning_length=4):
+    """
+    Takes a BED file and yields a list of positions between the start and stop of each entry.
+    """
+    for L in create_bed_lines(bed_file):
+        if not is_intable(L[2]):
+            logging.critical("error in bed file")
+        for pos in range(int(L[1]), int(L[2])):
+            close_to_end = pos + end_warning_length >= int(L[2])
+            yield L[0], pos, close_to_end
 
 
 def write_vcf_entry(vcf, contig, pos, vcf_entry):
