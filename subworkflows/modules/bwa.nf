@@ -10,7 +10,7 @@ process BwaIndex{
         path reference_genome
 
     output:
-        path "${reference_genome}*", includeInputs: true, emit: bwa_index
+        path "${reference_genome}*", emit: bwa_index
 
     script:
         """
