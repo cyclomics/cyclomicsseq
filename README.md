@@ -15,8 +15,12 @@ Click for installation instructions:
 
 ### Data requirements
 
-- data output by ONT Guppy-hac
+- data output by ONT Guppy (SUP preferred for optimal results)
 - Reference genome
+
+## System requirements
+
+The pipeline expects at least 16 threads to be available and 16GB of RAM. We recommend 64 GB of RAM to decrease the runtime significantly.
 
 
 ## Reference genome
