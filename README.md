@@ -16,7 +16,7 @@ Click for installation instructions:
 ### Data requirements
 
 - data output by ONT Guppy (SUP preferred for optimal results)
-- Reference genome
+- Reference genome, Ideally pre indexed by BWA to reduce runtime. 
 
 ## System requirements
 
@@ -34,6 +34,7 @@ wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_G
 gunzip GCA_000001405.29_GRCh38.p14_genomic.fna.gz
 ```
 
+To reduce runtime pre index the reference genome with BWA, or obtain a preindexed copy.
 
 
 ## Usage
