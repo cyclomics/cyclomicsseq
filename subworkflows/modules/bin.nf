@@ -21,7 +21,6 @@ process AddDepthToJson{
 process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
-
     label 'many_low_cpu_high_mem'
 
     input:
@@ -39,7 +38,6 @@ process AnnotateBamXTags{
 
 process AnnotateBamYTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-
     label 'many_low_cpu_high_mem'
 
     input:
@@ -57,6 +55,7 @@ process AnnotateBamYTags{
 
 process CollectClassificationTypes{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(metadata_json)
@@ -72,7 +71,6 @@ process CollectClassificationTypes{
 
 process FindVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
-
     label 'max_performance'
 
     input:
@@ -91,6 +89,7 @@ process FindVariants{
 
 process FilterVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
@@ -124,6 +123,7 @@ process FilterVariants{
 
 process MergeNoisyVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
@@ -150,6 +150,7 @@ process MergeNoisyVCF{
 
 process MergeFilteredVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
@@ -176,6 +177,7 @@ process MergeFilteredVCF{
 
 process AnnotateVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(variant_vcf)
@@ -193,6 +195,7 @@ process AnnotateVCF{
 process PlotFastqsQUalAndLength{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(fastq)
@@ -212,6 +215,7 @@ process PlotFastqsQUalAndLength{
 process PlotReadStructure{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -228,6 +232,7 @@ process PlotReadStructure{
 process PlotVcf{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(vcf)
@@ -244,6 +249,7 @@ process PlotVcf{
 
 process PasteVariantTable{
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(vcf_file)
@@ -261,6 +267,7 @@ process PasteVariantTable{
 process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         tuple val(X), path(split_pileup)
@@ -278,6 +285,7 @@ process PlotQScores{
 process PlotMetadataStats{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(jsons)
@@ -290,8 +298,10 @@ process PlotMetadataStats{
         plot_metadata.py . metadata_plots.html
         """
 }
+
 process PlotReport{
     publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
 
     input:
         path(jsons)
@@ -303,5 +313,4 @@ process PlotReport{
         """
         generate_report.py '${params}' $workflow.manifest.version
         """
-
 }

@@ -94,7 +94,7 @@ process Minimap2AlignAdaptiveParameterized{
 process Minimap2Index{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'few_memory_intensive'
-
+    
      input:
         path(reference_genome)
     

@@ -32,7 +32,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 // method selection
 params.qc                   = "simple" // simple or skip
 params.consensus_calling    = "cycas" // simple or skip
-params.alignment            = "bwamem"  // BWA, Latal, Lastal-trained or skip
+params.alignment            = "bwamem"  // BWA, or minimap
 params.variant_calling      = "validate"
 params.extra_haplotyping    = "skip"
 params.report               = "yes"
@@ -68,7 +68,7 @@ else {
 // ### Printout for user
 log.info """
     ===================================================
-    Cyclomics/CycloSeq : Cyclomics informed pipeline
+    Cyclomics/CyclomicsSeq : Cyclomics informed pipeline
     ===================================================
     Inputs:
         input_reads              : $params.input_read_dir
@@ -129,7 +129,6 @@ include {
 include {
     FreebayesSimple
     Mutect2
-    Varscan
     ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
 
@@ -161,11 +160,11 @@ workflow {
         region_file = params.region_file
     }
 
-    if (params.profile_selected == 'none') {
-        log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
-        log.warn "exiting..."
-        exit(1)
-    }
+    // if (params.profile_selected == 'none') {
+    //     log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
+    //     log.warn "exiting..."
+    //     exit(1)
+    // }
     if (params.profile_selected == 'local') {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
@@ -277,11 +276,6 @@ workflow {
     if( params.variant_calling == "freebayes" ) {
         FreebayesSimple(reads_aligned, PrepareGenome.out.mmi_combi)
         variant_vcf = FreebayesSimple.out
-        locations = ""
-    }
-    else if (params.variant_calling == "varscan"){
-        Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
-        variant_vcf = Varscan.out
         locations = ""
     }
     else if (params.variant_calling == "validate"){

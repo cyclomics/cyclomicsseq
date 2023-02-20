@@ -1,101 +1,141 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/CycloSeq/master/nextflow_schema.json",
-    "title": "CycloSeq pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
+    "title": "cyclomics/cyclomicsseq pipeline parameters",
     "description": "Collection of pipelines to process Cyclomics CyclomicSeq data.",
     "type": "object",
     "definitions": {
-        "input_output_options": {
-            "title": "Input/output options",
+        "output_options": {
+            "title": "output_options",
             "type": "object",
-            "fa_icon": "fas fa-terminal",
-            "description": "Define where the pipeline should find input data and save output data.",
+            "description": "",
+            "default": "",
             "properties": {
+                "output_dir": {
+                    "type": "string",
+                    "default": null
+                }
+            },
+            "required": [
+                "output_dir"
+            ]
+        },
+        "input_options": {
+            "title": "Input Options",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "reference": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": null
+                },
                 "input_read_dir": {
                     "type": "string",
-                    "default": "$HOME/data/raw_data/MAR6252/"
+                    "format": "path",
+                    "default": null
                 },
-                "read_pattern": {
+                "backbone": {
                     "type": "string",
-                    "default": "fastq_pass/**.{fq,fastq}"
+                    "default": "BB42"
                 },
                 "sequencing_quality_summary": {
                     "type": "string",
-                    "default": "sequencing_summary*.txt"
+                    "default": null
                 },
-                "output_dir": {
+                "region_file": {
                     "type": "string",
-                    "default": "$HOME/data/cyclomics"
+                    "default": "auto"
                 },
-                "control_vcf": {
+                "read_pattern": {
                     "type": "string",
-                    "default": ""
+                    "default": "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
                 }
-            }
+            },
+            "required": [
+                "reference",
+                "input_read_dir"
+            ]
         },
-        "reference_genome_options": {
-            "title": "Reference genome options",
+        "new_group_5": {
+            "title": "New Group 5",
             "type": "object",
-            "fa_icon": "fas fa-dna",
-            "description": "Reference genome related files and options required for the workflow.",
-            "properties": {
-                "backbone_fasta": {
-                    "type": "string",
-                    "default": "$HOME/data/backbones/backbones/backbones_db_valid.fasta"
-                },
-                "backbone_name": {
-                    "type": "string",
-                    "default": "BB22"
-                },
-                "reference": {
-                    "type": "string",
-                    "default": "$HOME/data/references/Homo_sapiens/UCSC/hg19/Sequence/BWAIndex/version0.6.0/genome.fa"
-                }
-            }
-        },
-        "institutional_config_options": {
-            "title": "Institutional config options",
-            "type": "object",
-            "fa_icon": "fas fa-university",
-            "description": "Parameters used to describe centralised config profiles. These should not be edited.",
-            "help_text": "The centralised nf-core configuration profiles use a handful of pipeline parameters to describe themselves. This information is then printed to the Nextflow log when you run a pipeline. You should not need to change these values when you run a pipeline.",
+            "description": "",
+            "default": "",
             "properties": {
                 "qc": {
                     "type": "string",
-                    "default": "skip"
-                },
-                "consensus_calling": {
-                    "type": "string",
-                    "default": "tidehunter"
+                    "default": "simple"
                 },
                 "alignment": {
                     "type": "string",
-                    "default": "minimap"
+                    "default": "bwamem"
                 },
-                "ci_run": {
+                "consensus_calling": {
+                    "type": "string",
+                    "default": "cycas"
+                },
+                "variant_calling": {
+                    "type": "string",
+                    "default": "validate"
+                },
+                "split_on_adapter": {
+                    "type": "string",
+                    "default": "yes"
+                },
+                "report": {
+                    "type": "string",
+                    "default": "yes"
+                },
+                "quick_results": {
+                    "type": "string",
+                    "default": null
+                }
+            }
+        },
+        "new_group_4": {
+            "title": "New Group 4",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "economy_mode": {
                     "type": "string",
                     "default": null
                 },
-                "extra_variant_calling": {
+                "user_conda_location": {
                     "type": "string",
-                    "default": "skip"
+                    "format": "path",
+                    "default": "/home/dami/Software/tmp/cyclomicsseq/environment.yml"
+                },
+                "backbone_name": {
+                    "type": "string",
+                    "default": null
                 },
                 "extra_haplotyping": {
                     "type": "string",
                     "default": "skip"
+                },
+                "min_repeat_count": {
+                    "type": "string",
+                    "default": "3"
                 }
             }
         }
     },
     "allOf": [
         {
-            "$ref": "#/definitions/input_output_options"
+            "$ref": "#/definitions/output_options"
         },
         {
-            "$ref": "#/definitions/reference_genome_options"
+            "$ref": "#/definitions/input_options"
         },
         {
-            "$ref": "#/definitions/institutional_config_options"
+            "$ref": "#/definitions/new_group_5"
+        },
+        {
+            "$ref": "#/definitions/new_group_4"
         }
     ]
 }

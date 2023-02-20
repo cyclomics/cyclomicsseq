@@ -43,7 +43,7 @@ process BwaMem{
 process BwaMemReferenceNamedBam{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'mgibio/dna-alignment:1.0.0'
-label 'many_med_cpu_huge_mem'
+    label 'many_med_cpu_huge_mem'
 
     cpus = 1
 

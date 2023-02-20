@@ -18,17 +18,6 @@ include {
     Minimap2Index as IndexCombined
 } from "./modules/minimap.nf"
 
-include {
-    LastCreateDB
-    LastTrainModelFastq
-    LastTrainModelFasta
-    LastAlign
-    LastAlignTrained
-    LastSplit
-    Maf2sam
-    SamtoolsFixSam
-} from "./modules/last.nf"
-
 include{
     ConcatenateFasta
     ConcatenateFastq
