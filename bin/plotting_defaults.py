@@ -185,6 +185,8 @@ TEMPLATE_STR = """
                   {% endfor %}
                </div>
             </div>
+            <!-- This div is here since the internal browser of EPI2ME labs does not rescale with the loading of the tabs. -->
+            <div style="height:1400px"><p></p></div>
             <!-- need to go below JS for layout reasons -->
             {% for i in bokehscript %}
             {{ i }}
