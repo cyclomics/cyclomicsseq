@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
-    "title": "cyclomics/cyclomicsseq pipeline parameters",
-    "description": "Collection of pipelines to process Cyclomics CyclomicSeq data.",
+    "title": "cyclomics/cyclomicsseq",
+    "description": "Create high quality alignment data with variant identification for the Cyclomics CyclomicsSeq protocol.",
     "type": "object",
     "definitions": {
         "output_options": {
@@ -29,20 +29,37 @@
                 "reference": {
                     "type": "string",
                     "format": "file-path",
+                    "description": "Tool used to convert raw reads to the high quality cyclomics consensus reads.",
+                    "help_text": "Our current testing shows best results with cycas.",
                     "default": null
                 },
                 "input_read_dir": {
                     "type": "string",
                     "format": "path",
+                    "description": "Directory of the sample of the sequencing run.",
+                    "help_text": "Our current testing shows best results with cycas.",
                     "default": null
                 },
                 "backbone": {
                     "type": "string",
-                    "default": "BB42"
+                    "description": "Backbone used in the CyclomicsSeq protocol.",
+                    "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option  under advanced user options to a fasta file with the sequence of the custom backbone as the only input where the name starts with `BB`.",
+                    "default": "BB42",
+                    "enum": [
+                        "BB22",
+                        "BB25",
+                        "BBCS",
+                        "BBCR",
+                        "BB41",
+                        "BB42",
+                        "Custom*"
+                    ]
                 },
                 "sequencing_quality_summary": {
                     "type": "string",
-                    "default": null
+                    "default": "sequencing_summary*.txt",
+                    "description": "Regular expression for the sequencing summary file in the folder selected as `input_read_dir`.",
+                    "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option to a fasta file with the sequence of the custom backbone as the only input where the name starts with BB"
                 },
                 "region_file": {
                     "type": "string",
@@ -58,44 +75,75 @@
                 "input_read_dir"
             ]
         },
-        "new_group_5": {
-            "title": "New Group 5",
+        "pipeline_options": {
+            "title": "pipeline options",
             "type": "object",
             "description": "",
             "default": "",
             "properties": {
                 "qc": {
                     "type": "string",
-                    "default": "simple"
-                },
-                "alignment": {
-                    "type": "string",
-                    "default": "bwamem"
+                    "default": "full",
+                    "description": "Currently there is no option yet to do a more minimal QC.",
+                    "help_text": "",
+                    "enum": [
+                        "full"
+                    ]
                 },
                 "consensus_calling": {
                     "type": "string",
-                    "default": "cycas"
+                    "default": "cycas",
+                    "description": "Tool used to convert raw reads to the high quality cyclomics consensus reads.",
+                    "help_text": "Our current testing shows best results with cycas.",
+                    "enum": [
+                        "tidehunter",
+                        "cycas",
+                        "medaka"
+                    ]
+                },
+                "alignment": {
+                    "type": "string",
+                    "default": "bwamem",
+                    "description": "Alignment tool to use for the final alignment.",
+                    "help_text": "We suggest to use bwa mem, however this requires more indexing that can take up to 1.5 hours to generate if not provided. Therefor there is also the option to use minimap2.",
+                    "enum": [
+                        "bwamem",
+                        "minimap"
+                    ]
                 },
                 "variant_calling": {
                     "type": "string",
-                    "default": "validate"
+                    "default": "validate",
+                    "description": "Strategy used to identify variants.",
+                    "help_text": "We've created a custom identification pipeline tailored to the characteristics of the protocol, There is however the option to use freebayes.",
+                    "enum": [
+                        "freebayes",
+                        "validate"
+                    ]
                 },
                 "split_on_adapter": {
                     "type": "string",
-                    "default": "yes"
+                    "default": "yes",
+                    "description": "Identifies adapter sequences and splits reads when encoutered.",
+                    "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads.",
+                    "enum": [
+                        "yes",
+                        "no"
+                    ]
                 },
                 "report": {
                     "type": "string",
-                    "default": "yes"
-                },
-                "quick_results": {
-                    "type": "string",
-                    "default": null
+                    "default": "yes",
+                    "description": "enable or disable the creation of the html report.",
+                    "enum": [
+                        "yes",
+                        "no"
+                    ]
                 }
             }
         },
-        "new_group_4": {
-            "title": "New Group 4",
+        "advanced_user_options": {
+            "title": "Advanced user options.",
             "type": "object",
             "description": "",
             "default": "",
@@ -109,16 +157,13 @@
                     "format": "path",
                     "default": "/home/dami/Software/tmp/cyclomicsseq/environment.yml"
                 },
-                "backbone_name": {
+                "backbone_file": {
                     "type": "string",
+                    "format": "file-path",
                     "default": null
                 },
-                "extra_haplotyping": {
-                    "type": "string",
-                    "default": "skip"
-                },
                 "min_repeat_count": {
-                    "type": "string",
+                    "type": "integer",
                     "default": "3"
                 }
             }
@@ -132,10 +177,10 @@
             "$ref": "#/definitions/input_options"
         },
         {
-            "$ref": "#/definitions/new_group_5"
+            "$ref": "#/definitions/pipeline_options"
         },
         {
-            "$ref": "#/definitions/new_group_4"
+            "$ref": "#/definitions/advanced_user_options"
         }
     ]
 }

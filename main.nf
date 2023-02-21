@@ -30,14 +30,12 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.qc                   = "simple" // simple or skip
-params.consensus_calling    = "cycas" // simple or skip
-params.alignment            = "bwamem"  // BWA, or minimap
+params.qc                   = "full"
+params.consensus_calling    = "cycas"
+params.alignment            = "bwamem"
 params.variant_calling      = "validate"
-params.extra_haplotyping    = "skip"
 params.report               = "yes"
 params.split_on_adapter     = "yes"
-params.quick_results        = false
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
@@ -61,7 +59,7 @@ else if (params.backbone == "BBCR") {
     backbone_file = "$projectDir/backbones/BBCR.fasta"
 }
 else {
-    backbone_file = params.backbone
+    backbone_file = params.backbone_file
 }
 
 
@@ -75,7 +73,7 @@ log.info """
         read_pattern             : $params.read_pattern
         reference                : $params.reference
         backbone                 : $params.backbone
-        backbone_name            : $params.backbone_name
+        backbone_file            : $params.backbone_file
         region_file              : $params.region_file  
         output folder            : $params.output_dir
         Cmd line                 : $workflow.commandLine
@@ -89,7 +87,6 @@ log.info """
 
     Other:
         profile                  : $params.profile_selected
-        quick_results            : $params.quick_results
 """
 
 if (params.profile_selected == "conda"){
@@ -308,7 +305,6 @@ workflow {
         base_unit_reads,
         read_info_json,
         reads_aligned,
-        params.quick_results,
         locations,
         variant_vcf,
     )

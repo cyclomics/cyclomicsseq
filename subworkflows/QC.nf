@@ -82,7 +82,6 @@ workflow PostQC {
         fastq_consensus
         read_info
         consensus_bam
-        quick_results
         noisy_vcf
         annotated_vcf
 
@@ -129,19 +128,20 @@ workflow PostQC {
 
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
-
-        PlotReport(
-            PlotRawFastqHist.out.combine(
-            PlotFilteredHist.out).combine(
-            PlotConFastqHist.out).combine(
-            PlotReadStructure.out).combine(
-            PlotQScores.out).combine(
-            PlotVcf.out).combine(
-            PlotMetadataStats.out).combine(
-            PasteVariantTable.out).combine(
-            SamtoolsFlagstats.out).combine(
-            CountNonBackboneVariants.out).combine(
-            SamtoolsIdxStats.out
+        
+        if (params.report == 'yes'):
+            PlotReport(
+                PlotRawFastqHist.out.combine(
+                PlotFilteredHist.out).combine(
+                PlotConFastqHist.out).combine(
+                PlotReadStructure.out).combine(
+                PlotQScores.out).combine(
+                PlotVcf.out).combine(
+                PlotMetadataStats.out).combine(
+                PasteVariantTable.out).combine(
+                SamtoolsFlagstats.out).combine(
+                CountNonBackboneVariants.out).combine(
+                SamtoolsIdxStats.out
+                )
             )
-        )
 }
