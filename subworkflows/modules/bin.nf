@@ -300,7 +300,7 @@ process PlotMetadataStats{
 }
 
 process PlotReport{
-    publishDir "${params.output_dir}/QC", mode: 'copy'
+    publishDir "${params.output_dir}", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:

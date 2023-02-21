@@ -39,6 +39,20 @@ To reduce runtime pre index the reference genome with BWA, or obtain a preindexe
 
 ## Usage
 
+### Inside of Epi2Me Labs
+
+This pipeline is compatible with the EPI2ME Labs platform by ONT. Please see [ONT's installation guide](https://labs.epi2me.io/installation).
+
+Installation inside EPI2ME Labs:
+1. go to workflows by clicking on "installed workflows", or click the workflows icon in the top bar.
+1. click "Import workflow".
+1. Paste "https://github.com/cyclomics/cyclomicsseq" into the text bar and click Import workflow.
+
+
+
+
+### As a nextflow pipeline
+
 In this section we assume that you have docker and nextflow installed on your system, if so running the pipeline is straightforward. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
 
 If you want to run the pipeline directly from github you need to use a Personal Access Token (PAT) as the password. Click the link to see how to create a [Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). Your PAT should have at least read permissions.
