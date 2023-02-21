@@ -129,7 +129,7 @@ workflow PostQC {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
         
-        if (params.report == 'yes'):
+        if (params.report == true):
             PlotReport(
                 PlotRawFastqHist.out.combine(
                 PlotFilteredHist.out).combine(

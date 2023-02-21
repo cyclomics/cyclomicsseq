@@ -14,7 +14,7 @@ workflow FilterWithAdapterDetection{
         read_fq_ch
 
     main:
-        if (params.split_on_adapter != "no") {
+        if (params.split_on_adapter == true) {
             fastq = SplitReadsOnAdapterSequence(read_fq_ch)
         }
         else {

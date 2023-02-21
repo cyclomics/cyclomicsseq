@@ -35,7 +35,7 @@ params.consensus_calling    = "cycas"
 params.alignment            = "bwamem"
 params.variant_calling      = "validate"
 params.report               = "yes"
-params.split_on_adapter     = "yes"
+params.split_on_adapter     = true
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
