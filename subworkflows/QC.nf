@@ -87,7 +87,6 @@ workflow PostQC {
 
     main:
         // dont add the ID to the process
-
         first_fq = fastq_raw.first()
         id = first_fq.simpleName
         extension = first_fq.getExtension()
@@ -129,7 +128,7 @@ workflow PostQC {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
         
-        if (params.report == true):
+        if (params.report == true) {
             PlotReport(
                 PlotRawFastqHist.out.combine(
                 PlotFilteredHist.out).combine(
@@ -144,4 +143,5 @@ workflow PostQC {
                 SamtoolsIdxStats.out
                 )
             )
+        }
 }
