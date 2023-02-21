@@ -80,7 +80,7 @@
             ]
         },
         "variant_identivication_options": {
-            "title": "Variant identification options",
+            "title": "Variant identification thresholds",
             "type": "object",
             "description": "Options to fine tune the variants that are reported.",
             "default": "",
@@ -88,7 +88,7 @@
                 "snp_filters.min_dir_ratio": {
                     "type": "number",
                     "description": "Minimal number of repeats to keep in the analysis. Currently only supported by Cycas.",
-                    "default": 3
+                    "default": 3.2
                 }
             }
         },
