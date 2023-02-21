@@ -84,7 +84,7 @@ this file is located in the repo, the pipeline needs to know where this file is 
 |--read_pattern                 | Regex pattern to look for fastq's in the read directory, defaults to: "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}".|
 |--sequencing_quality_summary   | Regex pattern for the summary file, default: "sequencing_summary*.txt".|
 |--backbone                     | Path to the fasta file containing backbone sequences.|
-|--backbone_name                | Name of the sequence to extract from the backbone fasta excluding the starting ">", e.g.:"BB42". |
+|--backbone_file                | File to use as backbone when --backbone is non of the available presets. eg a fasta file with a sequence with the name ">BB_custom" the name must start with BB for extraction reasons. |
 |--reference                    | Path to the reference genome to use, will ingest all index files in the same directory.|
 |--output_dir                   | Directory path where the results, including intermediate files, are stored. |
 |--snp_filters.min_dir_ratio, --indel_filters.min_dir_ratio | Minimum ratio of variant-supporting reads in each direction (default: 0.001 (SNP); 0.002 (Indel)).|
