@@ -100,7 +100,11 @@ workflow BWAAlign{
         bwa_index_file_count = 5
         // We do a smaller than since there might be a .fai file as well!
         if (reference_genome_indexes.size < bwa_index_file_count){
+            println "==================================="
             println "Warning! BWA index files are missing for the reference genome, This will slowdown execution in a major way."
+            println "==================================="
+            println ""
+            println ""
             reference_genome_indexes = BwaIndex(reference_genome)
         }
         
