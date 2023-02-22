@@ -113,6 +113,7 @@ process ConcatBams{
 
 process CollectClassificationTypes{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path(metadata_json)
@@ -130,6 +131,7 @@ process CollectClassificationTypes{
 
 process CountNonBackboneVariants{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_cpu_medium'
 
     input:
         path(vcf)
