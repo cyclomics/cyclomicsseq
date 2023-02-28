@@ -181,11 +181,9 @@ workflow {
         read_pattern = "${params.input_read_dir}/${params.read_pattern}"
     }
 
-    sequencing_quality_summary_pattern = "${params.input_read_dir}/${params.sequencing_quality_summary}"
-
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
-    seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: true)
+    seq_summary = Channel.fromPath(params.sequencing_quality_summary, checkIfExists: true)
     backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
