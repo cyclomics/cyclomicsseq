@@ -17,7 +17,7 @@ nextflow.enable.dsl = 2
 */
 // ### PARAMETERS
 params.input_read_dir             = ""
-params.read_pattern               = "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
+params.read_pattern               = "**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone                   = "BB42"
 params.backbone_name              = ""
@@ -34,8 +34,9 @@ params.qc                   = "full"
 params.consensus_calling    = "cycas"
 params.alignment            = "bwamem"
 params.variant_calling      = "validate"
-params.report               = "yes"
+params.report               = true
 params.split_on_adapter     = true
+params.backbone_file        = ""
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
