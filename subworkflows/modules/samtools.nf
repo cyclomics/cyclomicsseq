@@ -227,7 +227,7 @@ process SamtoolsMergeBams{
     script:
     """
     ls
-    samtools merge -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
+    samtools merge -p -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
     samtools index ${X}.merged.bam
     """
 }
@@ -248,7 +248,7 @@ process SamtoolsMergeBamsPublished{
     script:
     """
     ls
-    samtools merge -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
+    samtools merge -p -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
     samtools index ${X}.merged.bam
     """
 }
