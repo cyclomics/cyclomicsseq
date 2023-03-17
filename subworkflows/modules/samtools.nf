@@ -105,6 +105,7 @@ process SamToBam{
 process SamtoolsMerge{
     //  samtools merge – merges multiple sorted files into a single file 
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
     label 'many_cpu_medium'
 
     input:
@@ -213,6 +214,7 @@ process SamtoolsMergeTuple{
 process SamtoolsMergeBams{
     //  merge n number of bams into one
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+
     label 'many_cpu_medium'
 
     input:
@@ -225,7 +227,28 @@ process SamtoolsMergeBams{
     script:
     """
     ls
-    samtools merge -O bam ${X}.merged.bam \$(find . -name '*.bam')
+    samtools merge -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
+    samtools index ${X}.merged.bam
+    """
+}
+process SamtoolsMergeBamsPublished{
+    //  merge n number of bams into one
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
+
+    label 'many_cpu_medium'
+
+    input:
+        val(X)
+        file(bam_in)
+
+    output:
+        tuple val(X), path("${X}.merged.bam"), path("${X}.merged.bam.bai")
+    
+    script:
+    """
+    ls
+    samtools merge -c -O bam ${X}.merged.bam \$(find . -name '*.bam')
     samtools index ${X}.merged.bam
     """
 }

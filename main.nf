@@ -30,13 +30,14 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.qc                   = "full"
-params.consensus_calling    = "cycas"
-params.alignment            = "bwamem"
-params.variant_calling      = "validate"
-params.report               = true
-params.split_on_adapter     = true
-params.backbone_file        = ""
+params.qc                       = "full"
+params.consensus_calling        = "cycas"
+params.alignment                = "bwamem"
+params.variant_calling          = "validate"
+params.report                   = true
+params.split_on_adapter         = true
+params.sequence_summary_tagging = false
+params.backbone_file            = ""
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
@@ -261,8 +262,12 @@ workflow {
     }
     
     // We only get the sequencing summary once we've obtained all the fastq's
-    reads_aligned = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
-
+    if (params.sequence_summary_tagging) {
+        reads_aligned_tagged = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
+    }
+    else {
+        reads_aligned_tagged = reads_aligned
+    }
 /*
 ========================================================================================
 03.A   Variant calling
@@ -270,13 +275,13 @@ workflow {
 */  
     
     if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned, PrepareGenome.out.mmi_combi)
+        FreebayesSimple(reads_aligned_tagged, PrepareGenome.out.mmi_combi)
         variant_vcf = FreebayesSimple.out
         locations = ""
     }
     else if (params.variant_calling == "validate"){
         ValidatePosibleVariantLocations(
-            reads_aligned,
+            reads_aligned_tagged,
             region_file,
             PrepareGenome.out.fasta_combi
         )
@@ -303,7 +308,7 @@ workflow {
         split_bam_filtered,
         base_unit_reads,
         read_info_json,
-        reads_aligned,
+        reads_aligned_tagged,
         locations,
         variant_vcf,
     )

@@ -54,13 +54,6 @@
                         "BB42",
                         "Custom*"
                     ]
-                },
-                "sequencing_quality_summary": {
-                    "type": "string",
-                    "format": "file-path",
-                    "default": "${projectDir}/sequencing_summary*.txt",
-                    "description": "Optional: Sequencing summary file in txt format created by MinKnow for this experiment.",
-                    "help_text": "The sequencing summary file contains additional information that will be added to the final bam file when provided."
                 }
             },
             "required": [
@@ -272,6 +265,19 @@
                     "description": "Regular expression for fastq files used in the analysis.",
                     "help_text": "By default the regex looks for the folder pass and fastq_pass. pass is used when rebasecalling data. fastq_pass is created normally by MinKnow.\n You can limit the amount of data by altering this value e.g. by changing it to \n {pass,fastq_pass}/**{1,2}.{fq,fastq,fq.gz,fastq.gz} \n will only take in fastq files ending in 1 and 2.",
                     "default": "**.{fq,fastq,fq.gz,fastq.gz}"
+                },
+                "reads_aligned_tagged": {
+                    "type": "boolean",
+                    "description": "When enabled, tags will be added to the BAM based on information from teh sequencing_summary.",
+                    "help_text": "This step is quite memory intensive at this point.",
+                    "default": false
+                },
+                "sequencing_quality_summary": {
+                    "type": "string",
+                    "format": "file-path",
+                    "default": "${projectDir}/sequencing_summary*.txt",
+                    "description": "Sequencing summary file in txt format created by MinKnow for this experiment.",
+                    "help_text": "The sequencing summary file contains additional information that will be added to the final bam file when provided."
                 }
             }
         }
