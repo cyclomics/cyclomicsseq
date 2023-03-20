@@ -30,6 +30,7 @@ include {
     SamtoolsDepth
     SamtoolsDepthToTSV
     SamtoolsMergeBams
+    SamtoolsMergeBamsPublished
     BamTagFilter
 } from "./modules/samtools"
 
@@ -122,11 +123,16 @@ workflow BWAAlign{
         else {
             bams= Minimap2AlignAdaptive.out
         }
-
-        SamtoolsMergeBams(id, bams.collect())
+        
+        if (params.sequence_summary_tagging) {
+            bam = SamtoolsMergeBams(id, bams.collect())
+        }
+        else{
+            bam = SamtoolsMergeBamsPublished(id, bams.collect())
+        }
 
     emit:
-        bam = SamtoolsMergeBams.out
+        bam
 }
 
 workflow Minimap2Align{

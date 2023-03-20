@@ -20,7 +20,7 @@ process AddDepthToJson{
 
 process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
+    publishDir "${params.output_dir}/consensus_aligned_tagged", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:

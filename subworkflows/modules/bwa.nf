@@ -82,7 +82,7 @@ process BwaMemSorted{
         """
         REF=\$(ls | grep -E "*.(fasta\$|fa\$|fna\$)")
         set -euxo pipefail
-        bwa mem -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
         sambamba view -S -f bam /dev/stdin | \
         sambamba sort -t ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
         """
