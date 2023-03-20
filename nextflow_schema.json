@@ -268,7 +268,7 @@
                 },
                 "reads_aligned_tagged": {
                     "type": "boolean",
-                    "description": "When enabled, tags will be added to the BAM based on information from teh sequencing_summary.",
+                    "description": "When enabled, tags will be added to the BAM based on information from the sequencing_summary.",
                     "help_text": "This step is quite memory intensive at this point.",
                     "default": false
                 },
