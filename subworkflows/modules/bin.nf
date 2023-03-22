@@ -215,7 +215,7 @@ process PlotFastqsQUalAndLength{
 process PlotReadStructure{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
-    label 'many_low_cpu_high_mem'
+    label 'many_low_cpu_huge_mem'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -285,7 +285,7 @@ process PlotQScores{
 process PlotMetadataStats{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
-    label 'many_low_cpu_high_mem'
+    label 'many_low_cpu_huge_mem'
 
     input:
         path(jsons)
