@@ -18,17 +18,6 @@ include {
     Minimap2Index as IndexCombined
 } from "./modules/minimap.nf"
 
-include {
-    LastCreateDB
-    LastTrainModelFastq
-    LastTrainModelFasta
-    LastAlign
-    LastAlignTrained
-    LastSplit
-    Maf2sam
-    SamtoolsFixSam
-} from "./modules/last.nf"
-
 include{
     ConcatenateFasta
     ConcatenateFastq
@@ -41,6 +30,7 @@ include {
     SamtoolsDepth
     SamtoolsDepthToTSV
     SamtoolsMergeBams
+    SamtoolsMergeBamsPublished
     BamTagFilter
 } from "./modules/samtools"
 
@@ -111,7 +101,11 @@ workflow BWAAlign{
         bwa_index_file_count = 5
         // We do a smaller than since there might be a .fai file as well!
         if (reference_genome_indexes.size < bwa_index_file_count){
+            println "==================================="
             println "Warning! BWA index files are missing for the reference genome, This will slowdown execution in a major way."
+            println "==================================="
+            println ""
+            println ""
             reference_genome_indexes = BwaIndex(reference_genome)
         }
         
@@ -129,11 +123,16 @@ workflow BWAAlign{
         else {
             bams= Minimap2AlignAdaptive.out
         }
-
-        SamtoolsMergeBams(id, bams.collect())
+        
+        if (params.sequence_summary_tagging) {
+            bam = SamtoolsMergeBams(id, bams.collect())
+        }
+        else{
+            bam = SamtoolsMergeBamsPublished(id, bams.collect())
+        }
 
     emit:
-        bam = SamtoolsMergeBams.out
+        bam
 }
 
 workflow Minimap2Align{

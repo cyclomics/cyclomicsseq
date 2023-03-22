@@ -112,7 +112,7 @@ process CountFastqInfo{
 
 process FilterShortReads{
     label 'many_cpu_medium'
-
+    
     input:
         path(fastq)
 

@@ -9,10 +9,6 @@ include {
 } from "./modules/gatk"
 
 include {
-    VarscanFiltered
-} from "./modules/varscan"
-
-include {
     VcfToBed
 } from "./modules/bedops"
 
@@ -55,15 +51,7 @@ workflow Mutect2{
         Mutect2TumorOnly.out
 }
 
-workflow Varscan{
-    take:
-        reads
-        reference_genome
-    main:
-        VarscanFiltered(reads.combine(reference_genome))
-    emit:
-        VarscanFiltered.out
-}
+
 workflow ValidatePosibleVariantLocations{
     // Allow to determine VAF for given genomic positions in both bed and vcf format
     take:

@@ -15,3 +15,4 @@ plots/*
 tmp/
 testrun*
 fullrun*
+output*

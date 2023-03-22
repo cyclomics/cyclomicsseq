@@ -197,10 +197,6 @@ def main(args):
         fh.write(html_template.render(**data))
 
 
-def parse_nextflow_params(params_string):
-    pass
-
-
 if __name__ == "__main__":
     import argparse
 

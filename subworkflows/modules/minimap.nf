@@ -39,6 +39,7 @@ process MinimapAlignMany{
 
 process Minimap2AlignAdaptive{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'minimap_large'
 
     //  apply at least 1 Gb of memory to the process, otherwise we apply two-four times the size of the reference genome mmi
     memory {reference_genome.size() > 31_000_000_000 ? "30GB" : "${reference_genome.size() * (1 + task.attempt)}B"}
@@ -67,6 +68,7 @@ process Minimap2AlignAdaptive{
 
 process Minimap2AlignAdaptiveParameterized{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'minimap_large'
 
     memory {reference_genome.size() > 31_000_000_000 ? "30GB" : "${reference_genome.size() * (1 + task.attempt)}B"}
     // small jobs get 4 cores, big ones 8
@@ -94,7 +96,7 @@ process Minimap2AlignAdaptiveParameterized{
 process Minimap2Index{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'few_memory_intensive'
-
+    
      input:
         path(reference_genome)
     
@@ -103,6 +105,6 @@ process Minimap2Index{
 
     script:
         """
-        minimap2  -ax map-ont -t ${task.cpus} -d ${reference_genome.simpleName}.mmi $reference_genome
+        minimap2 -ax map-ont -t ${task.cpus} -d ${reference_genome.simpleName}.mmi $reference_genome
         """
 }

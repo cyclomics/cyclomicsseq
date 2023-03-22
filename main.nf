@@ -17,7 +17,7 @@ nextflow.enable.dsl = 2
 */
 // ### PARAMETERS
 params.input_read_dir             = ""
-params.read_pattern               = "{pass,fastq_pass}/**.{fq,fastq,fq.gz,fastq.gz}"
+params.read_pattern               = "**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_quality_summary = "sequencing_summary*.txt"
 params.backbone                   = "BB42"
 params.backbone_name              = ""
@@ -30,14 +30,14 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.qc                   = "simple" // simple or skip
-params.consensus_calling    = "cycas" // simple or skip
-params.alignment            = "bwamem"  // BWA, Latal, Lastal-trained or skip
-params.variant_calling      = "validate"
-params.extra_haplotyping    = "skip"
-params.report               = "yes"
-params.split_on_adapter     = "yes"
-params.quick_results        = false
+params.qc                       = "full"
+params.consensus_calling        = "cycas"
+params.alignment                = "bwamem"
+params.variant_calling          = "validate"
+params.report                   = true
+params.split_on_adapter         = true
+params.sequence_summary_tagging = false
+params.backbone_file            = ""
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
@@ -61,21 +61,21 @@ else if (params.backbone == "BBCR") {
     backbone_file = "$projectDir/backbones/BBCR.fasta"
 }
 else {
-    backbone_file = params.backbone
+    backbone_file = params.backbone_file
 }
 
 
 // ### Printout for user
 log.info """
     ===================================================
-    Cyclomics/CycloSeq : Cyclomics informed pipeline
+    Cyclomics/CyclomicsSeq : Cyclomics informed pipeline
     ===================================================
     Inputs:
         input_reads              : $params.input_read_dir
         read_pattern             : $params.read_pattern
         reference                : $params.reference
         backbone                 : $params.backbone
-        backbone_name            : $params.backbone_name
+        backbone_file            : $params.backbone_file
         region_file              : $params.region_file  
         output folder            : $params.output_dir
         Cmd line                 : $workflow.commandLine
@@ -89,7 +89,6 @@ log.info """
 
     Other:
         profile                  : $params.profile_selected
-        quick_results            : $params.quick_results
 """
 
 if (params.profile_selected == "conda"){
@@ -129,7 +128,6 @@ include {
 include {
     FreebayesSimple
     Mutect2
-    Varscan
     ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
 
@@ -161,11 +159,11 @@ workflow {
         region_file = params.region_file
     }
 
-    if (params.profile_selected == 'none') {
-        log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
-        log.warn "exiting..."
-        exit(1)
-    }
+    // if (params.profile_selected == 'none') {
+    //     log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
+    //     log.warn "exiting..."
+    //     exit(1)
+    // }
     if (params.profile_selected == 'local') {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
@@ -185,11 +183,9 @@ workflow {
         read_pattern = "${params.input_read_dir}/${params.read_pattern}"
     }
 
-    sequencing_quality_summary_pattern = "${params.input_read_dir}/${params.sequencing_quality_summary}"
-
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
-    seq_summary = Channel.fromPath(sequencing_quality_summary_pattern, checkIfExists: true)
+    seq_summary = Channel.fromPath(params.sequencing_quality_summary, checkIfExists: true)
     backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
@@ -266,8 +262,12 @@ workflow {
     }
     
     // We only get the sequencing summary once we've obtained all the fastq's
-    reads_aligned = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
-
+    if (params.sequence_summary_tagging) {
+        reads_aligned_tagged = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
+    }
+    else {
+        reads_aligned_tagged = reads_aligned
+    }
 /*
 ========================================================================================
 03.A   Variant calling
@@ -275,18 +275,13 @@ workflow {
 */  
     
     if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned, PrepareGenome.out.mmi_combi)
+        FreebayesSimple(reads_aligned_tagged, PrepareGenome.out.mmi_combi)
         variant_vcf = FreebayesSimple.out
-        locations = ""
-    }
-    else if (params.variant_calling == "varscan"){
-        Varscan(reads_aligned, PrepareGenome.out.fasta_combi)
-        variant_vcf = Varscan.out
         locations = ""
     }
     else if (params.variant_calling == "validate"){
         ValidatePosibleVariantLocations(
-            reads_aligned,
+            reads_aligned_tagged,
             region_file,
             PrepareGenome.out.fasta_combi
         )
@@ -313,8 +308,7 @@ workflow {
         split_bam_filtered,
         base_unit_reads,
         read_info_json,
-        reads_aligned,
-        params.quick_results,
+        reads_aligned_tagged,
         locations,
         variant_vcf,
     )

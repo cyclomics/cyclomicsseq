@@ -4,7 +4,6 @@ nextflow.enable.dsl=2
 process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
-
     label 'many_low_cpu_tiny_mem'
 
     input:
