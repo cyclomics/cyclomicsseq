@@ -1,5 +1,9 @@
 # changelog
 
+## 0.9.0
+ - fixed many smaller issues.
+ - Added integration with EPI2ME Labs.
+
 ## 0.8.2
 - Fixed issue where variant filtering throwed an error when variant dataframe becomes empty before DPQ filtering.
 

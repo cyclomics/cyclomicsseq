@@ -241,13 +241,13 @@
                     "type": "integer",
                     "description": "Maximum number of threads (not cores) assigned to a single process in the workflow.",
                     "help_text": "To increase the speed of some steps of the workflow this value can be increased. for example to 16 or even 32.",
-                    "default": false
+                    "default": 8
                 },
                 "max_mem_gb": {
                     "type": "integer",
                     "description": "Maximum memory assigned to a single process in the workflow in GB",
-                    "help_text": "ncrease if error 137 or another out of memmory error occurs",
-                    "default": false
+                    "help_text": "Increase if error 137 or another out of memmory error occurs",
+                    "default": 31
                 },
                 "economy_mode": {
                     "type": "boolean",
