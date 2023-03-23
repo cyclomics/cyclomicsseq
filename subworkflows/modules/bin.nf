@@ -20,7 +20,7 @@ process AddDepthToJson{
 
 process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/consensus_aligned_tagged", mode: 'copy'
+    // publishDir "${params.output_dir}/consensus_aligned_tagged", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -28,11 +28,11 @@ process AnnotateBamXTags{
         path(sequencing_summary)
 
     output:
-        tuple val(X), path("${X}.taged.bam"), path("${X}.taged.bam.bai")
+        tuple val(X), path("${X}.tagged.bam"), path("${X}.tagged.bam.bai")
 
     script:
         """
-        annotate_bam_x.py $sequencing_summary $bam ${X}.taged.bam
+        annotate_bam_x.py $sequencing_summary $bam ${X}.tagged.bam
         """
 }
 

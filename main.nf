@@ -121,7 +121,8 @@ include {
 include {
     Minimap2Align
     BWAAlign
-    AnnotateFilter
+    AnnotateBam
+    FilterBam
     PrepareGenome
 } from "./subworkflows/align"
 
@@ -263,11 +264,12 @@ workflow {
     
     // We only get the sequencing summary once we've obtained all the fastq's
     if (params.sequence_summary_tagging) {
-        reads_aligned_tagged = AnnotateFilter(reads_aligned, seq_summary, params.min_repeat_count)
+        reads_aligned_tagged = AnnotateBam(reads_aligned, seq_summary) 
     }
     else {
         reads_aligned_tagged = reads_aligned
     }
+    reads_aligned_filtered = FilterBam(reads_aligned_tagged, params.min_repeat_count)
 /*
 ========================================================================================
 03.A   Variant calling
@@ -275,13 +277,13 @@ workflow {
 */  
     
     if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned_tagged, PrepareGenome.out.mmi_combi)
+        FreebayesSimple(reads_aligned_filtered, PrepareGenome.out.mmi_combi)
         variant_vcf = FreebayesSimple.out
         locations = ""
     }
     else if (params.variant_calling == "validate"){
         ValidatePosibleVariantLocations(
-            reads_aligned_tagged,
+            reads_aligned_filtered,
             region_file,
             PrepareGenome.out.fasta_combi
         )
@@ -308,7 +310,7 @@ workflow {
         split_bam_filtered,
         base_unit_reads,
         read_info_json,
-        reads_aligned_tagged,
+        reads_aligned_filtered,
         locations,
         variant_vcf,
     )
