@@ -1,5 +1,11 @@
 # changelog
 
+## 0.9.0
+ - Fixed many smaller issues.
+ - Added integration with EPI2ME Labs.
+ - Changed consensus insert filtering rule to pass reads with YM >= 3 instead of YM > 3.
+ - Fixed filtered consensus insert number propagation to report. Workflow now outputs BAM with consensus inserts after filtering.
+
 ## 0.8.2
 - Fixed issue where variant filtering throwed an error when variant dataframe becomes empty before DPQ filtering.
 

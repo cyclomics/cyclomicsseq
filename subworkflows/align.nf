@@ -166,15 +166,24 @@ workflow Minimap2Align{
         bam = SamtoolsMergeBams.out
 }
 
-workflow AnnotateFilter{
+workflow AnnotateBam{
     take:
         reads
         sequencing_summary
-        minimun_repeat_count
 
     main:
         AnnotateBamXTags(reads, sequencing_summary)
-        BamTagFilter(AnnotateBamXTags.out, 'YM', minimun_repeat_count)
+    emit:
+        AnnotateBamXTags.out
+}
+
+workflow FilterBam{
+    take:
+        annotated_bam
+        minimun_repeat_count
+
+    main:
+        BamTagFilter(annotated_bam, 'YM', minimun_repeat_count)
     emit:
         BamTagFilter.out
 }

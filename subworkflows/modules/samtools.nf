@@ -343,6 +343,7 @@ process MPileup{
 
 process BamTagFilter{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
     label 'many_cpu_medium'
     
     input:
@@ -355,7 +356,7 @@ process BamTagFilter{
 
     script:
         """
-        samtools view -b -o ${X}.${tag}_gt_${minimum_repeats}.bam $bam_in --input-fmt-option 'filter=[${tag}]>${minimum_repeats}'
+        samtools view -b -o ${X}.${tag}_gt_${minimum_repeats}.bam $bam_in --input-fmt-option 'filter=[${tag}]>=${minimum_repeats}'
         samtools index ${X}.${tag}_gt_${minimum_repeats}.bam
         """
 }

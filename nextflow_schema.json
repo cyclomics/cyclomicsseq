@@ -237,6 +237,18 @@
             "description": "Additional Input options that the user rarely needs to interact with",
             "default": "",
             "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "description": "Maximum number of threads (not cores) assigned to a single process in the workflow.",
+                    "help_text": "To increase the speed of some steps of the workflow this value can be increased. for example to 16 or even 32.",
+                    "default": 8
+                },
+                "max_mem_gb": {
+                    "type": "integer",
+                    "description": "Maximum memory assigned to a single process in the workflow in GB",
+                    "help_text": "Increase if error 137 or another out of memmory error occurs",
+                    "default": 31
+                },
                 "economy_mode": {
                     "type": "boolean",
                     "description": "Drastically reduce the amount of computational resources used, takes much longer.",
