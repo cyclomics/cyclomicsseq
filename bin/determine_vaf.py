@@ -16,9 +16,9 @@ def process_pileup_column(
     pos: int,
     bam: str,
     reference_fasta: str,
-    amplicon_ending=False,
-    pileup_depth=1_000_000,
-    minimum_base_quality=10,
+    amplicon_ending: bool = False,
+    pileup_depth: int = 1_000_000,
+    minimum_base_quality: int = 10,
 ):
     """
     Function to process a single location in a genome alignment. Used to multiprocess the variant calling
@@ -35,6 +35,7 @@ def process_pileup_column(
     logging.debug(f"process column {contig} | {pos}")
     bam_af = pysam.AlignmentFile(bam, "r")
     reference = pysam.FastaFile(reference_fasta)
+    ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
 
     iteration = 0
     # create enteties for when no forloop event happens
@@ -50,9 +51,17 @@ def process_pileup_column(
         min_base_quality=minimum_base_quality,
         stepper="all",
     ):
-        snv_evidence = extract_snp_evidence(pu_column, contig, minimum_base_quality)
+        snv_evidence = extract_snp_evidence(
+            pu_column, contig, ref_nuc, minimum_base_quality
+        )
         indel_evidence = extract_indel_evidence(
-            pu_column, contig, reference, pos, minimum_base_quality, amplicon_ending
+            pu_column,
+            contig,
+            ref_nuc,
+            reference,
+            pos,
+            minimum_base_quality,
+            amplicon_ending,
         )
         if iteration > 0:
             logging.critical("Single thread worker recieved multiple locations.")
@@ -71,9 +80,9 @@ def main(
     snp_output_path: Path,
     indel_output_path: Path,
     pileup_depth: int = 1_000_000,
-    minimum_base_quality=10,
-    end_of_amplicon_warn_limit=4,
-    threads=16,
+    minimum_base_quality: int = 10,
+    end_of_amplicon_warn_limit: int = 4,
+    threads: int = 16,
 ):
     """
     Run variant detection over given positions.
@@ -150,7 +159,7 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
@@ -167,13 +176,26 @@ if __name__ == "__main__":
 
     if dev:
         # EGFR
+        # fasta = Path(
+        #     "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+        # )
+        # bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
+        # bam = Path(
+        #     "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
+        # )
+        # snp_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testsnp_EGFR.vcf")
+        # indel_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testindel_EGFR.vcf")
+
         fasta = Path(
-            "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/GCA_000001405_BB42.fasta"
         )
-        bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
+        bed = Path(
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214_roi.bed"
+        )
         bam = Path(
-            "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214.YM_gt_3.bam"
         )
-        snp_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testsnp_EGFR.vcf")
-        indel_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testindel_EGFR.vcf")
+        snp_vcf_out = Path("./test_snp.vcf")
+        indel_vcf_out = Path("./test_indel.vcf")
+
         main(fasta, bed, bam, snp_vcf_out, indel_vcf_out)

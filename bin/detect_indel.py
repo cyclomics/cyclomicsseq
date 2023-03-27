@@ -23,7 +23,7 @@ class Indel:
     length: int = 0
     assemby: str = ""
     start_position: int = 0
-    reference_nucleotide: str = ""
+    # reference_nucleotide: str = ""
     variant_nucleotide: str = ""
     support_count: int = 0
     support_ratio: float = 0.0
@@ -78,7 +78,7 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
     quality_map = list(zip(pu, query_qualities))
 
     # The reference nucleotide should be the most common in this position
-    variant.reference_nucleotide = Counter(pu).most_common(1)[0][0].upper()[0]
+    # variant.reference_nucleotide = Counter(pu).most_common(1)[0][0].upper()
 
     # Exclude matches, SNPs or irrelevant characters
     # The remainder should be indels
@@ -210,10 +210,11 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
 def extract_indel_evidence(
     pileupcolumn: pysam.PileupColumn,
     assembly: str,
+    ref_nt: str,
     reference: pysam.FastaFile,
     pos: int,
-    high_base_quality_cutoff=80,
-    end_of_amplicon=False,
+    high_base_quality_cutoff: int = 80,
+    end_of_amplicon: bool = False,
 ) -> Tuple[str, Tuple[str, str], VCF_entry]:
     """
     Find Indel in a given pileup position.
@@ -221,6 +222,7 @@ def extract_indel_evidence(
     Args:
         pileupcolumn: Pysam pileup column at a given position.
         assembly: Reference/contig name.
+        ref_nt: Reference nucleotide at a given position.
         reference: Reference genome or sequence, FASTA.
         pos: Position in the alignment pileup to check for variants.
         high_base_quality_cutoff: Cutoff to calculate ratios on high base
@@ -244,12 +246,9 @@ def extract_indel_evidence(
                 ref_seq = reference.fetch(
                     reference=assembly, start=pos, end=pos + indel.length + 1
                 )
-                alleles = (ref_seq, ref_seq[0])
+                alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
             else:
-                alleles = (
-                    indel.reference_nucleotide,
-                    str(indel.reference_nucleotide + indel.variant_nucleotide),
-                )
+                alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
 
             # Update variant statistics with the found indel
             indel_type = indel.type
@@ -303,7 +302,9 @@ def extract_indel_evidence(
     return (assembly, alleles, vcf_entry)
 
 
-def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_000_000):
+def main(
+    bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth: int = 1_000_000
+):
     """
     Run Indel detection over given positions.
 
@@ -341,10 +342,13 @@ def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_00
             stepper="all",
         )
 
+        ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1)
+
         for pileupcolumn in positional_pileup:
             result = extract_indel_evidence(
                 pileupcolumn=pileupcolumn,
                 assembly=contig,
+                ref_nt=str(ref_seq).upper(),
                 reference=reference,
                 pos=pos,
                 end_of_amplicon=amplicon_ending,
@@ -383,7 +387,7 @@ def main(bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth=1_00
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(
             description=("Detect indels in BAM alignment file.")
@@ -400,14 +404,14 @@ if __name__ == "__main__":
     if dev:
         # EGFR
         fasta = Path(
-            "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/GCA_000001405_BB42.fasta"
         )
-        bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
+        bed = Path(
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214_roi.bed"
+        )
         bam = Path(
-            "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
+            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214.YM_gt_3.bam"
         )
-        vcf_out = Path(
-            "/data/projects/ROD_1125_variant_improvements/testindel_EGFR.vcf"
-        )
+        vcf_out = Path("./test.vcf")
 
         main(bam, bed, fasta, vcf_out)
