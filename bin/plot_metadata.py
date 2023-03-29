@@ -195,6 +195,23 @@ def read_jsons_into_plots(json_folder, plot_file):
                     dict_data = []
                 dict_data += dict_data_json
 
+    tab_name = "metadata"
+    json_obj = {}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]["name"] = tab_name
+
+    if not dict_data:
+        f = open(plot_file, "w")
+        f.write("<h1>No metadata found.</h1>")
+        f.close()
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+            "",
+            "<h1>No metadata found: metadata JSON files were empty.</h1>",
+        )
+        with open(Path(plot_file).with_suffix(".json"), "w") as f:
+            f.write(json.dumps(json_obj))
+        return
+
     if type(dict_data) == dict:
         (
             alignment_ratio,
@@ -306,11 +323,7 @@ def read_jsons_into_plots(json_folder, plot_file):
     output_file(plot_file, title="metadata plots")
     final_plot = column([donut, p1, p2, density_plot])
 
-    tab_name = "metadata"
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
-        json_obj = {}
-        json_obj[tab_name] = {}
-        json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
         f.write(json.dumps(json_obj))
 
@@ -323,7 +336,10 @@ if __name__ == "__main__":
     dev = False
 
     if dev:
-        read_jsons_into_plots("metadata_dev2", "metadata2.html")
+        read_jsons_into_plots(
+            "/scratch/nxf_work/dami/39/02aa1653393aa6bd874a745668cdb5/",
+            "metadata2.html",
+        )
     else:
         parser = argparse.ArgumentParser(
             description="Create hist plot from a regex for fastq and fastq.gz files."
