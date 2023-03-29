@@ -82,7 +82,12 @@ process FindVariants{
         tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.indel.vcf")
     
     script:
+        // We sleep and access the reference genome, since in some rare cases the file needs accessing to 
+        // not cause issues in the python code. 
         """
+        sleep 1
+        ls
+        head $reference_genome
         determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf --threads ${task.cpus} 
         """
 }
