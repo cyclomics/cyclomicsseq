@@ -109,8 +109,15 @@ def extract_snp_evidence(
     else:
         hc_ratio = 0
 
-    total = pileupcolumn.n
-    quals_mean = np.mean(quals)
+    # if the depth is 0, make total an integer and not None
+    total = pileupcolumn.n if pileupcolumn.n is not None else 0
+
+    # We cannot calculate the mean of an empty array.
+    if len(quals) > 0:
+        quals_mean = np.mean(quals)
+    else:
+        quals_mean = 0
+
 
     nucs = nucs_fwd + nucs_rev
     counts_fwd, counts_rev, counts = (
@@ -152,9 +159,16 @@ def extract_snp_evidence(
             # alleles = [x[0] for x in counts_mc]
             counts_alt = [t for t in counts_mc if t[0] != ref_nt]
 
-            alleles = (ref_nt, counts_alt[0][0])
             alt_base = counts_alt[0][0]
-            alt_base_mean_qual = np.mean([x[1] for x in nuc_qual if x[0] == alt_base])
+            alleles = (ref_nt, alt_base)
+
+            alt_base_qualities= [x[1] for x in nuc_qual if x[0] == alt_base]
+            # We cannot calculate the mean of an empty array.
+            if len(alt_base_qualities) > 0:
+                alt_base_mean_qual = np.mean(alt_base_qualities)
+            else:
+                alt_base_mean_qual = 0
+
             # calculate
             ticker = [x[1] for x in ym_ticker if x[0] == ref_nt]
             alt_ticker = [x[1] for x in ym_ticker if x[0] == alt_base]
@@ -189,6 +203,7 @@ def extract_snp_evidence(
             base = alt_base_fwd
 
         tot_count = fwd_count + rev_count
+        # No need to escape this mean due to never beeing empty
         tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
 
         vcf_entry.DP = total

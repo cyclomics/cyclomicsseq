@@ -35,8 +35,15 @@ def process_pileup_column(
     logging.debug(f"process column {contig} | {pos}")
     bam_af = pysam.AlignmentFile(bam, "r")
     reference = pysam.FastaFile(reference_fasta)
-    ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
-
+    print(reference.references)
+    try:
+        ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+    except KeyError:
+        try:
+            ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+        except KeyError:
+            ref_nuc = "."
+        
     iteration = 0
     # create enteties for when no forloop event happens
     snv_evidence = None
