@@ -318,8 +318,9 @@ process FindRegionOfInterest{
         tuple val(X), path("${X}_roi.bed")
 
     script:
+        // 
         """
-        samtools depth $bam_in | awk '\$3>100' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d 25 -i /dev/stdin > ${X}_roi.bed
+        samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${X}_roi.bed
         """
 }
 
