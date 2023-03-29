@@ -103,6 +103,7 @@ def main(
     with ProcessPoolExecutor(max_workers=threads) as executor:
         logging.debug("creating location promisses in ProcessPoolExecutor")
         for bed_file_line in create_bed_lines(bed_path):
+            print(bed_file_line)
             contig = bed_file_line[0]
             contig_region_start = int(bed_file_line[1])
             contig_region_stop = int(bed_file_line[2])
@@ -126,16 +127,19 @@ def main(
                         minimum_base_quality,
                     )
                 )
+        print('done with submitting')
         logging.debug("Asking for results from ProcessPoolExecutor")
         done, not_done = wait(promisses, return_when=ALL_COMPLETED)
-
+        print('done with collecting')
         results = [x.result() for x in promisses]
+        print('done with obtaining results')
 
     bam_af = pysam.AlignmentFile(bam_path, "r")
 
     snp_vcf = initialize_output_vcf(snp_output_path, bam_af.references)
     indel_vcf = initialize_output_vcf(indel_output_path, bam_af.references)
 
+    print('Started writing vcf files')
     for result in results:
         if not result:
             continue
@@ -149,7 +153,9 @@ def main(
 
         if indel_results:
             write_vcf_entry(indel_vcf, contig, position, indel_results)
-
+    
+    print('finishing writing and closing files.')
+    # Wait for all the threads to finish writing
     delay_for_pysam_variantfile = 0.5
     time.sleep(delay_for_pysam_variantfile)
     snp_vcf.close()
@@ -159,7 +165,7 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    dev = True
+    dev = False
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
