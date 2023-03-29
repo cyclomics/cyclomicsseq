@@ -118,7 +118,6 @@ def extract_snp_evidence(
     else:
         quals_mean = 0
 
-
     nucs = nucs_fwd + nucs_rev
     counts_fwd, counts_rev, counts = (
         Counter(nucs_fwd),
@@ -162,7 +161,7 @@ def extract_snp_evidence(
             alt_base = counts_alt[0][0]
             alleles = (ref_nt, alt_base)
 
-            alt_base_qualities= [x[1] for x in nuc_qual if x[0] == alt_base]
+            alt_base_qualities = [x[1] for x in nuc_qual if x[0] == alt_base]
             # We cannot calculate the mean of an empty array.
             if len(alt_base_qualities) > 0:
                 alt_base_mean_qual = np.mean(alt_base_qualities)
@@ -172,7 +171,11 @@ def extract_snp_evidence(
             # calculate
             ticker = [x[1] for x in ym_ticker if x[0] == ref_nt]
             alt_ticker = [x[1] for x in ym_ticker if x[0] == alt_base]
-            obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
+
+            if sum(alt_ticker) != 0:
+                obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
+            else:
+                obs_ratio = 0
 
         # Check support fwd
         if len(counts_fwd_mc) > 1:
@@ -320,13 +323,13 @@ if __name__ == "__main__":
     if dev:
         # PNK_01
         fasta = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/GCA_000001405_BB42.fasta"
+            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/chm13v2_BB42.fasta"
         )
         bed = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214_roi.bed"
+            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/FAW03991_roi.bed"
         )
         bam = Path(
-            "/data/sequencing/results/Cyclomics/0.9.0-rc13/000123/consensus_aligned/FAV97298.YM_gt_3.bam"
+            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/FAW03991.YM_gt_3.bam"
         )
         vcf_out = Path("./test2_snp.vcf")
 
