@@ -235,7 +235,7 @@ def extract_indel_evidence(
         and a VCF_entry object with variant information.
     """
 
-    vcf_entry = VCF_entry(None)
+    vcf_entry = VCF_entry()
     alleles = (".", ".")
 
     if not end_of_amplicon:
