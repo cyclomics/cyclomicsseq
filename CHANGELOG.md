@@ -5,6 +5,9 @@
  - Added integration with EPI2ME Labs.
  - Changed consensus insert filtering rule to pass reads with YM >= 3 instead of YM > 3.
  - Fixed filtered consensus insert number propagation to report. Workflow now outputs BAM with consensus inserts after filtering.
+ - Fixed VCF position reporting when depth at position is 0
+ - Fixed non-contiguous chromosome error by adding back -a flag to bcftools sort
+ - Changed AnntotateBamXTags label
 
 ## 0.8.2
 - Fixed issue where variant filtering throwed an error when variant dataframe becomes empty before DPQ filtering.
