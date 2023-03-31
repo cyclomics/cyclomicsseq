@@ -21,7 +21,7 @@ process AddDepthToJson{
 process AnnotateBamXTags{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // publishDir "${params.output_dir}/consensus_aligned_tagged", mode: 'copy'
-    label 'many_low_cpu_high_mem'
+    label 'few_very_memory_intensive'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -146,7 +146,7 @@ process MergeNoisyVCF{
         bgzip ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
         tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
-        bcftools concat ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
+        bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
         -O v -o ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
         bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf
         rm ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
@@ -173,7 +173,7 @@ process MergeFilteredVCF{
         bgzip ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
         tabix ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
-        bcftools concat ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
+        bcftools concat -a ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
         -O v -o ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
         bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf
         rm ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf

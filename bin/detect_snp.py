@@ -32,8 +32,8 @@ def extract_snp_evidence(
         and a VCF_entry object with variant information.
     """
 
-    vcf_entry = VCF_entry(None)
-    alleles = (".", ".")
+    vcf_entry = VCF_entry()
+    alleles = (ref_nt, ".")
 
     total = 0
     counted_nucs = 0
@@ -323,13 +323,13 @@ if __name__ == "__main__":
     if dev:
         # PNK_01
         fasta = Path(
-            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/chm13v2_BB42.fasta"
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/GCA_000001405_BB42.fasta"
         )
         bed = Path(
-            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/FAW03991_roi.bed"
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214_roi.bed"
         )
         bam = Path(
-            "/scratch/nxf_work/rodrigo/09/c1f67a8cf5b2a8783a8a1981295eb9/FAW03991.YM_gt_3.bam"
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214.YM_gt_3.bam"
         )
         vcf_out = Path("./test2_snp.vcf")
 
