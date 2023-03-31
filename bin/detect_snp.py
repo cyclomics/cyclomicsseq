@@ -12,6 +12,7 @@ from vcf_tools import VCF_entry
 def extract_snp_evidence(
     pileupcolumn: pysam.PileupColumn,
     assembly: str,
+    ref_nt: str,
     add_dels: bool = False,
     high_base_quality_cutoff: int = 80,
 ) -> Tuple[str, Tuple[str, str], VCF_entry]:
@@ -21,6 +22,7 @@ def extract_snp_evidence(
     Args:
         pileupcolumn: Pysam pileup column at a given position.
         assembly: Reference/contig name.
+        ref_nt: Reference nucleotide at a given position.
         add_dels: Flag to add deletions to results (Default = False).
         high_base_quality_cutoff: Cutoff to calculate ratios on high base
             quality nucleotides only (Default = 80).
@@ -30,8 +32,8 @@ def extract_snp_evidence(
         and a VCF_entry object with variant information.
     """
 
-    vcf_entry = VCF_entry(None)
-    alleles = (".", ".")
+    vcf_entry = VCF_entry()
+    alleles = (ref_nt, ".")
 
     total = 0
     counted_nucs = 0
@@ -99,19 +101,22 @@ def extract_snp_evidence(
                     nucs_rev.append(nuc)
 
     # Calculate metrics
-    hc_count = Counter(hc_nucs)
-    if len(hc_count.most_common()) > 1:
-        hc_ratio = (
-            1
-            / sum([x[1] for x in hc_count.most_common()])
-            * hc_count.most_common()[1][1]
-        )
+    hc_count = Counter(hc_nucs).most_common()
+    if len(hc_count) > 1:
+        hc_count_alt = [t for t in hc_count if t[0] != ref_nt][0][1]
+        hc_ratio = 1 / sum([x[1] for x in hc_count]) * hc_count_alt
 
     else:
         hc_ratio = 0
 
-    total = pileupcolumn.n
-    quals_mean = np.mean(quals)
+    # if the depth is 0, make total an integer and not None
+    total = pileupcolumn.n if pileupcolumn.n is not None else 0
+
+    # We cannot calculate the mean of an empty array.
+    if len(quals) > 0:
+        quals_mean = np.mean(quals)
+    else:
+        quals_mean = 0
 
     nucs = nucs_fwd + nucs_rev
     counts_fwd, counts_rev, counts = (
@@ -135,30 +140,48 @@ def extract_snp_evidence(
         return (assembly, alleles, vcf_entry)
 
     else:
-        data_present = counts_mc[0][1] / total
-        non_ref_ratio_filtered = 1 - (counts_mc[0][1] / counted_nucs)
+        counts_ref = [t for t in counts_mc if t[0] == ref_nt]
+        if counts_ref:
+            data_present = counts_ref[0][1] / total
+            non_ref_ratio_filtered = 1 - (counts_ref[0][1] / counted_nucs)
+        else:
+            data_present = 0
+            non_ref_ratio_filtered = 1
 
         if len(counts_mc) == 1:
             # perfect positions
-            alleles = (counts_mc[0][0], ".")
+            alleles = (ref_nt, ".")
             alt_base_mean_qual = 0
 
         else:
             # only allows 2 alleles
             # alleles = [x[0] for x in counts_mc]
-            alleles = (counts_mc[0][0], counts_mc[1][0])
-            base = counts_mc[0][0]
-            alt_base = counts_mc[1][0]
-            alt_base_mean_qual = np.mean([x[1] for x in nuc_qual if x[0] == alt_base])
+            counts_alt = [t for t in counts_mc if t[0] != ref_nt]
+
+            alt_base = counts_alt[0][0]
+            alleles = (ref_nt, alt_base)
+
+            alt_base_qualities = [x[1] for x in nuc_qual if x[0] == alt_base]
+            # We cannot calculate the mean of an empty array.
+            if len(alt_base_qualities) > 0:
+                alt_base_mean_qual = np.mean(alt_base_qualities)
+            else:
+                alt_base_mean_qual = 0
+
             # calculate
-            ticker = [x[1] for x in ym_ticker if x[0] == base]
+            ticker = [x[1] for x in ym_ticker if x[0] == ref_nt]
             alt_ticker = [x[1] for x in ym_ticker if x[0] == alt_base]
-            obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
+
+            if sum(alt_ticker) != 0:
+                obs_ratio = 1 / (sum(ticker) + sum(alt_ticker)) * sum(alt_ticker)
+            else:
+                obs_ratio = 0
 
         # Check support fwd
         if len(counts_fwd_mc) > 1:
-            alt_base_fwd = counts_fwd_mc[1][0]
-            fwd_count = counts_fwd_mc[1][1]
+            counts_fwd_alt = [t for t in counts_fwd_mc if t[0] != ref_nt]
+            alt_base_fwd = counts_fwd_alt[0][0]
+            fwd_count = counts_fwd_alt[0][1]
             alt_base_ratio_fwd = fwd_count / counted_nucs_fwd
 
         else:
@@ -168,8 +191,9 @@ def extract_snp_evidence(
 
         # Check support reverse
         if len(counts_rev_mc) > 1:
-            alt_base_rev = counts_rev_mc[1][0]
-            rev_count = counts_rev_mc[1][1]
+            counts_rev_alt = [t for t in counts_rev_mc if t[0] != ref_nt]
+            alt_base_rev = counts_rev_alt[0][0]
+            rev_count = counts_rev_alt[0][1]
             alt_base_ratio_rev = rev_count / counted_nucs_rev
 
         else:
@@ -182,6 +206,7 @@ def extract_snp_evidence(
             base = alt_base_fwd
 
         tot_count = fwd_count + rev_count
+        # No need to escape this mean due to never beeing empty
         tot_ratio = np.mean((alt_base_ratio_fwd, alt_base_ratio_rev))
 
         vcf_entry.DP = total
@@ -203,13 +228,16 @@ def extract_snp_evidence(
     return (assembly, alleles, vcf_entry)
 
 
-def main(bam: Path, bed: Path, output_path: Path, pileup_depth=1_000_000):
+def main(
+    bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth: int = 1_000_000
+):
     """
     Run SNP detection over given positions.
 
     Args:
         bam: Read alignments, BAM.
         bed: Genomic locations, BED.
+        fasta: Reference genome or sequence, FASTA.
         output_path: Output path for SNPs, VCF.
         pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
     """
@@ -221,6 +249,7 @@ def main(bam: Path, bed: Path, output_path: Path, pileup_depth=1_000_000):
     # logging.debug("started main")
     # Open input files and create empty output VCF
     bam_af = pysam.AlignmentFile(bam, "rb")
+    reference = pysam.FastaFile(fasta)
     vcf = initialize_output_vcf(output_path, bam_af.references)
 
     # Iterate over positions in search space indicated in BED file
@@ -237,8 +266,12 @@ def main(bam: Path, bed: Path, output_path: Path, pileup_depth=1_000_000):
             stepper="all",
         )
 
+        ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1)
+
         for pileupcolumn in positional_pileup:
-            result = extract_snp_evidence(pileupcolumn=pileupcolumn, assembly=contig)
+            result = extract_snp_evidence(
+                pileupcolumn=pileupcolumn, assembly=contig, ref_nt=str(ref_seq).upper()
+            )
 
             if result:
                 # Reference allele is not '.', then a variant was found
@@ -289,10 +322,15 @@ if __name__ == "__main__":
 
     if dev:
         # PNK_01
-        bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
-        bam = Path(
-            "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
+        fasta = Path(
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/GCA_000001405_BB42.fasta"
         )
-        vcf_out = Path("/data/projects/ROD_1125_variant_improvements/testsnp_EGFR.vcf")
+        bed = Path(
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214_roi.bed"
+        )
+        bam = Path(
+            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214.YM_gt_3.bam"
+        )
+        vcf_out = Path("./test2_snp.vcf")
 
-        main(bam, bed, vcf_out)
+        main(bam, bed, fasta, vcf_out)

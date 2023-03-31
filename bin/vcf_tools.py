@@ -146,7 +146,7 @@ def initialize_output_vcf(vcf_path, contigs):
             ("ID", "FREQ"),
             ("Number", 1),
             ("Type", "String"),
-            ("Description", "Frequency, raw frequency of non majority allele"),
+            ("Description", "Frequency, raw frequency of the reference allele"),
         ],
     )
     vcfh.add_meta(
