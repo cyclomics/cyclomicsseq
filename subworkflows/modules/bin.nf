@@ -222,6 +222,10 @@ process PlotReadStructure{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_huge_mem'
 
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
+
     input:
         tuple val(X), path(bam), path(bai)
 
@@ -229,6 +233,7 @@ process PlotReadStructure{
         tuple path("${bam.simpleName}_aligned_segments.html"), path("${bam.simpleName}_read_structure.html"), path("${bam.simpleName}_read_structure.json")
 
     script:
+        // This takes a lot of RAM when the sequencing summary is big!
         """
         plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
         """
@@ -238,6 +243,9 @@ process PlotVcf{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
 
     input:
         path(vcf)
@@ -246,9 +254,9 @@ process PlotVcf{
         tuple path("${vcf.simpleName}.html"), path("${vcf.simpleName}.json")
     
     script:
+        // This takes a lot of RAM when the sequencing summary is big!
         """
         plot_vcf.py $vcf ${vcf.simpleName}.html
-
         """
 }
 
@@ -291,6 +299,9 @@ process PlotMetadataStats{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_huge_mem'
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
 
     input:
         path(jsons)
@@ -299,6 +310,7 @@ process PlotMetadataStats{
         tuple path("metadata_plots.html"), path("metadata_plots.json")
     
     script:
+        // This takes a lot of RAM when the sequencing summary is big!
         """
         plot_metadata.py . metadata_plots.html
         """
