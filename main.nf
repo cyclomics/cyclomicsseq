@@ -18,7 +18,7 @@ nextflow.enable.dsl = 2
 // ### PARAMETERS
 params.input_read_dir             = ""
 params.read_pattern               = "**.{fq,fastq,fq.gz,fastq.gz}"
-params.sequencing_quality_summary = "${projectDir}/sequencing_summary*.txt"
+params.sequencing_summary_path = "${projectDir}/sequencing_summary*.txt"
 params.backbone                   = "BB42"
 params.backbone_name              = ""
 params.region_file                = "auto"
@@ -189,7 +189,7 @@ workflow {
 
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
-    seq_summary = Channel.fromPath(params.sequencing_quality_summary, checkIfExists: true)
+    seq_summary = Channel.fromPath(params.sequencing_summary_path, checkIfExists: true)
     backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
