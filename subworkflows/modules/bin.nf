@@ -220,7 +220,7 @@ process PlotFastqsQUalAndLength{
 process PlotReadStructure{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
-    label 'many_low_cpu_huge_mem'
+    label 'many_cpu_medium'
 
     memory { task.memory * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
@@ -235,7 +235,9 @@ process PlotReadStructure{
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_read_structure_donut.py $bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
+        samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
+        samtools index tmp_readname_sorted_${bam.simpleName}.bam
+        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
         """
 }
 
