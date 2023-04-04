@@ -8,12 +8,8 @@ import json
 from typing import Dict, List, Tuple
 
 import pandas as pd
-import numpy as np
 import pysam
 
-# from plotly.subplots import make_subplots
-# import plotly.graph_objects as go
-# import plotly.express as px
 from bokeh.embed import components
 from bokeh.io import save, output_file
 from bokeh.plotting import figure
@@ -413,26 +409,26 @@ def main(
 
 
 if __name__ == "__main__":
-    # import argparse
+    import argparse
 
-    # parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
+    parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
 
-    # parser.add_argument("bam_file")
-    # parser.add_argument("assembly_plot")
-    # parser.add_argument("donut_plot_readstructure")
-    # args = parser.parse_args()
+    parser.add_argument("bam_file")
+    parser.add_argument("assembly_plot")
+    parser.add_argument("donut_plot_readstructure")
+    args = parser.parse_args()
 
-    # main(
-    #     args.bam_file,
-    #     args.assembly_plot,
-    #     "Segment count per assembly in reference",
-    #     args.donut_plot_readstructure,
-    #     "Read structure based on chromosomal presence per readname",
-    # )
-
-    split_bam = (
-        "/scratch/nxf_work/dami/ef/18b6f2d2166b1e237d00ba747bbe8c/tmp_namesorted.bam"
+    main(
+        args.bam_file,
+        args.assembly_plot,
+        "Segment count per assembly in reference",
+        args.donut_plot_readstructure,
+        "Read structure based on chromosomal presence per readname",
     )
-    aln_file = pysam.AlignmentFile(split_bam, "rb")
 
-    main(aln_file, "assem.html", "assem count", "Donuts.html", "Donut plot 123")
+    # split_bam = (
+    #     "/scratch/nxf_work/dami/ef/18b6f2d2166b1e237d00ba747bbe8c/tmp_namesorted.bam"
+    # )
+    # aln_file = pysam.AlignmentFile(split_bam, "rb")
+
+    # main(aln_file, "assem.html", "assem count", "Donuts.html", "Donut plot 123")

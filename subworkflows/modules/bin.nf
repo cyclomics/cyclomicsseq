@@ -236,7 +236,6 @@ process PlotReadStructure{
         // This takes a lot of RAM when the sequencing summary is big!
         """
         samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
-        samtools index tmp_readname_sorted_${bam.simpleName}.bam
         plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
         """
 }
