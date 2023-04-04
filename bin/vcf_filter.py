@@ -214,7 +214,14 @@ class VCF_file:
             pos = row[1]["POS"]
             chrom = row[1]["CHROM"]
             chr_depth = depth_table[depth_table["REF"] == chrom]
-            pos_depth = int(chr_depth[chr_depth["POS"] == pos]["DEPTH"])
+            #  Pos could be missing in the depth table, have backup for snp
+            if pos in chr_depth['POS']:
+                pos_depth = int(chr_depth[chr_depth["POS"] == pos]["DEPTH"])
+            else:
+                try:
+                    pos_depth = row[1]["DPQ"]
+                except KeyError:
+                    pos_depth = 0
 
             # Calculate local maximum
             depth_range = chr_depth.loc[
@@ -325,7 +332,7 @@ if __name__ == "__main__":
         vcf.write(args.output_vcf)
 
     if dev:
-        depth_table = get_depth_table("debug/consensus.tsv")
-        vcf = VCF_file("debug/AJV906.snp.vcf")
+        depth_table = get_depth_table("/scratch/nxf_work/dami/d7/f02755707dfea6666b01c501c5bd4e/consensus.tsv")
+        vcf = VCF_file("/scratch/nxf_work/dami/b1/fe10b93a02c3c05eae514bb8b4c7cb/FAV97107.snp.vcf")
         vcf.filter(depth_table)
-        vcf.write("debug/AJV906_filtered.snp.vcf")
+        vcf.write("debug/FAV97107_filtered.snp2.vcf")

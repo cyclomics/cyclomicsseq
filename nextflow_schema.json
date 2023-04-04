@@ -284,7 +284,7 @@
                     "help_text": "This step is quite memory intensive at this point.",
                     "default": false
                 },
-                "sequencing_quality_summary": {
+                "sequencing_summary_path": {
                     "type": "string",
                     "format": "file-path",
                     "default": "${projectDir}/sequencing_summary*.txt",
