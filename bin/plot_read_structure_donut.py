@@ -382,14 +382,16 @@ def create_readtype_donuts(
 
 
 def main(
-    bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
+    bam_path, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
 ):
     """
     Extract data from bam and plot it using two functions that further select data
     """
     # df = create_split_bam_table(bam)
     # read_counts, base_counts = count_reads_and_bases(df)
-    read_counts, base_counts, chromosome_counts = direct_to_Couter(bam)
+    aln_file = pysam.AlignmentFile(bam_path, "rb")
+
+    read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
 
     assembly_info = create_assembly_count_plot(
         chromosome_counts, assembly_plot_file, assembly_plot_title
@@ -427,8 +429,7 @@ if __name__ == "__main__":
     )
 
     # split_bam = (
-    #     "/scratch/nxf_work/dami/ef/18b6f2d2166b1e237d00ba747bbe8c/tmp_namesorted.bam"
+    #     "/scratch/nxf_work/dami/bf/b4e997120a32723705a5ffd59f7ba1/tmp_readname_sorted_splibams_merged.bam"
     # )
-    # aln_file = pysam.AlignmentFile(split_bam, "rb")
 
     # main(aln_file, "assem.html", "assem count", "Donuts.html", "Donut plot 123")
