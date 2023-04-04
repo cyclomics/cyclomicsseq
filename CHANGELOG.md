@@ -1,7 +1,6 @@
 # changelog
 
 ## 0.9.0
- - Fixed many smaller issues.
  - Added integration with EPI2ME Labs.
  - Changed consensus insert filtering rule to pass reads with YM >= 3 instead of YM > 3.
  - Fixed filtered consensus insert number propagation to report. Workflow now outputs BAM with consensus inserts after filtering.
@@ -11,6 +10,11 @@
  - Added the parameterized roi settings
  - Fixed reference nucleotide reporting if majority nucleotide
  - Fixed metadata json plotting when no reads where found
+ - Fixed memory hogging of the donut plot generation by looping over a sorted bam iso making a dataframe
+ - Added BB41T (legacy development backbone)
+ - Made the reporting truely optional.
+ - Fixed bug where very low depth variants could crash the variant filter.
+ - Fixed many smaller issues.
 
 
 ## 0.8.2

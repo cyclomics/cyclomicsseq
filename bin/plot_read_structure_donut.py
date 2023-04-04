@@ -5,14 +5,11 @@ from itertools import chain
 from math import pi
 from pathlib import Path
 import json
+from typing import Dict, List, Tuple
 
 import pandas as pd
-import numpy as np
 import pysam
 
-# from plotly.subplots import make_subplots
-# import plotly.graph_objects as go
-# import plotly.express as px
 from bokeh.embed import components
 from bokeh.io import save, output_file
 from bokeh.plotting import figure
@@ -22,155 +19,149 @@ from bokeh.models import Div, ColumnDataSource
 from bokeh.models import LabelSet, ColumnDataSource
 
 
-def _bam_to_df(bam, chr=None, start=None, stop=None):
+def determine_read_type(
+    read_info_list: List[pysam.AlignedSegment],
+    per_read_counter: Counter,
+    per_base_counter: Counter,
+) -> None:
     """
-    Convert a bam into a pandas dataframe for the columns we need.
+    Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
+
     """
-    qname = []
-    flag = []
-    rname = []
-    pos = []
-    mapq = []
-    cigar = []
-    original_length = []
+    # ignore empty reads. should not occur since the read should be unmapped.
+    if not read_info_list:
+        return
 
-    for read in bam.fetch(chr, start, stop, until_eof=True):
-        qname.append(read.qname)
-        flag.append(read.flag)
-        pos.append(read.pos)
-        mapq.append(read.mapq)
-
-        # values that can be missing:
-        cigarstring = read.cigarstring
-        cigar.append(cigarstring if cigarstring else "*")
-        read_reference_name = read.reference_name
-        rname.append(read_reference_name if read_reference_name else "*")
-
-        # length is special since pysam uses the cigar string to get the length
-        original_read_length = read.infer_read_length()
-        if not original_read_length:
-            original_read_length = len(read.seq)
-        original_length.append(original_read_length)
-
-    return pd.DataFrame(
-        {
-            "QNAME": qname,
-            "FLAG": flag,
-            "RNAME": rname,
-            "POS": pos,
-            "MAPQ": mapq,
-            "CIGAR": cigar,
-            "original_length": original_length,
-        }
+    mapped = list(
+        set([x.reference_name if x.is_mapped else "*" for x in read_info_list])
     )
+    raw_read_length = read_info_list[0].infer_read_length()
+    if not raw_read_length:
+        raw_read_length = len(read_info_list[0].seq)
+
+    mapped_bb = [x for x in mapped if x.startswith("BB")]
+    mapped_ins = [x for x in mapped if not x.startswith("BB")]
+
+    if len(mapped) == 1:
+        if mapped == ["*"]:
+            per_read_counter.update({"Unmapped"})
+            per_base_counter.update({"Unmapped": raw_read_length})
+        elif mapped[0] in mapped_bb:
+            per_read_counter.update({"BB-only"})
+            per_base_counter.update({"BB-only": raw_read_length})
+        else:
+            per_read_counter.update({"I-only"})
+            per_base_counter.update({"I-only": raw_read_length})
+
+    # two elements mapped
+    elif len(mapped) == 2:
+        if mapped_bb and mapped_ins:
+            per_read_counter.update({"BB-I"})
+            per_base_counter.update({"BB-I": raw_read_length})
+        elif mapped_bb and not mapped_ins:
+            per_read_counter.update({"BB-only"})
+            per_base_counter.update({"BB-only": raw_read_length})
+        else:
+            per_read_counter.update({"I-only"})
+            per_base_counter.update({"I-only": raw_read_length})
+
+    # complex mapping
+    else:
+        if not mapped_ins and len(mapped_bb) > 1:
+            per_read_counter.update({"mBB-only"})
+            per_base_counter.update({"mBB-only": raw_read_length})
+
+        elif not mapped_bb and len(mapped_ins) > 1:
+            per_read_counter.update({"mI-only"})
+            per_base_counter.update({"mI-only": raw_read_length})
+
+        elif len(mapped_ins) > 1 and len(mapped_bb) == 1:
+            per_read_counter.update({"BB-mI"})
+            per_base_counter.update({"BB-mI": raw_read_length})
+
+        elif len(mapped_bb) > 1 and len(mapped_ins) == 1:
+            per_read_counter.update({"mBB-I"})
+            per_base_counter.update({"mBB-I": raw_read_length})
+
+        elif len(mapped_bb) > 1 and len(mapped_ins) > 1:
+            per_read_counter.update({"mBB-mI"})
+            per_base_counter.update({"mBB-mI": raw_read_length})
+        else:
+            per_read_counter.update({"Unknown"})
+            per_base_counter.update({"Unknown": raw_read_length})
 
 
-def create_split_bam_table(bam_path):
+def update_chromosome_counts(
+    reads: List[pysam.AlignedSegment], chromosome_counts: Counter
+) -> None:
     """
-    Create a dataframe and set the properties correctly.
-    """
-    pysam.index(bam_path)
-    aln_file = pysam.AlignmentFile(bam_path, "rb")
-    split_table = _bam_to_df(aln_file)
-    split_table["FLAG"] = split_table.FLAG.astype(int)
-    split_table["POS"] = split_table.POS.astype(int)
-    split_table["MAPQ"] = split_table.MAPQ.astype(int)
-    split_table["original_length"] = split_table.original_length.astype(int)
-    return split_table
-
-
-def count_reads_and_bases(split_table):
-    """
-    Determine the type of read based on the present alignments.
+    Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
     """
 
-    def initialize_counters():
-        concat_types = {
-            "BB-I": 0,
-            "BB-only": 0,
-            "I-only": 0,
-            "Unmapped": 0,
-            "mBB-only": 0,  # multiple BB, no I
-            "mI-only": 0,  # multiple I, no BB
-            "BB-mI": 0,  # single BB, multiple I
-            "mBB-I": 0,  # multiple BB, single I
-            "mBB-mI": 0,  # multiple BB, multiple I
-            "Unknown": 0,  # anything else
-        }
-        concat_type_stats = Counter(concat_types)
-        concat_type_stats_by_bases = Counter(concat_types)
-        return concat_type_stats, concat_type_stats_by_bases
+    mapped = list(set([x.reference_name if x.reference_name else "*" for x in reads]))
+
+    for map in mapped:
+        if map in chromosome_counts.keys():
+            chromosome_counts[map] += 1
+        else:
+            chromosome_counts[map] = 1
+
+
+def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
+    """
+    Given a name sorted bam, create counters for read types and chromosome counts.
+
+    """
 
     concat_type_stats, concat_type_stats_by_bases = initialize_counters()
-
-    for qname, g in split_table.groupby("QNAME"):
-        mapped = list(g.RNAME.unique())
-        mapped_bb = [i for i in mapped if i.startswith("BB")]
-        mapped_ins = [i for i in mapped if i not in mapped_bb]
-        raw_read_length = g.original_length.iloc[0]
-
-        # single element mapped
-        if len(mapped) == 1:
-            if mapped == ["*"]:
-                concat_type_stats.update({"Unmapped"})
-                concat_type_stats_by_bases.update({"Unmapped": raw_read_length})
-            elif mapped[0] in mapped_bb:
-                concat_type_stats.update({"BB-only"})
-                concat_type_stats_by_bases.update({"BB-only": raw_read_length})
-            else:
-                concat_type_stats.update({"I-only"})
-                concat_type_stats_by_bases.update({"I-only": raw_read_length})
-
-        # two elements mapped
-        elif len(mapped) == 2:
-            if mapped_bb and mapped_ins:
-                concat_type_stats.update({"BB-I"})
-                concat_type_stats_by_bases.update({"BB-I": raw_read_length})
-            elif mapped_bb and not mapped_ins:
-                concat_type_stats.update({"BB-only"})
-                concat_type_stats_by_bases.update({"BB-only": raw_read_length})
-            else:
-                concat_type_stats.update({"I-only"})
-                concat_type_stats_by_bases.update({"I-only": raw_read_length})
-
-        # complex mapping
+    chromosome_counts = {}
+    read_info = []
+    readname = None
+    for i, read in enumerate(bam):
+        if read.qname == readname:
+            read_info.append(read)
         else:
-            if not mapped_ins and len(mapped_bb) > 1:
-                concat_type_stats.update({"mBB-only"})
-                concat_type_stats_by_bases.update({"mBB-only": raw_read_length})
+            if not readname:
+                readname = read.qname
+                read_info = [read]
+                continue
+            determine_read_type(
+                read_info, concat_type_stats, concat_type_stats_by_bases
+            )
+            update_chromosome_counts(read_info, chromosome_counts)
 
-            elif not mapped_bb and len(mapped_ins) > 1:
-                concat_type_stats.update({"mI-only"})
-                concat_type_stats_by_bases.update({"mI-only": raw_read_length})
+            readname = read.qname
+            read_info = [read]
 
-            elif len(mapped_ins) > 1 and len(mapped_bb) == 1:
-                concat_type_stats.update({"BB-mI"})
-                concat_type_stats_by_bases.update({"BB-mI": raw_read_length})
+    return concat_type_stats, concat_type_stats_by_bases, chromosome_counts
 
-            elif len(mapped_bb) > 1 and len(mapped_ins) == 1:
-                concat_type_stats.update({"mBB-I"})
-                concat_type_stats_by_bases.update({"mBB-I": raw_read_length})
 
-            elif len(mapped_bb) > 1 and len(mapped_ins) > 1:
-                concat_type_stats.update({"mBB-mI"})
-                concat_type_stats_by_bases.update({"mBB-mI": raw_read_length})
-            else:
-                concat_type_stats.update({"Unknown"})
-                concat_type_stats_by_bases.update({"Unknown": raw_read_length})
-
-    print(concat_type_stats)
-    print(concat_type_stats_by_bases)
+def initialize_counters():
+    concat_types = {
+        "BB-I": 0,
+        "BB-only": 0,
+        "I-only": 0,
+        "Unmapped": 0,
+        "mBB-only": 0,  # multiple BB, no I
+        "mI-only": 0,  # multiple I, no BB
+        "BB-mI": 0,  # single BB, multiple I
+        "mBB-I": 0,  # multiple BB, single I
+        "mBB-mI": 0,  # multiple BB, multiple I
+        "Unknown": 0,  # anything else
+    }
+    concat_type_stats = Counter(concat_types)
+    concat_type_stats_by_bases = Counter(concat_types)
     return concat_type_stats, concat_type_stats_by_bases
 
 
-def create_assembly_count_plot(split_table, output_file_name, my_title):
+def create_assembly_count_plot(chromosome_counts, output_file_name, my_title):
     """
     Create a barplot for the assembly statistics.
     """
     ##Segments count
-    _d = Counter(split_table.RNAME.values)
+    # _d = Counter(split_table.RNAME.values)
     segments = (
-        pd.DataFrame.from_dict(_d, orient="index")
+        pd.DataFrame.from_dict(chromosome_counts, orient="index")
         .reset_index()
         .rename(columns={"index": "CHROM", 0: "count"})
     )
@@ -178,6 +169,7 @@ def create_assembly_count_plot(split_table, output_file_name, my_title):
     source = ColumnDataSource(data=segments)
 
     output_file(filename=output_file_name, title=my_title)
+
     p = figure(plot_height=500, plot_width=1000, x_range=segments.CHROM, title=my_title)
     p.vbar(x="CHROM", top="count", width=0.8, source=source)
     p.xaxis.major_label_orientation = "vertical"
@@ -329,15 +321,18 @@ def create_readtype_donuts(
 
 
 def main(
-    bam, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
+    bam_path, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
 ):
     """
     Extract data from bam and plot it using two functions that further select data
     """
-    df = create_split_bam_table(bam)
-    read_counts, base_counts = count_reads_and_bases(df)
+
+    aln_file = pysam.AlignmentFile(bam_path, "rb")
+
+    read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
+
     assembly_info = create_assembly_count_plot(
-        df, assembly_plot_file, assembly_plot_title
+        chromosome_counts, assembly_plot_file, assembly_plot_title
     )
     donut_info = create_readtype_donuts(
         read_counts, base_counts, donut_plot_file, donut_plot_title
@@ -371,5 +366,8 @@ if __name__ == "__main__":
         "Read structure based on chromosomal presence per readname",
     )
 
-    # split_bam = "/media/dami/cyclomics_003/results/Cyclomics/000012_v4/CycasConsensus/Minimap2AlignAdaptiveParameterized/fastq_runid_4a99bd39c5b5f3262fd50fdb53e15f99baef4b0c_153_0_filtered.bam"
-    # main(split_bam, "assem.html", 'assem count', "Donuts.html", 'Donut plot 123')
+    # split_bam = (
+    #     "/scratch/nxf_work/dami/bf/b4e997120a32723705a5ffd59f7ba1/tmp_readname_sorted_splibams_merged.bam"
+    # )
+
+    # main(aln_file, "assem.html", "assem count", "Donuts.html", "Donut plot 123")

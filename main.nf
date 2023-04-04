@@ -18,7 +18,7 @@ nextflow.enable.dsl = 2
 // ### PARAMETERS
 params.input_read_dir             = ""
 params.read_pattern               = "**.{fq,fastq,fq.gz,fastq.gz}"
-params.sequencing_quality_summary = "sequencing_summary*.txt"
+params.sequencing_summary_path = "${projectDir}/sequencing_summary*.txt"
 params.backbone                   = "BB42"
 params.backbone_name              = ""
 params.region_file                = "auto"
@@ -44,6 +44,9 @@ params.min_repeat_count = 3
 
 if (params.backbone == "BB41") {
     backbone_file = "$projectDir/backbones/BB41.fasta"
+}
+else if (params.backbone == "BB41T") {
+    backbone_file = "$projectDir/backbones/BB41T.fasta"
 }
 else if (params.backbone == "BB42") {
     backbone_file = "$projectDir/backbones/BB42.fasta"
@@ -186,7 +189,7 @@ workflow {
 
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
     read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
-    seq_summary = Channel.fromPath(params.sequencing_quality_summary, checkIfExists: true)
+    seq_summary = Channel.fromPath(params.sequencing_summary_path, checkIfExists: true)
     backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
     
     reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
@@ -302,18 +305,20 @@ workflow {
 04.    Reporting
 ========================================================================================
 */  
-    PostQC(
-        PrepareGenome.out.fasta_combi,
-        read_fastq,
-        read_fastq_filtered,
-        split_bam,
-        split_bam_filtered,
-        base_unit_reads,
-        read_info_json,
-        reads_aligned_filtered,
-        locations,
-        variant_vcf,
-    )
+    if (params.report){
+        PostQC(
+            PrepareGenome.out.fasta_combi,
+            read_fastq,
+            read_fastq_filtered,
+            split_bam,
+            split_bam_filtered,
+            base_unit_reads,
+            read_info_json,
+            reads_aligned_filtered,
+            locations,
+            variant_vcf,
+        )
+    }
 }
 
 workflow.onComplete {
