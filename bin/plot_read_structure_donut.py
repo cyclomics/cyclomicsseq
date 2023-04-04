@@ -19,7 +19,11 @@ from bokeh.models import Div, ColumnDataSource
 from bokeh.models import LabelSet, ColumnDataSource
 
 
-def determine_read_type(read_info_list:List[pysam.AlignedSegment], per_read_counter:Counter, per_base_counter:Counter) -> None:
+def determine_read_type(
+    read_info_list: List[pysam.AlignedSegment],
+    per_read_counter: Counter,
+    per_base_counter: Counter,
+) -> None:
     """
     Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
 
@@ -87,7 +91,9 @@ def determine_read_type(read_info_list:List[pysam.AlignedSegment], per_read_coun
             per_base_counter.update({"Unknown": raw_read_length})
 
 
-def update_chromosome_counts(reads:List[pysam.AlignedSegment], chromosome_counts:Counter) -> None:
+def update_chromosome_counts(
+    reads: List[pysam.AlignedSegment], chromosome_counts: Counter
+) -> None:
     """
     Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
     """
@@ -101,7 +107,7 @@ def update_chromosome_counts(reads:List[pysam.AlignedSegment], chromosome_counts
             chromosome_counts[map] = 1
 
 
-def direct_to_Couter(bam) -> Tuple[Dict[str,int], Dict[str,int], Dict[str,int]]:
+def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """
     Given a name sorted bam, create counters for read types and chromosome counts.
 
@@ -145,73 +151,6 @@ def initialize_counters():
     }
     concat_type_stats = Counter(concat_types)
     concat_type_stats_by_bases = Counter(concat_types)
-    return concat_type_stats, concat_type_stats_by_bases
-
-
-def count_reads_and_bases(split_table):
-    """
-    Determine the type of read based on the present alignments.
-    """
-
-    concat_type_stats, concat_type_stats_by_bases = initialize_counters()
-
-    for qname, g in split_table.groupby("QNAME"):
-        mapped = list(g.RNAME.unique())
-        mapped_bb = [i for i in mapped if i.startswith("BB")]
-        mapped_ins = [i for i in mapped if i not in mapped_bb]
-        raw_read_length = g.original_length.iloc[0]
-
-        # single element mapped
-        if len(mapped) == 1:
-            if mapped == ["*"]:
-                concat_type_stats.update({"Unmapped"})
-                concat_type_stats_by_bases.update({"Unmapped": raw_read_length})
-            elif mapped[0] in mapped_bb:
-                concat_type_stats.update({"BB-only"})
-                concat_type_stats_by_bases.update({"BB-only": raw_read_length})
-            else:
-                concat_type_stats.update({"I-only"})
-                concat_type_stats_by_bases.update({"I-only": raw_read_length})
-
-        # two elements mapped
-        elif len(mapped) == 2:
-            if mapped_bb and mapped_ins:
-                concat_type_stats.update({"BB-I"})
-                concat_type_stats_by_bases.update({"BB-I": raw_read_length})
-            elif mapped_bb and not mapped_ins:
-                concat_type_stats.update({"BB-only"})
-                concat_type_stats_by_bases.update({"BB-only": raw_read_length})
-            else:
-                concat_type_stats.update({"I-only"})
-                concat_type_stats_by_bases.update({"I-only": raw_read_length})
-
-        # complex mapping
-        else:
-            if not mapped_ins and len(mapped_bb) > 1:
-                concat_type_stats.update({"mBB-only"})
-                concat_type_stats_by_bases.update({"mBB-only": raw_read_length})
-
-            elif not mapped_bb and len(mapped_ins) > 1:
-                concat_type_stats.update({"mI-only"})
-                concat_type_stats_by_bases.update({"mI-only": raw_read_length})
-
-            elif len(mapped_ins) > 1 and len(mapped_bb) == 1:
-                concat_type_stats.update({"BB-mI"})
-                concat_type_stats_by_bases.update({"BB-mI": raw_read_length})
-
-            elif len(mapped_bb) > 1 and len(mapped_ins) == 1:
-                concat_type_stats.update({"mBB-I"})
-                concat_type_stats_by_bases.update({"mBB-I": raw_read_length})
-
-            elif len(mapped_bb) > 1 and len(mapped_ins) > 1:
-                concat_type_stats.update({"mBB-mI"})
-                concat_type_stats_by_bases.update({"mBB-mI": raw_read_length})
-            else:
-                concat_type_stats.update({"Unknown"})
-                concat_type_stats_by_bases.update({"Unknown": raw_read_length})
-
-    print(concat_type_stats)
-    print(concat_type_stats_by_bases)
     return concat_type_stats, concat_type_stats_by_bases
 
 
@@ -387,8 +326,7 @@ def main(
     """
     Extract data from bam and plot it using two functions that further select data
     """
-    # df = create_split_bam_table(bam)
-    # read_counts, base_counts = count_reads_and_bases(df)
+
     aln_file = pysam.AlignmentFile(bam_path, "rb")
 
     read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
