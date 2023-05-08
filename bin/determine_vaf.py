@@ -9,7 +9,7 @@ from detect_snp import extract_snp_evidence
 from vcf_tools import create_bed_lines, initialize_output_vcf, write_vcf_entry
 
 from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
-
+from threading import Lock
 
 def process_pileup_column(
     contig: str,
@@ -34,16 +34,30 @@ def process_pileup_column(
     """
     logging.debug(f"process column {contig} | {pos}")
     bam_af = pysam.AlignmentFile(bam, "r")
-    reference = pysam.FastaFile(reference_fasta)
-    print(reference.references)
-    try:
-        ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
-    except KeyError:
+    # Only have one process access the reference genome at a time, multi access is not supported on all filesystems
+    with Lock() as lock:
+        # Double try to read the reference genome, with a sleep time for the retry
+        try:
+            reference = pysam.FastaFile(reference_fasta)
+        except OSError:
+            try:
+                time.sleep(0.2)
+                reference = pysam.FastaFile(reference_fasta)
+            except:
+                raise OSError(f"Reference genome {reference_fasta} could not be read.")
+            
+        print(reference.references)
         try:
             ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
         except KeyError:
-            ref_nuc = "."
+            try:
+                ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+            except KeyError:
+                ref_nuc = "."
+                logging.warning(f"Unable to fetch reference genome at {contig} - {pos}")
         
+        del reference
+
     iteration = 0
     # create enteties for when no forloop event happens
     snv_evidence = None
@@ -65,7 +79,7 @@ def process_pileup_column(
             pu_column,
             contig,
             ref_nuc,
-            reference,
+            reference_fasta,
             pos,
             minimum_base_quality,
             amplicon_ending,
