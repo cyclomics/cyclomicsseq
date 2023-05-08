@@ -138,18 +138,22 @@ process MergeNoisyVCF{
     
     script:
         """
-        bcftools sort $noisy_snp_vcf -o ${noisy_snp_vcf.simpleName}.sorted.snp.vcf
+	    mkdir tmpdir
+
+        bcftools sort $noisy_snp_vcf -o ${noisy_snp_vcf.simpleName}.sorted.snp.vcf --temp-dir tmpdir
         bgzip ${noisy_snp_vcf.simpleName}.sorted.snp.vcf
         tabix ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz
 
-        bcftools sort $noisy_indel_vcf -o ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
+        bcftools sort $noisy_indel_vcf -o ${noisy_indel_vcf.simpleName}.sorted.indel.vcf --temp-dir tmpdir
         bgzip ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
         tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
         bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
         -O v -o ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
-        bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf
+        bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf --temp-dir tmpdir
         rm ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
+
+	    rm -r tmpdir
         """
 }
 
@@ -165,18 +169,22 @@ process MergeFilteredVCF{
     
     script:
         """
-        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
+	    mkdir tmpdir
+
+        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}.sorted.snp.vcf --temp-dir tmpdir
         bgzip ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
         tabix ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz
 
-        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
+        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}.sorted.indel.vcf --temp-dir tmpdir
         bgzip ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
         tabix ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
         bcftools concat -a ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
         -O v -o ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
-        bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf
+        bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf --temp-dir tmpdir
         rm ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
+
+	    rm -r tmpdir
         """
 }
 

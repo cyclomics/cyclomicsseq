@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 
 process BwaIndex{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'mgibio/dna-alignment:1.0.0'
+    // container 'mgibio/dna-alignment:1.0.0'
     label 'many_med_cpu_huge_mem'
 
     input:
@@ -20,7 +20,7 @@ process BwaIndex{
 
 process BwaMem{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'mgibio/dna-alignment:1.0.0'
+    // container 'mgibio/dna-alignment:1.0.0'
     label 'many_med_cpu_huge_mem'
 
     cpus = 2
@@ -42,7 +42,7 @@ process BwaMem{
 
 process BwaMemReferenceNamedBam{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'mgibio/dna-alignment:1.0.0'
+    // container 'mgibio/dna-alignment:1.0.0'
     label 'many_med_cpu_huge_mem'
 
     cpus = 1
@@ -65,7 +65,7 @@ process BwaMemReferenceNamedBam{
 
 process BwaMemSorted{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    container 'mgibio/dna-alignment:1.0.0'
+    // container 'mgibio/dna-alignment:1.0.0'
     label 'many_med_cpu_huge_mem'
 
     input:
@@ -83,8 +83,7 @@ process BwaMemSorted{
         REF=\$(ls | grep -E "*.(fasta\$|fa\$|fna\$)")
         set -euxo pipefail
         bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
-        sambamba view -S -f bam /dev/stdin | \
-        sambamba sort -t ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
+        samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
         """
 }
 
@@ -92,7 +91,7 @@ process BwaMem16c{
     // Run bwa with sam output using 16 cores
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     // Legacy process
-    container 'mgibio/dna-alignment:1.0.0'
+    // container 'mgibio/dna-alignment:1.0.0'
     label 'many_med_cpu_huge_mem'
 
     input:
