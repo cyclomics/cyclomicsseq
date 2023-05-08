@@ -19,7 +19,7 @@ nextflow.enable.dsl = 2
 params.input_read_dir             = ""
 params.read_pattern               = "**.{fq,fastq,fq.gz,fastq.gz}"
 params.sequencing_summary_path = "${projectDir}/sequencing_summary*.txt"
-params.backbone                   = "BB42"
+params.backbone                   = "BBCS"
 params.backbone_name              = ""
 params.region_file                = "auto"
 

@@ -3,6 +3,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field, fields
 from pathlib import Path
+from threading import Lock
 from typing import Tuple
 
 import numpy as np
@@ -211,7 +212,7 @@ def extract_indel_evidence(
     pileupcolumn: pysam.PileupColumn,
     assembly: str,
     ref_nt: str,
-    reference: pysam.FastaFile,
+    reference_fa: str,
     pos: int,
     high_base_quality_cutoff: int = 80,
     end_of_amplicon: bool = False,
@@ -243,9 +244,11 @@ def extract_indel_evidence(
         if indel.found:
             if indel.type == "deletion":
                 # Adjust reference allele to include deleted seq
-                ref_seq = reference.fetch(
-                    reference=assembly, start=pos, end=pos + indel.length + 1
-                )
+                with Lock() as lock:
+                    reference =  pysam.FastaFile(reference_fa)
+                    ref_seq = reference.fetch(
+                        reference=assembly, start=pos, end=pos + indel.length + 1
+                    )
                 alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
             else:
                 alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
