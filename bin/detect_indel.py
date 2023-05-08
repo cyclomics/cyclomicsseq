@@ -249,6 +249,7 @@ def extract_indel_evidence(
                     ref_seq = reference.fetch(
                         reference=assembly, start=pos, end=pos + indel.length + 1
                     )
+                    del reference
                 alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
             else:
                 alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
