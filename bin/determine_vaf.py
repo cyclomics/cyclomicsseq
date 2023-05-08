@@ -44,7 +44,7 @@ def process_pileup_column(
                 time.sleep(0.2)
                 reference = pysam.FastaFile(reference_fasta)
             except:
-                raise OSError(f"Reference genome {reference_fasta} could not be red.")
+                raise OSError(f"Reference genome {reference_fasta} could not be read.")
             
         print(reference.references)
         try:
