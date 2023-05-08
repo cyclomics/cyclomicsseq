@@ -1,5 +1,14 @@
 # changelog
 
+## 0.9.1
+ - Changed the mounting of the data in Singularity containers, so that they are compatible with SLURM.
+ - Changed the locking of files in multithreaded variant calling, to prevent issues in single read file systems.
+ - Change the allocation of tmp directories in variant calling processing steps.
+ - Disabled containers for processes that can be executed in the main cyclomicsseq container.
+ - Disabled the split_on_adapter_sequence by default.
+ - Changed the default backbone to BBCS, the backbone shipped with the developer access kit.
+ - Changed the default behavior of overwriting the Nextflow trace file.
+
 ## 0.9.0
  - Added integration with EPI2ME Labs.
  - Changed consensus insert filtering rule to pass reads with YM >= 3 instead of YM > 3.
