@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import io
 
-from plotting_defaults import cyclomics_defaults
+from plotting_defaults import cyclomics_defaults, human_format
 
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
@@ -49,6 +49,11 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     sample1 = variants_df["Sample1"].str.split(":")
     vaf = sample1.str[3]
+    # convert fraction to percentage
+    vaf = (vaf.astype(float) * 100).round(2).astype(str) + "%"
+
+    coverage = sample1.str[0]
+    coverage = coverage.apply(human_format)
 
     info = variants_df["INFO"].str.split(";")
 
@@ -83,7 +88,8 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         "Location",
         "Ref",
         "Alt",
-        "VAF",
+        "Var (%)",
+        "Coverage",
         "Type",
         "Symbol",
         "Biotype",
@@ -99,6 +105,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         ref,
         alt,
         vaf,
+        coverage,
         var_type,
         symbol,
         biotype,
@@ -111,6 +118,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
+
     annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(
         to_replace=",", value=", ", regex=True
     )
@@ -154,7 +162,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
 
 
 if __name__ == "__main__":
-    dev = False
+    dev = True
     if not dev:
         import argparse
 
@@ -172,7 +180,7 @@ if __name__ == "__main__":
     else:
         # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
         # vcf_file = "fastq_annotated.vcf"
-        vcf_file = "FAU48563_annotated.vcf"
+        vcf_file = "/home/dami/FAW79009_filtered.filtered_merged.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 
