@@ -15,7 +15,7 @@ from bokeh.embed import components
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.models import Div
 
-from plotting_defaults import cyclomics_defaults, TEMPLATE_STR, nextflow_params_parser
+from plotting_defaults import cyclomics_defaults, TEMPLATE_STR, nextflow_params_parser, human_format
 
 REPORT = "report.html"
 
@@ -32,23 +32,6 @@ def get_template(template: str) -> Template:
 
     current_template = Environment(loader=BaseLoader()).from_string(template)
     return current_template
-
-
-def human_format(num):
-    if type(num) == str:
-        try:
-            num = float(num)
-        except ValueError:
-            return num
-
-    num = float("{:.3g}".format(num))
-    magnitude = 0
-    while abs(num) >= 1000:
-        magnitude += 1
-        num /= 1000.0
-    return "{}{}".format(
-        "{:f}".format(num).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude]
-    )
 
 
 @dataclass
