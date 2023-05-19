@@ -38,7 +38,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
     return variants_df
 
 
-def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
+def restructure_annotations(variants_df: pd.DataFrame, variant_decimal_points=3) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
@@ -50,7 +50,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     sample1 = variants_df["Sample1"].str.split(":")
     vaf = sample1.str[3]
     # convert fraction to percentage
-    vaf = (vaf.astype(float) * 100).round(2).astype(str) + "%"
+    vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"
 
     coverage = sample1.str[0]
     coverage = coverage.apply(human_format)
@@ -162,7 +162,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
 
 
 if __name__ == "__main__":
-    dev = True
+    dev = False
     if not dev:
         import argparse
 
