@@ -18,6 +18,9 @@ from bokeh.layouts import row, column
 from bokeh.models import Div, ColumnDataSource
 from bokeh.models import LabelSet, ColumnDataSource
 
+TAB_PRIORITY_CONTIG_COUNT = 90
+TAB_PRIORITY_DONUT = 1
+
 
 def determine_read_type(
     read_info_list: List[pysam.AlignedSegment],
@@ -183,6 +186,7 @@ def create_assembly_count_plot(chromosome_counts, output_file_name, my_title):
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
     json_obj["additional_info"] = add_info
+    json_obj[tab_name]["priority"] = TAB_PRIORITY_CONTIG_COUNT
 
     return json_obj
 
@@ -316,7 +320,9 @@ def create_readtype_donuts(
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
     json_obj["additional_info"] = add_info
+    json_obj[tab_name]["priority"] = TAB_PRIORITY_DONUT
     save(donut_plot)
+
     return json_obj
 
 

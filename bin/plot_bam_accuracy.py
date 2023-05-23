@@ -20,6 +20,8 @@ from bokeh.layouts import gridplot
 
 chromosomal_region = Tuple[str, int, int]
 SIDE_DIST_PLOT_SIZE = 100
+TAB_PRIORITY = 5
+
 
 
 def get_roi_pileup_df(
@@ -463,6 +465,7 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
 
     if df1.empty or df2.empty:
         f = open(output_plot_file, "w")

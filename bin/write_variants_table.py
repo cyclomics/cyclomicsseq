@@ -6,6 +6,7 @@ import io
 
 from plotting_defaults import cyclomics_defaults, human_format
 
+TAB_PRIORITY = 2
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
     """Loads a VCF file as a Pandas DataFrame."""
@@ -157,7 +158,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
         json_obj[tab_name]["div"] = vcf_table
-        json_obj[tab_name]["priority"] = 1
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
         f.write(json.dumps(json_obj))
 
 

@@ -19,6 +19,8 @@ from bokeh.embed import components
 
 from plotting_defaults import cyclomics_defaults
 
+TAB_PRIORITY = 6
+
 
 def process_fastqs(fastqs_path):
     overall = Counter()
@@ -107,6 +109,8 @@ def main(file_extention, output_file_name, my_title_q, my_title_len, tab_name):
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
         json_obj["additional_info"] = {f"reads{tab_name}": len(lengths)}
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
+
         f.write(json.dumps(json_obj))
 
     save(final_plot)

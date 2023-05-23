@@ -77,6 +77,7 @@ class ReportTab:
     name: str
     plot: str
     script: str
+    priority: int
 
 
 @dataclass
@@ -86,8 +87,8 @@ class ReportTabCollection:
     def __add__(self, addition):
         print(addition["name"])
         script = addition["script"].replace("\n", "")
-
-        self.tabs.append(ReportTab(addition["name"], addition["div"], script))
+        priority = ["priority"]
+        self.tabs.append(ReportTab(addition["name"], addition["div"], script, priority))
         return self
 
     def get_scripts(self):
@@ -99,9 +100,13 @@ class ReportTabCollection:
             plot = tab.plot
             # we set the width here and it propogates to the overall width of the tab selector
             # https://github.com/bokeh/bokeh/issues/8726
-            pre_tabs.append(
-                Panel(child=Div(text=plot, width=overall_width), title=tab.name)
-            )
+            pre_tabs.append((
+                Panel(child=Div(text=plot, width=overall_width), title=tab.name),
+                tab.priority
+            ))
+
+        pre_tabs.sort(key = lambda x: x[1] )
+        pre_tabs = [x[0] for x in pre_tabs]
 
         return components(Tabs(tabs=pre_tabs))
 
