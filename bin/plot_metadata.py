@@ -197,7 +197,7 @@ def read_jsons_into_plots(json_folder, plot_file):
                     dict_data = []
                 dict_data += dict_data_json
 
-    tab_name = "metadata"
+    tab_name = "Metadata"
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name

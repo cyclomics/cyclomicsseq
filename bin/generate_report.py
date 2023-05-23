@@ -87,7 +87,7 @@ class ReportTabCollection:
     def __add__(self, addition):
         print(addition["name"])
         script = addition["script"].replace("\n", "")
-        priority = ["priority"]
+        priority = addition["priority"]
         self.tabs.append(ReportTab(addition["name"], addition["div"], script, priority))
         return self
 
@@ -95,13 +95,15 @@ class ReportTabCollection:
         return [x.script for x in self.tabs]
 
     def generate_tabs(self, overall_width=cyclomics_defaults.width):
+        self.tabs.sort(key=lambda x : x.priority)
+
         pre_tabs = []
-        for tab in self.tabs:
+        for i, tab in enumerate(self.tabs, start=1):
             plot = tab.plot
             # we set the width here and it propogates to the overall width of the tab selector
             # https://github.com/bokeh/bokeh/issues/8726
             pre_tabs.append((
-                Panel(child=Div(text=plot, width=overall_width), title=tab.name),
+                Panel(child=Div(text=plot, width=overall_width), title=f"{i}. {tab.name}"),
                 tab.priority
             ))
 

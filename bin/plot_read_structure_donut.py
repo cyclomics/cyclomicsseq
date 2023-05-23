@@ -313,7 +313,7 @@ def create_readtype_donuts(
 
     donut_row = row(p1, p2)
     donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
-    tab_name = "read structure"
+    tab_name = "Read structure"
 
     json_obj = {}
     json_obj[tab_name] = {}

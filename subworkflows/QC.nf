@@ -91,19 +91,19 @@ workflow PostQC {
         id = first_fq.simpleName
         extension = first_fq.getExtension()
         FastqInfoRaw(fastq_raw.collect(),'raw')
-        PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"raw fastq info"')
+        PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"Raw fastq info"')
         
         first_fq = fastq_filtered.first()
         id = first_fq.simpleName
         extension = first_fq.getExtension()
-        PlotFilteredHist(fastq_filtered.collect(),extension, id + "filtered", '"filtered fastq info"')
+        PlotFilteredHist(fastq_filtered.collect(),extension, id + "filtered", '"Filtered fastq info"')
 
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
 
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect(), 'consensus')
-        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id + "consensus", '"consensus fastq info"')
+        PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id + "consensus", '"Consensus fastq info"')
 
         merged_split_bam = SamtoolsMergeBams('splibams_merged', split_bam.collect())
         PlotReadStructure(merged_split_bam)
