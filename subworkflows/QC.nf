@@ -11,7 +11,8 @@ include {
     PasteVariantTable
     PlotQScores
     PlotMetadataStats
-    PlotReport
+    PlotReportDetailed
+    PlotReportStd
 } from "./modules/bin"
 
 include {
@@ -64,9 +65,15 @@ workflow StandardReport {
         FastqInfoRaw(fastq_raw.collect(),'raw')
         PlotRawFastqHist(fastq_raw.collect(), extension, id + "raw", '"Raw fastq info"')
         
+        first_fq = fastq_filtered.first()
+        id = first_fq.simpleName
+        extension = first_fq.getExtension()
+        PlotFilteredHist(fastq_filtered.collect(),extension, id + "filtered", '"Filtered fastq info"')
+
         first_fq = fastq_consensus.first()
         id = first_fq.map(it -> it[0])
         extension = first_fq.map(it -> it[1]).getExtension()
+
         FastqInfoConsensus(fastq_consensus.map(it -> it[1]).collect(), 'consensus')
         PlotConFastqHist(fastq_consensus.map(it -> it[1]).collect(),extension, id + "consensus", '"Consensus fastq info"')
 
@@ -75,12 +82,15 @@ workflow StandardReport {
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
         CountNonBackboneVariants(annotated_vcf)
-
+        meta_data = read_info.map(it -> it[1]).collect()
+        PlotMetadataStats(meta_data)
 
         roi = FindRegionOfInterest(consensus_bam)
       
         PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
         PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
+
+        PlotQScores(PerbaseBaseDepthSplit.out, PerbaseBaseDepthConsensus.out)
 
         if (params.variant_calling == "validate") {
             PlotVcf(noisy_vcf)
@@ -90,12 +100,14 @@ workflow StandardReport {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
         
-        
-        PlotReport(
+        PlotReportStd(
             PlotRawFastqHist.out.combine(
+            PlotFilteredHist.out).combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
+            PlotQScores.out).combine(
             PlotVcf.out).combine(
+            PlotMetadataStats.out).combine(
             PasteVariantTable.out).combine(
             SamtoolsFlagstats.out).combine(
             CountNonBackboneVariants.out).combine(
@@ -160,8 +172,7 @@ workflow DetailedReport {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
         
-        
-        PlotReport(
+        PlotReportDetailed(
             PlotRawFastqHist.out.combine(
             PlotFilteredHist.out).combine(
             PlotConFastqHist.out).combine(

@@ -20,7 +20,7 @@ from bokeh.embed import components
 
 from plotting_defaults import cyclomics_defaults
 
-TAB_PRIORITY = 6
+TAB_PRIORITY = 92
 
 concat_type_colors = {
     "BB-I": "DodgerBlue",  # perfect

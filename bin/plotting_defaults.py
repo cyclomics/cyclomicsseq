@@ -177,6 +177,7 @@ TEMPLATE_STR = """
                               <li class="list-group-item">Backbone: {{ additional_info.nextflow_params.backbone }}</li>
                               <li class="list-group-item">Regions: {{  additional_info.nextflow_params.region_file }}</li>
                               <li class="list-group-item">Original output: {{  additional_info.nextflow_params.output_dir }}</li>
+                              <li class="list-group-item">report style: {{  additional_info.nextflow_params.report }}</li>
                               &nbsp
                               <li class="list-group-item">QC: {{  additional_info.nextflow_params.qc }}</li>
                               <li class="list-group-item">Consensus generation: {{  additional_info.nextflow_params.consensus_calling }}</li>

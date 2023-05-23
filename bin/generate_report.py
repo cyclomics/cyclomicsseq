@@ -94,7 +94,7 @@ class ReportTabCollection:
     def get_scripts(self):
         return [x.script for x in self.tabs]
 
-    def generate_tabs(self, overall_width=cyclomics_defaults.width):
+    def generate_tabs(self, overall_width=cyclomics_defaults.width, priority_limit=89):
         self.tabs.sort(key=lambda x : x.priority)
 
         pre_tabs = []
@@ -108,7 +108,7 @@ class ReportTabCollection:
             ))
 
         pre_tabs.sort(key = lambda x: x[1] )
-        pre_tabs = [x[0] for x in pre_tabs]
+        pre_tabs = [x[0] for x in pre_tabs if x[1] < priority_limit]
 
         return components(Tabs(tabs=pre_tabs))
 
@@ -140,18 +140,18 @@ def main(args):
 
     print(data["additional_info"])
     data["bokehscript"] = tabs.get_scripts()
-    data["plot_items"] = tabs.generate_tabs()
+    data["plot_items"] = tabs.generate_tabs(priority_limit=args.priority_limit)
     for i in [
         (
             "Sequencing reads",
             "fa-dna",
-            "readsraw fastq info",
+            "readsRaw fastq info",
             "text-succes",
         ),  # count from input material
         (
             "Post split & QC reads",
             "fa-filter",
-            "readsfiltered fastq info",
+            "readsFiltered fastq info",
             "text-succes",
         ),
         (
@@ -181,7 +181,7 @@ def main(args):
             )
         except KeyError:
             data["cards"].append(SummaryCard(i[0], i[1], "nan", i[3]))
-
+    print(data["additional_info"])
     # print(tabs)
     with open(REPORT, "w") as fh:
         fh.write(html_template.render(**data))
@@ -196,6 +196,7 @@ if __name__ == "__main__":
 
     parser.add_argument("nextflow_params", type=str)
     parser.add_argument("version", type=str)
+    parser.add_argument("priority_limit",type=int, default= 89)
 
     args = parser.parse_args()
     print(args)

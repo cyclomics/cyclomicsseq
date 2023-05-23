@@ -20,7 +20,7 @@ from bokeh.layouts import gridplot
 
 chromosomal_region = Tuple[str, int, int]
 SIDE_DIST_PLOT_SIZE = 100
-TAB_PRIORITY = 5
+TAB_PRIORITY = 91
 
 
 

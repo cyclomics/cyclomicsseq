@@ -325,7 +325,7 @@ process PlotMetadataStats{
         """
 }
 
-process PlotReport{
+process PlotReportDetailed{
     publishDir "${params.output_dir}", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
@@ -337,6 +337,22 @@ process PlotReport{
     
     script:
         """
-        generate_report.py '${params}' $workflow.manifest.version
+        generate_report.py '${params}' $workflow.manifest.version 9999
+        """
+}
+
+process PlotReportStd{
+    publishDir "${params.output_dir}", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+
+    input:
+        path(jsons)
+
+    output:
+        path("report.html")
+    
+    script:
+        """
+        generate_report.py '${params}' $workflow.manifest.version 89
         """
 }
