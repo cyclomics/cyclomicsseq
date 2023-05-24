@@ -234,7 +234,7 @@ process SamtoolsMergeBams{
 process SamtoolsMergeBamsPublished{
     //  merge n number of bams into one
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
+    // publishDir "${params.output_dir}/consensus_aligned", mode: 'copy'
 
     label 'many_cpu_medium'
 
