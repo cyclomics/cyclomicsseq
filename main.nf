@@ -290,14 +290,16 @@ workflow {
             region_file,
             PrepareGenome.out.fasta_combi
         )
+        regions = ValidatePosibleVariantLocations.out.regions
         locations = ValidatePosibleVariantLocations.out.locations
         variant_vcf = ValidatePosibleVariantLocations.out.variants
     
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
-        variant_vcf = ""
+        regions = ""
         locations = ""
+        variant_vcf = ""
     }
 
 /*
@@ -315,6 +317,7 @@ workflow {
             base_unit_reads,
             read_info_json,
             reads_aligned_filtered,
+            regions,
             locations,
             variant_vcf,
         )
@@ -329,6 +332,7 @@ workflow {
             base_unit_reads,
             read_info_json,
             reads_aligned_filtered,
+            regions,
             locations,
             variant_vcf,
         )

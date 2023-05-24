@@ -54,6 +54,7 @@ workflow StandardReport {
         fastq_consensus
         read_info
         consensus_bam
+        roi
         noisy_vcf
         annotated_vcf
 
@@ -85,7 +86,7 @@ workflow StandardReport {
         meta_data = read_info.map(it -> it[1]).collect()
         PlotMetadataStats(meta_data)
 
-        roi = FindRegionOfInterest(consensus_bam)
+        // roi = FindRegionOfInterest(consensus_bam)
       
         PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
         PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
@@ -126,6 +127,7 @@ workflow DetailedReport {
         fastq_consensus
         read_info
         consensus_bam
+        regions_of_interest
         noisy_vcf
         annotated_vcf
 
@@ -157,7 +159,7 @@ workflow DetailedReport {
         meta_data = read_info.map(it -> it[1]).collect()
         PlotMetadataStats(meta_data)
 
-        roi = FindRegionOfInterest(consensus_bam)
+        // roi = FindRegionOfInterest(consensus_bam)
       
         PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
         PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')

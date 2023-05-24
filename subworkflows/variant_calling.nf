@@ -65,6 +65,9 @@ workflow ValidatePosibleVariantLocations{
         if (variant_file_name == 'auto') {
             positions = FindRegionOfInterest(reads_aligned)
         }
+        else if( variant_file_name.endsWith('.bed') ) {
+            positions = variant_file
+        }
         else if( variant_file_name.endsWith('.vcf') ) {
             positions = VcfToBed(variant_file)
         }
@@ -84,6 +87,7 @@ workflow ValidatePosibleVariantLocations{
 
 
     emit:
+        regions = positions
         locations = MergeNoisyVCF.out
         variants = AnnotateVCF.out
 }
