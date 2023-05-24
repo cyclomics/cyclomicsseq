@@ -98,7 +98,6 @@ class MetadataClassifier:
         return outcome
 
     def separate_alignments(self, classification, alignments):
-
         classifier = [
             x for x in self.classification_options if x.name == classification
         ]
@@ -120,24 +119,6 @@ class MetadataClassifier:
 
     def show_counts(self):
         return Counter([v for v in self.result.values()])
-
-
-class LowAlignmentCount(BaseMetadataClass):
-    applicable = True
-    priority = 11
-
-    def inspect(self, metadata: METADATA) -> str:
-        outcome = False
-        conditions = [metadata["CalculateSegmentCountPercentageTenSegments"] < 0.21]
-        if all(conditions):
-            return self.name
-        else:
-            return outcome
-
-    def chop_blocks(self, alignments):
-        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
-            alignments
-        )
 
 
 class BackboneInsert(BaseMetadataClass):
@@ -235,6 +216,24 @@ class SingleBackbone(BaseMetadataClass):
         )
 
 
+class LowAlignmentCount(BaseMetadataClass):
+    applicable = True
+    priority = 11
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        conditions = [metadata["CalculateSegmentCountPercentageTenSegments"] < 0.21]
+        if all(conditions):
+            return self.name
+        else:
+            return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
 class SingleInsertUnalignedGaps(BaseMetadataClass):
     applicable = True
     priority = 19
@@ -272,6 +271,45 @@ class SingleInsert(BaseMetadataClass):
         if metadata["CheckTwoStartLocationsByOwnLength"]:
             return outcome
         if metadata["CheckEqualStartLocations"] > 0.8:
+            return self.name
+
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class SingleInsertUncertain(BaseMetadataClass):
+    applicable = True
+    priority = 24
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        if metadata["CheckTwoStartLocationsByOwnLength"]:
+            return outcome
+        if metadata["Check1ChromosomesPresent"]:
+            return self.name
+
+        return outcome
+
+    def chop_blocks(self, alignments):
+        return self.alignment_processor.create_paired_alignment_groups_per_chromosome_and_distance(
+            alignments
+        )
+
+
+class DoubleInsertUncertain(BaseMetadataClass):
+    applicable = True
+    priority = 25
+
+    def inspect(self, metadata: METADATA) -> str:
+        outcome = False
+        if (
+            not metadata["Check1BackBoneInAlignments"]
+            and metadata["Check2ChromosomesPresent"]
+        ):
             return self.name
 
         return outcome

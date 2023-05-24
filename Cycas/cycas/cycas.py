@@ -9,6 +9,7 @@ logger.add(sys.stderr, level="INFO")
 
 old = False
 
+
 # Command Group, all others could initiate from this
 @click.group(name="tools")
 def cli():

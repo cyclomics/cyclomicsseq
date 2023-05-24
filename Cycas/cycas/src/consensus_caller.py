@@ -179,7 +179,6 @@ class BaseConsensusCaller(ABC):
         alignment_object.qual += [0] * required_additions
 
     def update_insert_locations(self, alignment_objects):
-
         max_length = max([x.alignment_length for x in alignment_objects.keys()])
         max_insert_n = max(
             [x.extended_cigar.count("I") for x in alignment_objects.keys()]
@@ -320,8 +319,10 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 barcode,
                 barcode_arrays,
                 alignment_start,
+                best_nuc_support,
                 flipped,
             ) = self.create_block_consensus(block)
+
             # add to the reporting for the output
             result[tag] = {
                 "filtered": filter_on_count,
@@ -335,6 +336,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 "alignment_position": f"{block.consensus_chromosome}:{alignment_start}:{alignment_start+len(cons)}",
                 "alignment_orientation": "R" if flipped else "F",
                 "original_read_positions": self.generate_block_positions(block),
+                "nt_repeat_support": best_nuc_support,
             }
         return result
 
@@ -375,6 +377,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
         quality = []
         alignment_start = 0
         aligned_segment_count = len(consensus_alignments)
+        best_nuc_support = []
         # loop over all posible positions
         for i in range(max_length):
             nucs = [x.get_seq_pos(i) for x in consensus_alignments.values()]
@@ -418,6 +421,8 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             probs = [self.phred_to_prob(x) for x in quals]
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
+            best_nuc_support.append(tuple([nucs.count(best_nuc), len(nucs)]))
+
             # If we start the consensus string we store the position
             if alignment_start == 0 and best_nuc != "-":
                 alignment_start = i + block.get_start_position()
@@ -443,6 +448,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
         if self.determine_consensus_direction_backwards(block):
             consensus = str(Seq(consensus).reverse_complement())
             quality = quality[::-1]
+            best_nuc_support = best_nuc_support[::-1]
             flipped = True
 
         return (
@@ -451,5 +457,6 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             barcode,
             barcode_arrays,
             alignment_start,
+            best_nuc_support,
             flipped,
         )

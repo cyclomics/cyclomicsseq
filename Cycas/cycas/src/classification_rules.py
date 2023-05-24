@@ -119,7 +119,6 @@ class CalculateRelativeChromosomalAbundance(ClassificationRule):
 
     @lru_cache(maxsize=1)
     def score(self, group):
-
         directional_chromosomes = [
             f"{x.alignment_chromosome}_{x.alignment_direction}"
             for x in group.alignments
@@ -190,7 +189,6 @@ class CheckNDirectionalChromosomesPresent(ClassificationRule):
 
     @lru_cache(maxsize=1)
     def score(self, group):
-
         alignments = group.alignments
         result = 1
         chroms = [
@@ -267,7 +265,6 @@ class CheckNChromosomesPresent(ClassificationRule):
 
     @lru_cache(maxsize=1)
     def score(self, group):
-
         alignments = group.alignments
         result = 1
         chroms = [x.alignment_chromosome for x in alignments]
@@ -471,7 +468,6 @@ class CheckTwoStartLocations(ClassificationRule):
         self.minimum_distance = minimum_distance
 
     def score(self, group):
-
         alignments = group.alignments
         #  set compresension, since we only need every chromosome once
         chromosomes_observed = {
@@ -508,7 +504,6 @@ class CheckTwoStartLocationsByOwnLength(ClassificationRule):
         self.minimum_distance = minimum_distance
 
     def score(self, group):
-
         alignments = group.alignments
         #  set compresension, since we only need every chromosome once
         chromosomes_observed = {
@@ -555,7 +550,6 @@ class CalculateTripletChromosomes(ClassificationRule):
     applicable = True
 
     def score(self, group):
-
         alignments = group.alignments
 
         if len(group) <= 2:
