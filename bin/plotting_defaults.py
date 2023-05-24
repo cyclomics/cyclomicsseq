@@ -9,6 +9,21 @@ class plot_defaults:
     plot_axis_text_size: str = "16pt"
     plot_label_size: str = "12pt"
 
+def human_format(num):
+    if type(num) == str:
+        try:
+            num = float(num)
+        except ValueError:
+            return num
+
+    num = float("{:.3g}".format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return "{}{}".format(
+        "{:f}".format(num).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude]
+    )
 
 def findnth_occurance(input, search, n):
     """
@@ -162,6 +177,7 @@ TEMPLATE_STR = """
                               <li class="list-group-item">Backbone: {{ additional_info.nextflow_params.backbone }}</li>
                               <li class="list-group-item">Regions: {{  additional_info.nextflow_params.region_file }}</li>
                               <li class="list-group-item">Original output: {{  additional_info.nextflow_params.output_dir }}</li>
+                              <li class="list-group-item">report style: {{  additional_info.nextflow_params.report }}</li>
                               &nbsp
                               <li class="list-group-item">QC: {{  additional_info.nextflow_params.qc }}</li>
                               <li class="list-group-item">Consensus generation: {{  additional_info.nextflow_params.consensus_calling }}</li>

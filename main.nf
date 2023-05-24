@@ -30,7 +30,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.qc                       = "full"
+params.report                   = "detailed"
 params.consensus_calling        = "cycas"
 params.alignment                = "bwamem"
 params.variant_calling          = "validate"
@@ -83,7 +83,7 @@ log.info """
         output folder            : $params.output_dir
         Cmd line                 : $workflow.commandLine
     Method:  
-        QC                       : $params.qc
+        report                   : $params.report
         consensus_calling        : $params.consensus_calling
         Alignment                : $params.alignment
         variant_calling          : $params.variant_calling
@@ -106,8 +106,8 @@ if (params.profile_selected == "conda"){
 ========================================================================================
 */
 include {
-    QC_MinionQc
-    PostQC
+    DetailedReport
+    StandardReport
 } from "./subworkflows/QC"
 
 include {
@@ -305,8 +305,8 @@ workflow {
 04.    Reporting
 ========================================================================================
 */  
-    if (params.report){
-        PostQC(
+    if (params.report == "detailed"){
+        DetailedReport(
             PrepareGenome.out.fasta_combi,
             read_fastq,
             read_fastq_filtered,
@@ -319,6 +319,27 @@ workflow {
             variant_vcf,
         )
     }
+    else if (params.report == "standard") {
+        StandardReport(
+            PrepareGenome.out.fasta_combi,
+            read_fastq,
+            read_fastq_filtered,
+            split_bam,
+            split_bam_filtered,
+            base_unit_reads,
+            read_info_json,
+            reads_aligned_filtered,
+            locations,
+            variant_vcf,
+        )
+    }
+    else if (params.report == "skip") {
+        println('Skipping report generation entirely')
+    }
+    else {
+        error "Invalid reporting selector: ${params.report}"
+    }
+
 }
 
 workflow.onComplete {

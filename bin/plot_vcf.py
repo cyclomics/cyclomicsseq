@@ -16,7 +16,7 @@ from bokeh.embed import components
 from plotting_defaults import cyclomics_defaults
 
 chromosomal_region = Tuple[str, int, int]
-
+TAB_PRIORITY = 3
 
 def get_roi_pileup_df(
     df: pd.DataFrame, distance: int = 100
@@ -209,6 +209,8 @@ def main(vcf_file, plot_file):
             "",
             "<h1>One of the pileups was not deep enough.</h1>",
         )
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
+
         with open(Path(plot_file).with_suffix(".json"), "w") as f:
             f.write(json.dumps(json_obj))
         return
@@ -221,6 +223,8 @@ def main(vcf_file, plot_file):
 
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
     json_obj["additional_info"] = add_info
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
+
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))

@@ -20,6 +20,8 @@ from bokeh.embed import components
 
 from plotting_defaults import cyclomics_defaults
 
+TAB_PRIORITY = 92
+
 concat_type_colors = {
     "BB-I": "DodgerBlue",  # perfect
     "BB-only": "Crimson",  # waste
@@ -195,11 +197,11 @@ def read_jsons_into_plots(json_folder, plot_file):
                     dict_data = []
                 dict_data += dict_data_json
 
-    tab_name = "metadata"
+    tab_name = "Metadata"
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
-
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
     if not dict_data:
         f = open(plot_file, "w")
         f.write("<h1>No metadata found.</h1>")
