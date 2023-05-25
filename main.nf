@@ -282,6 +282,7 @@ workflow {
     if( params.variant_calling == "freebayes" ) {
         FreebayesSimple(reads_aligned_filtered, PrepareGenome.out.mmi_combi)
         variant_vcf = FreebayesSimple.out
+        regions = ""
         locations = ""
     }
     else if (params.variant_calling == "validate"){
