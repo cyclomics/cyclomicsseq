@@ -127,7 +127,7 @@ workflow DetailedReport {
         fastq_consensus
         read_info
         consensus_bam
-        regions_of_interest
+        roi
         noisy_vcf
         annotated_vcf
 
