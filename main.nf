@@ -130,6 +130,7 @@ include {
 } from "./subworkflows/align"
 
 include {
+    ProcessTargetRegions
     FreebayesSimple
     Mutect2
     ValidatePosibleVariantLocations
@@ -278,29 +279,31 @@ workflow {
 03.A   Variant calling
 ========================================================================================
 */  
-    
-    if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned_filtered, PrepareGenome.out.mmi_combi)
-        variant_vcf = FreebayesSimple.out
-        regions = ""
-        locations = ""
-    }
-    else if (params.variant_calling == "validate"){
-        ValidatePosibleVariantLocations(
+    ProcessTargetRegions(region_file, reads_aligned_filtered)
+    regions = ProcessTargetRegions.out
+    locations = ""
+    variant_vcf = ""
+
+    if (params.variant_calling == "freebayes") {
+        FreebayesSimple(
             reads_aligned_filtered,
-            region_file,
+            regions,
             PrepareGenome.out.fasta_combi
         )
-        regions = ValidatePosibleVariantLocations.out.regions
+        locations = FreebayesSimple.out.locations
+        variant_vcf = FreebayesSimple.out.variants
+    }
+    else if (params.variant_calling == "validate") {
+        ValidatePosibleVariantLocations(
+            reads_aligned_filtered,
+            regions,
+            PrepareGenome.out.fasta_combi
+        )
         locations = ValidatePosibleVariantLocations.out.locations
         variant_vcf = ValidatePosibleVariantLocations.out.variants
-    
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
-        regions = ""
-        locations = ""
-        variant_vcf = ""
     }
 
 /*

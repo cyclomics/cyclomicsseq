@@ -8,6 +8,7 @@ from plotting_defaults import cyclomics_defaults, human_format
 
 TAB_PRIORITY = 2
 
+
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
     """Loads a VCF file as a Pandas DataFrame."""
     with open(vcf_file, "r") as f:
@@ -20,26 +21,32 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
                 lines.append(l)
 
     vcf_header = header
-    variants_df = pd.read_csv(
-        io.StringIO("".join(lines)),
-        dtype={
-            "#CHROM": str,
-            "POS": int,
-            "ID": str,
-            "REF": str,
-            "ALT": str,
-            "QUAL": str,
-            "FILTER": str,
-            "INFO": str,
-            "Sample1": str,
-        },
-        sep="\t",
-    ).rename(columns={"#CHROM": "CHROM"})
+    variants_df = (
+        pd.read_csv(
+            io.StringIO("".join(lines)),
+            dtype={
+                "#CHROM": str,
+                "POS": int,
+                "ID": str,
+                "REF": str,
+                "ALT": str,
+                "QUAL": str,
+                "FILTER": str,
+                "INFO": str,
+                "Sample1": str,
+            },
+            sep="\t",
+        )
+        .rename(columns={"#CHROM": "CHROM"})
+        .rename(columns=str.upper)
+    )
 
     return variants_df
 
 
-def restructure_annotations(variants_df: pd.DataFrame, variant_decimal_points=3) -> pd.DataFrame:
+def restructure_annotations(
+    variants_df: pd.DataFrame, variant_decimal_points=3
+) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
@@ -48,7 +55,7 @@ def restructure_annotations(variants_df: pd.DataFrame, variant_decimal_points=3)
     ref = variants_df["REF"]
     alt = variants_df["ALT"]
 
-    sample1 = variants_df["Sample1"].str.split(":")
+    sample1 = variants_df["SAMPLE1"].str.split(":")
     vaf = sample1.str[3]
     # convert fraction to percentage
     vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"

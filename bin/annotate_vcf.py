@@ -38,25 +38,29 @@ class VCF_file:
                     lines.append(l)
 
         self.vcf_header = header
-        df = pd.read_csv(
-            io.StringIO("".join(lines)),
-            dtype={
-                "#CHROM": str,
-                "POS": int,
-                "ID": str,
-                "REF": str,
-                "ALT": str,
-                "QUAL": str,
-                "FILTER": str,
-                "INFO": str,
-            },
-            sep="\t",
-        ).rename(columns={"#CHROM": "CHROM"})
+        df = (
+            pd.read_csv(
+                io.StringIO("".join(lines)),
+                dtype={
+                    "#CHROM": str,
+                    "POS": int,
+                    "ID": str,
+                    "REF": str,
+                    "ALT": str,
+                    "QUAL": str,
+                    "FILTER": str,
+                    "INFO": str,
+                },
+                sep="\t",
+            )
+            .rename(columns={"#CHROM": "CHROM"})
+            .rename(columns=str.upper)
+        )
 
         if not df.empty:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
-                df[fmt] = df.Sample1.apply(
+                df[fmt] = df.SAMPLE1.apply(
                     lambda x: self.relaxed_float(x.split(":")[i])
                     if (x.split(":")[i])
                     else 0
@@ -81,7 +85,7 @@ class VCF_file:
                     "FILTER",
                     "INFO",
                     "FORMAT",
-                    "Sample1",
+                    "SAMPLE1",
                 ]
             ]
 
