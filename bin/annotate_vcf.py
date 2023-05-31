@@ -38,29 +38,25 @@ class VCF_file:
                     lines.append(l)
 
         self.vcf_header = header
-        df = (
-            pd.read_csv(
-                io.StringIO("".join(lines)),
-                dtype={
-                    "#CHROM": str,
-                    "POS": int,
-                    "ID": str,
-                    "REF": str,
-                    "ALT": str,
-                    "QUAL": str,
-                    "FILTER": str,
-                    "INFO": str,
-                },
-                sep="\t",
-            )
-            .rename(columns={"#CHROM": "CHROM"})
-            .rename(columns=str.upper)
-        )
+        df = pd.read_csv(
+            io.StringIO("".join(lines)),
+            dtype={
+                "#CHROM": str,
+                "POS": int,
+                "ID": str,
+                "REF": str,
+                "ALT": str,
+                "QUAL": str,
+                "FILTER": str,
+                "INFO": str,
+            },
+            sep="\t",
+        ).rename(columns={"#CHROM": "CHROM"})
 
         if not df.empty:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
-                df[fmt] = df.SAMPLE1.apply(
+                df[fmt] = df.Sample1.apply(
                     lambda x: self.relaxed_float(x.split(":")[i])
                     if (x.split(":")[i])
                     else 0
@@ -85,7 +81,7 @@ class VCF_file:
                     "FILTER",
                     "INFO",
                     "FORMAT",
-                    "SAMPLE1",
+                    "Sample1",
                 ]
             ]
 
@@ -150,7 +146,6 @@ class VCF_file:
         variant_class = None
         consequence = None
         mutation_ids = None
-        cosmic_legacy_ids = None
         gene = None
         impact = None
         biotype = None
@@ -176,16 +171,14 @@ class VCF_file:
             mutation_ids = []
             cosmic_legacy_ids = []
             for xref in colocated_variants:
-                mutation_ids.append(xref["id"])
                 if xref["allele_string"] == "COSMIC_MUTATION":
-                    cosmic_legacy_ids.append(xref["var_synonyms"]["COSMIC"][0])
+                    mutation_ids.append(xref["id"])
 
             # Join list of found IDs into comma-separated string
-            mutation_ids = ",".join(mutation_ids)
-            cosmic_legacy_ids = ",".join(cosmic_legacy_ids)
+            mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
+
         except:
             mutation_ids = "None"
-            cosmic_legacy_ids = "None"
 
         transcript_cons = vep_json.get("transcript_consequences")
         # Transcript consequences can differ a lot per query
@@ -213,7 +206,6 @@ class VCF_file:
                 "variant_class": variant_class,
                 "consequence": consequence,
                 "COSMIC": mutation_ids,
-                "COSMIC_legacy": cosmic_legacy_ids,
                 "gene": gene,
                 "impact": impact,
                 "biotype": biotype,
@@ -292,8 +284,8 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        # variant_vcf = "/scratch/nxf_work/rodrigo/a4/a030f4325cb5bf3385a1ceb02f6c3a/FAS12641.merged.vcf"
-        variant_vcf = "testindel_EGFR.vcf"
+        # variant_vcf = "/data/projects/ROD_0524_CHIP/Technical_2_test/variants/FAS12641_filtered.filtered_merged.vcf"
+        # variant_vcf = "testindel_EGFR.vcf"
 
         server = "https://rest.ensembl.org"
 
