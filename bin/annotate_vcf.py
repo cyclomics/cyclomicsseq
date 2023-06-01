@@ -11,6 +11,24 @@ import sys
 import json
 
 
+def obtain_legacy_cosmic_id(
+    cosv_id: int,
+    base_url: str = "https://clinicaltables.nlm.nih.gov/api/cosmic/v4/search?terms=",
+) -> str:
+    """extract legacy information from the clinicaltables.nlm.nih.gov api."""
+    query = base_url + str(cosv_id) + "&ef=LegacyMutationID"
+    try:
+        response = requests.get(url=query, headers={"Content-Type": "application/json"})
+        json_data = json.loads(response.text)[0]
+        id_list = list(set(json.loads(response.text)[2]["LegacyMutationID"]))
+        legacy_ids = [id for id in id_list if "COSM" in id]
+
+    except:
+        return "None"
+
+    return ",".join(legacy_ids)
+
+
 class VCF_file:
     def __init__(self, vcf_file):
         self.vcf_file = vcf_file
@@ -172,10 +190,19 @@ class VCF_file:
             cosmic_legacy_ids = []
             for xref in colocated_variants:
                 if xref["allele_string"] == "COSMIC_MUTATION":
-                    mutation_ids.append(xref["id"])
+                    cosv = xref["id"]
+                    mutation_ids.append(cosv)
+                    try:
+                        cosm = obtain_legacy_cosmic_id(cosv)
+                        cosmic_legacy_ids.append(cosm)
+                    except:
+                        continue
 
             # Join list of found IDs into comma-separated string
             mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
+            cosmic_legacy_ids = (
+                ",".join(cosmic_legacy_ids) if cosmic_legacy_ids else "None"
+            )
 
         except:
             mutation_ids = "None"
@@ -206,6 +233,7 @@ class VCF_file:
                 "variant_class": variant_class,
                 "consequence": consequence,
                 "COSMIC": mutation_ids,
+                "COSMIC legacy": cosmic_legacy_ids,
                 "gene": gene,
                 "impact": impact,
                 "biotype": biotype,
@@ -284,7 +312,6 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        # variant_vcf = "/data/projects/ROD_0524_CHIP/Technical_2_test/variants/FAS12641_filtered.filtered_merged.vcf"
         # variant_vcf = "testindel_EGFR.vcf"
 
         server = "https://rest.ensembl.org"

@@ -72,12 +72,13 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
     else:
         var_type = info.str[0].str.split("=").str[1]
         consequence = info.str[1].str.split("=").str[1]
-        symbol = info.str[3].str.split("=").str[1]
-        impact = info.str[4].str.split("=").str[1]
-        biotype = info.str[5].str.split("=").str[1]
-        sift = info.str[7].str.split("=").str[1]
-        polyphen = info.str[9].str.split("=").str[1]
+        symbol = info.str[4].str.split("=").str[1]
+        impact = info.str[5].str.split("=").str[1]
+        biotype = info.str[6].str.split("=").str[1]
+        sift = info.str[8].str.split("=").str[1]
+        polyphen = info.str[10].str.split("=").str[1]
         cosmic_ids = info.str[2].str.split("=").str[1]
+        legacy_ids = info.str[3].str.split("=").str[1]
 
     annot_columns = [
         "Location",
@@ -92,6 +93,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         "SIFT",
         "PolyPhen",
         "COSMIC",
+        "COSMIC legacy",
     ]
 
     annot_data = [
@@ -107,11 +109,15 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         sift,
         polyphen,
         cosmic_ids,
+        legacy_ids,
     ]
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
     annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(
+        to_replace=",", value=", ", regex=True
+    )
+    annotation_df["COSMIC legacy"] = annotation_df["COSMIC legacy"].replace(
         to_replace=",", value=", ", regex=True
     )
     annotation_df = annotation_df.replace(to_replace=r"\(\)", value="")
