@@ -8,6 +8,7 @@ from plotting_defaults import cyclomics_defaults, human_format
 
 TAB_PRIORITY = 2
 
+
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
     """Loads a VCF file as a Pandas DataFrame."""
     with open(vcf_file, "r") as f:
@@ -39,7 +40,9 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
     return variants_df
 
 
-def restructure_annotations(variants_df: pd.DataFrame, variant_decimal_points=3) -> pd.DataFrame:
+def restructure_annotations(
+    variants_df: pd.DataFrame, variant_decimal_points=3
+) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
@@ -148,6 +151,8 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
             from a pandas DataFrame.
         tab_name: Name of the variant table tab to add to the report, str.
     """
+    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
+
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
     vcf_table = annotation_df.to_html(na_rep="N/A")
@@ -156,14 +161,13 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
     )
     vcf_table = vcf_table.replace('border="1"', "")
     # f"width={cyclomics_defaults.width}")
-    vcf_table += "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         json_obj = {}
         json_obj[tab_name] = {}
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
-        json_obj[tab_name]["div"] = vcf_table
+        json_obj[tab_name]["div"] = "<div>" + vcf_table + version_notice + "</div>"
         json_obj[tab_name]["priority"] = TAB_PRIORITY
         f.write(json.dumps(json_obj))
 
@@ -185,9 +189,9 @@ if __name__ == "__main__":
         main(args.vcf_file, args.variant_table_file, args.tab_name)
 
     else:
-        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
+        vcf_file = "FAS12641_filtered_annotated.vcf"
         # vcf_file = "fastq_annotated.vcf"
-        vcf_file = "FAU48563_annotated.vcf"
+        # vcf_file = "FAU48563_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 
