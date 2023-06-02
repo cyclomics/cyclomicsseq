@@ -4,8 +4,9 @@ from pathlib import Path
 import pandas as pd
 import io
 
-from plotting_defaults import cyclomics_defaults
+from plotting_defaults import cyclomics_defaults, human_format
 
+TAB_PRIORITY = 2
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
     """Loads a VCF file as a Pandas DataFrame."""
@@ -38,7 +39,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
     return variants_df
 
 
-def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
+def restructure_annotations(variants_df: pd.DataFrame, variant_decimal_points=3) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
@@ -49,6 +50,11 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     sample1 = variants_df["Sample1"].str.split(":")
     vaf = sample1.str[3]
+    # convert fraction to percentage
+    vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"
+
+    coverage = sample1.str[0]
+    coverage = coverage.apply(human_format)
 
     info = variants_df["INFO"].str.split(";")
 
@@ -75,7 +81,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         symbol = info.str[4].str.split("=").str[1]
         impact = info.str[5].str.split("=").str[1]
         biotype = info.str[6].str.split("=").str[1]
-        sift = info.str[8].str.split("=").str[1]
+        sift = info.str[9].str.split("=").str[1]
         polyphen = info.str[10].str.split("=").str[1]
         cosmic_ids = info.str[2].str.split("=").str[1]
         legacy_ids = info.str[3].str.split("=").str[1]
@@ -84,7 +90,8 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         "Location",
         "Ref",
         "Alt",
-        "VAF",
+        "Var (%)",
+        "Coverage",
         "Type",
         "Symbol",
         "Biotype",
@@ -101,6 +108,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         ref,
         alt,
         vaf,
+        coverage,
         var_type,
         symbol,
         biotype,
@@ -148,6 +156,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
     )
     vcf_table = vcf_table.replace('border="1"', "")
     # f"width={cyclomics_defaults.width}")
+    vcf_table += "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         json_obj = {}
@@ -155,7 +164,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
         json_obj[tab_name]["div"] = vcf_table
-        json_obj[tab_name]["priority"] = 1
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
         f.write(json.dumps(json_obj))
 
 
