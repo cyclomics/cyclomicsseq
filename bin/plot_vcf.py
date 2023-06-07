@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import io
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -16,6 +16,16 @@ from bokeh.embed import components
 from plotting_defaults import cyclomics_defaults
 
 chromosomal_region = Tuple[str, int, int]
+TAB_PRIORITY = 3
+
+
+def relaxed_float(x: Any) -> float:
+    """Return a float, with value error catch"""
+    try:
+        my_float = float(x)
+    except ValueError:
+        my_float = x
+    return my_float
 
 
 def get_roi_pileup_df(
@@ -50,32 +60,36 @@ def get_roi_pileup_df(
 def read_vcf(path):
     with open(path, "r") as f:
         lines = [l for l in f if not l.startswith("##")]
-    df = pd.read_csv(
-        io.StringIO("".join(lines)),
-        dtype={
-            "#CHROM": str,
-            "POS": int,
-            "ID": str,
-            "REF": str,
-            "ALT": str,
-            "QUAL": str,
-            "FILTER": str,
-            "INFO": str,
-        },
-        sep="\t",
-    ).rename(columns={"#CHROM": "CHROM"})
+    df = (
+        pd.read_csv(
+            io.StringIO("".join(lines)),
+            dtype={
+                "#CHROM": str,
+                "POS": int,
+                "ID": str,
+                "REF": str,
+                "ALT": str,
+                "QUAL": str,
+                "FILTER": str,
+                "INFO": str,
+            },
+            sep="\t",
+        )
+        .rename(columns={"#CHROM": "CHROM"})
+        .rename(columns=str.upper)
+    )
 
     if df.empty:
         return df
 
     formats = df.FORMAT[0].split(":")
     for i, fmt in enumerate(formats):
-        df[fmt] = df.Sample1.apply(
-            lambda x: float((x.split(":")[i] if (x.split(":")[i]) else 0))
+        df[fmt] = df.SAMPLE1.apply(
+            lambda x: relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
         )
 
     del df["FORMAT"]
-    del df["Sample1"]
+    del df["SAMPLE1"]
     return df
 
 
@@ -209,6 +223,8 @@ def main(vcf_file, plot_file):
             "",
             "<h1>One of the pileups was not deep enough.</h1>",
         )
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
+
         with open(Path(plot_file).with_suffix(".json"), "w") as f:
             f.write(json.dumps(json_obj))
         return
@@ -221,6 +237,7 @@ def main(vcf_file, plot_file):
 
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
     json_obj["additional_info"] = add_info
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))

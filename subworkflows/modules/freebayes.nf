@@ -7,21 +7,22 @@ process Freebayes {
     label 'many_cpu_medium'
 
     input:
-        tuple val(X), path(input_bam_file),path(input_bai_file), path(reference)
+        tuple val(X), path(input_bam_file), path(input_bai_file), path(reference)
+        tuple val(X), path(roi)
 
     output:
-        tuple val(X), path("${input_bam_file.SimpleName}.vcf")
+        path("${input_bam_file.SimpleName}.vcf")
 
     script:
-        println("WARN: chr17 variant calling only!")
-        ref = reference.first()
+        ref = reference
         """
         freebayes \
         --haplotype-length 3 \
         --min-alternate-count 1 \
-        -r chr17 \
+        -t $roi \
         -f $ref \
         --vcf ${input_bam_file.SimpleName}.vcf \
         $input_bam_file
         """
 }
+        // ref = reference.first()

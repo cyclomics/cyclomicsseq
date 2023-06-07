@@ -30,7 +30,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.qc                       = "full"
+params.report                   = "detailed"
 params.consensus_calling        = "cycas"
 params.alignment                = "bwamem"
 params.variant_calling          = "validate"
@@ -83,7 +83,7 @@ log.info """
         output folder            : $params.output_dir
         Cmd line                 : $workflow.commandLine
     Method:  
-        QC                       : $params.qc
+        report                   : $params.report
         consensus_calling        : $params.consensus_calling
         Alignment                : $params.alignment
         variant_calling          : $params.variant_calling
@@ -106,8 +106,8 @@ if (params.profile_selected == "conda"){
 ========================================================================================
 */
 include {
-    QC_MinionQc
-    PostQC
+    DetailedReport
+    StandardReport
 } from "./subworkflows/QC"
 
 include {
@@ -130,6 +130,7 @@ include {
 } from "./subworkflows/align"
 
 include {
+    ProcessTargetRegions
     FreebayesSimple
     Mutect2
     ValidatePosibleVariantLocations
@@ -278,26 +279,31 @@ workflow {
 03.A   Variant calling
 ========================================================================================
 */  
-    
-    if( params.variant_calling == "freebayes" ) {
-        FreebayesSimple(reads_aligned_filtered, PrepareGenome.out.mmi_combi)
-        variant_vcf = FreebayesSimple.out
-        locations = ""
+    ProcessTargetRegions(region_file, reads_aligned_filtered)
+    regions = ProcessTargetRegions.out
+    locations = ""
+    variant_vcf = ""
+
+    if (params.variant_calling == "freebayes") {
+        FreebayesSimple(
+            reads_aligned_filtered,
+            regions,
+            PrepareGenome.out.fasta_combi
+        )
+        locations = FreebayesSimple.out.locations
+        variant_vcf = FreebayesSimple.out.variants
     }
-    else if (params.variant_calling == "validate"){
+    else if (params.variant_calling == "validate") {
         ValidatePosibleVariantLocations(
             reads_aligned_filtered,
-            region_file,
+            regions,
             PrepareGenome.out.fasta_combi
         )
         locations = ValidatePosibleVariantLocations.out.locations
         variant_vcf = ValidatePosibleVariantLocations.out.variants
-    
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"
-        variant_vcf = ""
-        locations = ""
     }
 
 /*
@@ -305,8 +311,8 @@ workflow {
 04.    Reporting
 ========================================================================================
 */  
-    if (params.report){
-        PostQC(
+    if (params.report == "detailed"){
+        DetailedReport(
             PrepareGenome.out.fasta_combi,
             read_fastq,
             read_fastq_filtered,
@@ -315,10 +321,33 @@ workflow {
             base_unit_reads,
             read_info_json,
             reads_aligned_filtered,
+            regions,
             locations,
             variant_vcf,
         )
     }
+    else if (params.report == "standard") {
+        StandardReport(
+            PrepareGenome.out.fasta_combi,
+            read_fastq,
+            read_fastq_filtered,
+            split_bam,
+            split_bam_filtered,
+            base_unit_reads,
+            read_info_json,
+            reads_aligned_filtered,
+            regions,
+            locations,
+            variant_vcf,
+        )
+    }
+    else if (params.report == "skip") {
+        println('Skipping report generation entirely')
+    }
+    else {
+        error "Invalid reporting selector: ${params.report}"
+    }
+
 }
 
 workflow.onComplete {

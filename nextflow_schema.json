@@ -54,6 +54,17 @@
                         "BB42",
                         "Custom*"
                     ]
+                },
+                "report": {
+                    "type": "string",
+                    "description": "type of report to generate at the end of the pipeline.",
+                    "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
+                    "default": "standard",
+                    "enum": [
+                        "standard",
+                        "detailed",
+                        "skip"
+                    ]
                 }
             },
             "required": [
@@ -223,11 +234,6 @@
                     "default": true,
                     "description": "Identifies adapter sequences and splits reads when encoutered.",
                     "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads."
-                },
-                "report": {
-                    "type": "boolean",
-                    "description": "enable or disable the creation of the html report.",
-                    "default": true
                 }
             }
         },

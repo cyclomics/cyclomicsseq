@@ -4,7 +4,9 @@ from pathlib import Path
 import pandas as pd
 import io
 
-from plotting_defaults import cyclomics_defaults
+from plotting_defaults import cyclomics_defaults, human_format
+
+TAB_PRIORITY = 2
 
 
 def load_vcf(vcf_file: Path) -> pd.DataFrame:
@@ -38,7 +40,9 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
     return variants_df
 
 
-def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
+def restructure_annotations(
+    variants_df: pd.DataFrame, variant_decimal_points=3
+) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
@@ -49,6 +53,11 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
 
     sample1 = variants_df["Sample1"].str.split(":")
     vaf = sample1.str[3]
+    # convert fraction to percentage
+    vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"
+
+    coverage = sample1.str[0]
+    coverage = coverage.apply(human_format)
 
     info = variants_df["INFO"].str.split(";")
 
@@ -78,12 +87,14 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         sift = info.str[9].str.split("=").str[1]
         polyphen = info.str[10].str.split("=").str[1]
         cosmic_ids = info.str[2].str.split("=").str[1]
+        legacy_ids = info.str[3].str.split("=").str[1]
 
     annot_columns = [
         "Location",
         "Ref",
         "Alt",
-        "VAF",
+        "Var (%)",
+        "Coverage",
         "Type",
         "Symbol",
         "Biotype",
@@ -92,6 +103,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         "SIFT",
         "PolyPhen",
         "COSMIC",
+        "COSMIC legacy",
     ]
 
     annot_data = [
@@ -99,6 +111,7 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         ref,
         alt,
         vaf,
+        coverage,
         var_type,
         symbol,
         biotype,
@@ -107,11 +120,15 @@ def restructure_annotations(variants_df: pd.DataFrame) -> pd.DataFrame:
         sift,
         polyphen,
         cosmic_ids,
+        legacy_ids,
     ]
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
     annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(
+        to_replace=",", value=", ", regex=True
+    )
+    annotation_df["COSMIC legacy"] = annotation_df["COSMIC legacy"].replace(
         to_replace=",", value=", ", regex=True
     )
     annotation_df = annotation_df.replace(to_replace=r"\(\)", value="")
@@ -134,6 +151,8 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
             from a pandas DataFrame.
         tab_name: Name of the variant table tab to add to the report, str.
     """
+    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
+
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
     vcf_table = annotation_df.to_html(na_rep="N/A")
@@ -148,8 +167,8 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
         json_obj[tab_name] = {}
         json_obj[tab_name]["name"] = tab_name
         json_obj[tab_name]["script"] = ""
-        json_obj[tab_name]["div"] = vcf_table
-        json_obj[tab_name]["priority"] = 1
+        json_obj[tab_name]["div"] = "<div>" + vcf_table + version_notice + "</div>"
+        json_obj[tab_name]["priority"] = TAB_PRIORITY
         f.write(json.dumps(json_obj))
 
 
@@ -170,9 +189,9 @@ if __name__ == "__main__":
         main(args.vcf_file, args.variant_table_file, args.tab_name)
 
     else:
-        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
+        vcf_file = "FAS12641_filtered_annotated.vcf"
         # vcf_file = "fastq_annotated.vcf"
-        vcf_file = "FAU48563_annotated.vcf"
+        # vcf_file = "FAU48563_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 
