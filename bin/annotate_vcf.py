@@ -304,7 +304,7 @@ class VCF_file:
 
 
 if __name__ == "__main__":
-    dev = True
+    dev = False
     if not dev:
         import argparse
 
@@ -322,8 +322,7 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        # variant_vcf = "/data/projects/ROD_tmp/test_vep/variants/FAW78856_filtered.filtered_merged.vcf"
-        variant_vcf = "/data/sequencing/results/validation/Set_1/ONT-15_PNK_01/CycloSeq/0.8.2/variants/FAS12641_filtered.filtered_merged.vcf"
+        variant_vcf = "a_test_file.vcf"
         server = "https://rest.ensembl.org"
 
         vcf = VCF_file(variant_vcf)
