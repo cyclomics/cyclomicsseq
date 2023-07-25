@@ -9,23 +9,28 @@ import io
 import requests
 import sys
 import json
+import logging
+
+
+class NoColocatedVariantsException(Exception):
+    "Raised when an Ensembl-VEP query does not return any colocated variants."
+    pass
 
 
 def obtain_legacy_cosmic_id(
-    cosv_id: int,
+    cosv_id: str,
     base_url: str = "https://clinicaltables.nlm.nih.gov/api/cosmic/v4/search?terms=",
 ) -> str:
     """extract legacy information from the clinicaltables.nlm.nih.gov api."""
-    query = base_url + str(cosv_id) + "&ef=LegacyMutationID"
-    try:
-        response = requests.get(url=query, headers={"Content-Type": "application/json"})
-        json_data = json.loads(response.text)[0]
-        id_list = list(set(json.loads(response.text)[2]["LegacyMutationID"]))
-        legacy_ids = [id for id in id_list if "COSM" in id]
 
-    except:
+    query = base_url + cosv_id + "&ef=LegacyMutationID"
+    response = requests.get(url=query, headers={"Content-Type": "application/json"})
+    try:
+        id_list = set(json.loads(response.text)[2]["LegacyMutationID"])
+    except KeyError:  # LegacyMutationID was not found in
         return "None"
 
+    legacy_ids = [id for id in id_list if "COSM" in id]
     return ",".join(legacy_ids)
 
 
@@ -146,13 +151,10 @@ class VCF_file:
             response = requests.get(
                 url=query, headers={"Content-Type": "application/json"}
             )
-
             json_data = json.loads(response.text)[0]
 
-        except:
-            # Any query that doesn't exist in Ensembl will return an SLLError or HTTPError,
-            # e.g. querying variants in a backbone sequence.
-            # In that case, we return nothing
+        except KeyError:
+            # No response data found in this query location
             return
 
         return json_data
@@ -186,26 +188,34 @@ class VCF_file:
         # and thus COSMIC IDs
         try:
             colocated_variants = vep_json.get("colocated_variants")
-            mutation_ids = []
-            cosmic_legacy_ids = []
-            for xref in colocated_variants:
-                if xref["allele_string"] == "COSMIC_MUTATION":
-                    cosv = xref["id"]
-                    mutation_ids.append(cosv)
-                    try:
-                        cosm = obtain_legacy_cosmic_id(cosv)
-                        cosmic_legacy_ids.append(cosm)
-                    except:
-                        continue
 
-            # Join list of found IDs into comma-separated string
-            mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
-            cosmic_legacy_ids = (
-                ",".join(cosmic_legacy_ids) if cosmic_legacy_ids else "None"
-            )
+            if not colocated_variants:
+                raise NoColocatedVariantsException(
+                    "Ensembl-VEP query does not return any colocated variants."
+                )
 
-        except:
+            else:
+                mutation_ids = []
+                cosmic_legacy_ids = []
+                for xref in colocated_variants:
+                    if xref["allele_string"] == "COSMIC_MUTATION":
+                        cosv = xref["id"]
+                        if cosv:
+                            mutation_ids.append(cosv)
+                            cosm = obtain_legacy_cosmic_id(cosv)
+                            cosmic_legacy_ids.append(cosm)
+                        else:
+                            continue
+
+                # Join list of found IDs into comma-separated string
+                mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
+                cosmic_legacy_ids = (
+                    ",".join(cosmic_legacy_ids) if cosmic_legacy_ids else "None"
+                )
+
+        except NoColocatedVariantsException:
             mutation_ids = "None"
+            cosmic_legacy_ids = "None"
 
         transcript_cons = vep_json.get("transcript_consequences")
         # Transcript consequences can differ a lot per query
@@ -312,10 +322,9 @@ if __name__ == "__main__":
         vcf.write(args.file_out)
 
     if dev:
-        # variant_vcf = "testindel_EGFR.vcf"
-
+        variant_vcf = "a_test_file.vcf"
         server = "https://rest.ensembl.org"
 
         vcf = VCF_file(variant_vcf)
         vcf.annotate_vep(server)
-        vcf.write("testannotate_EGFR.vcf")
+        vcf.write("testannotate.vcf")

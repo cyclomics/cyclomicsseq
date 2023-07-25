@@ -77,6 +77,7 @@ def restructure_annotations(
         sift = pd.Series(["N/A"] * len(location))
         polyphen = pd.Series(["N/A"] * len(location))
         cosmic_ids = pd.Series(["N/A"] * len(location))
+        legacy_ids = pd.Series(["N/A"] * len(location))
 
     else:
         var_type = info.str[0].str.split("=").str[1]
