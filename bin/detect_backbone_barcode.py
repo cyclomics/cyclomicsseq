@@ -20,6 +20,24 @@ class Backbone:
     name:str
     seq:str
 
+    
+    def __post_init__(self):
+        self.matrix_file: str = f"aln_matrix_demux_{self.name}.txt"
+        self.matrix:str = """
+    A   T   G   C   N   *
+A   5  -4  -4  -4   0  -5
+T  -4   5  -4  -4   0  -5
+G  -4  -4   5  -4   0  -5
+C  -4  -4  -4   5   0  -5
+N   0   0   0   0  -1  -5
+*  -5  -5  -5  -5  -5  -5
+"""
+        # self.matrix = parasail.dnafull
+        with open(self.matrix_file, "w") as f:
+            f.write(self.matrix)
+
+        self.matrix = parasail.Matrix(self.matrix_file)
+
     def __repr__(self) -> str:
         return f"Backbone {self.name}"
 
@@ -27,7 +45,7 @@ class Backbone:
         return self.name
 
     def map(self, sequence, show_aln=True):
-        mapping = parasail.sg_trace(sequence,self.seq, open=2, extend =1, matrix= parasail.dnafull)
+        mapping = parasail.sg_trace(sequence,self.seq, open=2, extend =1, matrix= self.matrix)
         if show_aln:
             print(f"score: {mapping.score}")
             print(mapping.traceback.ref)
@@ -36,7 +54,7 @@ class Backbone:
 
         return mapping
 
-    def check_for_barcode(self, sequence, min_score=500, show_aln=False):
+    def check_for_barcode(self, sequence, min_score=500, show_aln=True):
         
         # Parasail does not automatically check the sense and anti-sense strand, thus we do it manually.
         mapping = self.map(sequence, show_aln=show_aln)
