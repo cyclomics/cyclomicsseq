@@ -17,7 +17,7 @@ process Freebayes {
         ref = reference
         """
         freebayes \
-        --haplotype-length 3 \
+        --min-alternate-fraction 0.0001 \
         --min-alternate-count 1 \
         -t $roi \
         -f $ref \
