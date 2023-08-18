@@ -17,8 +17,9 @@ process Freebayes {
         ref = reference
         """
         freebayes \
-        --min-alternate-fraction 0.0001 \
-        --min-alternate-count 1 \
+        --min-alternate-fraction 0 \
+        --min-alternate-count 2 \
+        --min-base-quality 10
         -t $roi \
         -f $ref \
         --vcf ${input_bam_file.SimpleName}.vcf \

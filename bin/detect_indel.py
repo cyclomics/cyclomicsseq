@@ -245,7 +245,7 @@ def extract_indel_evidence(
             if indel.type == "deletion":
                 # Adjust reference allele to include deleted seq
                 with Lock() as lock:
-                    reference =  pysam.FastaFile(reference_fa)
+                    reference = pysam.FastaFile(reference_fa)
                     ref_seq = reference.fetch(
                         reference=assembly, start=pos, end=pos + indel.length + 1
                     )
