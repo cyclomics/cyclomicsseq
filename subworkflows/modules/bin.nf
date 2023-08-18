@@ -92,7 +92,7 @@ process FindVariants{
         """
 }
 
-process FilterVariants{
+process FilterValidateVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 

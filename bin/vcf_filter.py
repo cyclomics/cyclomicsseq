@@ -37,25 +37,11 @@ def parse_arguments():
         help="Input Perbase TSV table with positional depths.",
     )
     parser.add_argument(
-        "-p",
+        "-d",
         "--dynamic_vaf_params",
         type=Path,
         required=True,
         help="Input file with params for Dynamic VAF filtering.",
-    )
-    parser.add_argument(
-        "--min_dir_ratio",
-        type=float,
-        required=False,
-        default=0.001,
-        help="Minimum ratio of variant-supporting reads in each direction (default: 0.001).",
-    )
-    parser.add_argument(
-        "--min_dir_count",
-        type=float,
-        required=False,
-        default=5,
-        help="Minimum number of variant-supporting reads in each direction (default: 50).",
     )
     parser.add_argument(
         "--min_dpq",
@@ -79,11 +65,11 @@ def parse_arguments():
         help="Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3).",
     )
     parser.add_argument(
-        "--min_vaf",
+        "--max_sap",
         type=float,
         required=False,
-        default=0.003,
-        help="Minimum variant allele frequency (default: 0.002).",
+        default=60,
+        help="Maximum Phred-scaled strand balance probability before alternative allele is considered strand-imbalanced (default: 60).",
     )
     parser.add_argument(
         "--min_rel_ratio",
@@ -132,12 +118,11 @@ if __name__ == "__main__":
         vcf = Vcf(args.input_vcf)
         vcf.filter(
             depth_table,
-            args.min_dir_ratio,
-            args.min_dir_count,
+            dynamic_vaf_params,
             args.min_dpq,
             args.min_dpq_n,
             args.min_dpq_ratio,
-            args.min_vaf,
+            args.max_sap,
             args.min_rel_ratio,
             args.min_abq,
         )

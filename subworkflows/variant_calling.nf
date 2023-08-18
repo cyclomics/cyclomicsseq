@@ -54,7 +54,7 @@ workflow ProcessTargetRegions{
 
 }
 
-workflow FreebayesSimple{
+workflow CallVariantsFreebayes{
     take:
         reads_aligned
         positions
@@ -62,7 +62,9 @@ workflow FreebayesSimple{
 
     main:
         Freebayes(reads_aligned.combine(reference), positions)
-        AnnotateVCF(Freebayes.out)
+        PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
+        FilterVariants(Freebayes.out.combine(PerbaseBaseDepthConsensus.out))
+        AnnotateVCF(FilterVariants.out)
 
     emit:
         locations = Freebayes.out
