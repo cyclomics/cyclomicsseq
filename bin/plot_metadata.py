@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 
+import logging
 import glob
 import json
+import random
 from collections import Counter
 from math import pi
 from pathlib import Path
-import random
+import tracemalloc
 
 import numpy as np
 import pandas as pd
-
-from bokeh.plotting import figure
-from bokeh.layouts import column
-from bokeh.io import save, output_file
-from bokeh.transform import cumsum
-from bokeh.models import LabelSet, ColumnDataSource, HoverTool
 from bokeh.embed import components
-
-
+from bokeh.io import output_file, save
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, HoverTool, LabelSet
+from bokeh.plotting import figure
+from bokeh.transform import cumsum
 from plotting_defaults import cyclomics_defaults
+from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
+from threading import Lock
 
 TAB_PRIORITY = 92
 
@@ -123,88 +124,133 @@ def _plot_donut(
     return donut_plot
 
 
-def parse_Cycas_metadata(dict_data):
-    print("cycas parsing")
+# def parse_Tidehunter_metadata(dict_data):
+#     alignment_ratio, repeat_data, raw_lens, segments, classifications = (
+#         [],
+#         [],
+#         [],
+#         [],
+#         [],
+#     )
 
-    alignment_ratio, repeat_data, raw_lens, segments, classifications = (
-        [],
-        [],
-        [],
-        [],
-        [],
-    )
+#     for i, data in enumerate(dict_data):
+#         if i == 0:
+#             continue
+#         # print(data)
+#         aln_ratio = float(data["baseunit_copies"]) * float(data["baseunit_length"])
+#         alignment_ratio.append((int(data["raw_length"]), aln_ratio))
+#         repeat_data.append((int(data["raw_length"]), float(data["baseunit_copies"])))
+#         raw_lens.append(int(data["raw_length"]))
+#         segments.append(float(data["baseunit_copies"]))
+#         classifications.append("Unknown")
+#     # print(dict_data)
+#     return alignment_ratio, repeat_data, raw_lens, segments, classifications
 
+aln_ratio_dt = np.dtype([("raw_len", np.int32), ("aln_len", np.int32)])
+repeat_data_dt = np.dtype([("raw_len", np.int32), ("segment", np.int16)])
+raw_len_dt = np.int32
+aln_len_dt = np.int32
+segment_dt = np.int16
+class_dt = "U50"
+
+
+def parse_Cycas_metadata(
+    dict_data,
+    repeat_data=np.array([], dtype=repeat_data_dt),
+    raw_lens=np.array([], dtype=raw_len_dt),
+    aln_lens=np.array([], dtype=aln_len_dt),
+    segments=np.array([], dtype=segment_dt),
+    classifications=np.array([], dtype=class_dt),
+):
     for read in dict_data.keys():
         data = dict_data[read]
+        # raw_len = np.int32(data["raw_length"])
+        # segment = np.int16(data["alignment_count"])
         raw_len = data["raw_length"]
+        segment = data["alignment_count"]
+        classification = data["classification"]
         aln_len = sum(
             [
                 v["aligned_bases_before_consensus"]
                 for k, v in data["consensus_reads"].items()
             ]
         )
-        alignment_ratio.append((raw_len, aln_len))
 
-        raw_len = data["raw_length"]
-        segment = data["alignment_count"]
-        classification = data["classification"]
+        # Can these 2 be removed?
+        # alignment_ratio = np.append(
+        #     alignment_ratio, np.array([(raw_len, aln_len)], dtype=aln_ratio_dt)
+        # )
+        repeat_data = np.append(
+            repeat_data, np.array([(raw_len, segment)], dtype=repeat_data_dt)
+        )
+        #######
+        raw_lens = np.append(raw_lens, np.array([raw_len], dtype=raw_len_dt))
+        aln_lens = np.append(aln_lens, np.array([aln_len], dtype=aln_len_dt))
+        segments = np.append(segments, np.array([segment], dtype=segment_dt))
+        classifications = np.append(
+            classifications, np.array([classification], dtype=class_dt)
+        )
 
-        repeat_data.append((raw_len, segment))
-        raw_lens.append(raw_len)
-        segments.append(segment)
-        classifications.append(classification)
-
-    return alignment_ratio, repeat_data, raw_lens, segments, classifications
-
-
-def parse_Tidehunter_metadata(dict_data):
-    print("tidehunter parsing")
-    alignment_ratio, repeat_data, raw_lens, segments, classifications = (
-        [],
-        [],
-        [],
-        [],
-        [],
-    )
-
-    for i, data in enumerate(dict_data):
-        if i == 0:
-            continue
-        print(data)
-        aln_ratio = float(data["baseunit_copies"]) * float(data["baseunit_length"])
-        alignment_ratio.append((int(data["raw_length"]), aln_ratio))
-        repeat_data.append((int(data["raw_length"]), float(data["baseunit_copies"])))
-        raw_lens.append(int(data["raw_length"]))
-        segments.append(float(data["baseunit_copies"]))
-        classifications.append("Unknown")
-    print(dict_data)
-    return alignment_ratio, repeat_data, raw_lens, segments, classifications
+    return repeat_data, raw_lens, aln_lens, segments, classifications
 
 
-def read_jsons_into_plots(json_folder, plot_file):
-    print(json_folder)
-    dict_data = None
-    for test_json in glob.glob(f"{json_folder}/*.json"):
-        with open(test_json) as d:
-            print(test_json)
-            dict_data_json = json.load(d)
-            # If cycas
-            if type(dict_data_json) == dict:
-                if not dict_data:
-                    dict_data = {}
-                dict_data = {**dict_data, **dict_data_json}
-            # Tidehunter
-            else:
-                if not dict_data:
-                    dict_data = []
-                dict_data += dict_data_json
+def read_jsons_into_plots(json_folder, plot_file, threads: int = 16):
+    # print(json_folder)
+    # dict_data = None
+    promises = []
+
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        logging.debug("creating location promisses in ProcessPoolExecutor")
+        for test_json in glob.glob(f"{json_folder}/*.json"):
+            with open(test_json) as d:
+                # print(test_json)
+                # If cycas
+                # print("Cycas parsing")
+                dict_data_json = json.load(d)
+                if type(dict_data_json) == dict:
+                    logging.debug("appending to ProcessPoolExecutor")
+                    promises.append(
+                        executor.submit(
+                            parse_Cycas_metadata,
+                            dict_data_json
+                            # alignment_ratio,
+                            # repeat_data,
+                            # raw_lens,
+                            # segments,
+                            # classifications,
+                        )
+                    )
+                    # print(raw_lens.size)
+
+        print("done with submitting")
+        logging.debug("Asking for results from ProcessPoolExecutor")
+        done, not_done = wait(promises, return_when=ALL_COMPLETED)
+        print("done with collecting")
+        results = np.hstack([x.result() for x in promises])
+        print("done with obtaining results")
+        # alignment_ratio = results[5]
+        repeat_data = results[0]
+        raw_lens = results[1]
+        aln_lens = results[2]
+        segments = results[3]
+        classifications = results[4]
+        print("Done!")
+
+        # if not dict_data:
+        #     dict_data = {}
+        # dict_data = {**dict_data, **dict_data_json}
+        # Tidehunter
+        # else:
+        #     if not dict_data:
+        #         dict_data = []
+        #     dict_data += dict_data_json
 
     tab_name = "Metadata"
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
-    if not dict_data:
+    if raw_lens.size == 0:
         f = open(plot_file, "w")
         f.write("<h1>No metadata found.</h1>")
         f.close()
@@ -216,26 +262,27 @@ def read_jsons_into_plots(json_folder, plot_file):
             f.write(json.dumps(json_obj))
         return
 
-    if type(dict_data) == dict:
-        (
-            alignment_ratio,
-            repeat_data,
-            raw_lens,
-            segments,
-            classifications,
-        ) = parse_Cycas_metadata(dict_data)
-    else:
-        (
-            alignment_ratio,
-            repeat_data,
-            raw_lens,
-            segments,
-            classifications,
-        ) = parse_Tidehunter_metadata(dict_data)
+    # if type(dict_data) == dict:
+    #     (
+    #         alignment_ratio,
+    #         repeat_data,
+    #         raw_lens,
+    #         segments,
+    #         classifications,
+    #     ) = parse_Cycas_metadata(dict_data)
+    # else:
+    #     (
+    #         alignment_ratio,
+    #         repeat_data,
+    #         raw_lens,
+    #         segments,
+    #         classifications,
+    #     ) = parse_Tidehunter_metadata(dict_data)
 
-    X = [x[0] for x in alignment_ratio]
-    Y = [x[1] for x in alignment_ratio]
-    Y_n = [(x[1]) / x[0] for x in alignment_ratio]
+    Y_n = np.divide(aln_lens, raw_lens)
+    # X = [x[0] for x in alignment_ratio]
+    # Y = [x[1] for x in alignment_ratio]
+    # Y_n = [(x[1]) / x[0] for x in alignment_ratio]
     hist, edges = np.histogram(Y_n, density=True, bins=100)
 
     p1 = figure(
@@ -263,8 +310,8 @@ def read_jsons_into_plots(json_folder, plot_file):
     if len(raw_lens) > 10_000:
         full = list(zip(raw_lens, segments))
         subset = random.sample(full, 10_000)
-        raw_lens_subset = [x[0] for x in subset]
-        segments_subset = [x[1] for x in subset]
+        raw_lens_subset = [x[0] for x in subset]  # here
+        segments_subset = [x[1] for x in subset]  # here
     else:
         raw_lens_subset = raw_lens
         segments_subset = segments
@@ -337,13 +384,16 @@ def read_jsons_into_plots(json_folder, plot_file):
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    tracemalloc.start()
+
+    dev = True
 
     if dev:
         read_jsons_into_plots(
-            "/scratch/nxf_work/dami/39/02aa1653393aa6bd874a745668cdb5/",
-            "metadata2.html",
+            "/data/projects/ROD_1002_cycseq-093/plot_metadata/jsons/",
+            "./metadata.html",
         )
+
     else:
         parser = argparse.ArgumentParser(
             description="Create hist plot from a regex for fastq and fastq.gz files."
@@ -355,3 +405,10 @@ if __name__ == "__main__":
 
         read_jsons_into_plots(args.json_glob_path, args.plot_file)
     # read_jsons_into_plots('dummy_json', 'tmp.html')
+
+    snapshot = tracemalloc.take_snapshot()
+    top_stats = snapshot.statistics("lineno")
+
+    print("[ Top 10 ]")
+    for stat in top_stats[:10]:
+        print(stat)
