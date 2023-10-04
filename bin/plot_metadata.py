@@ -269,8 +269,9 @@ def parse_Cycas_metadata(
 def read_jsons_into_plots(
     json_folder,
     plot_file,
-    subsample: bool = True,
+    subsample_files: bool = False,
     file_subset_size: int = 200,
+    subsample_reads: bool = True,
     read_subset_size: int = 10_000,
     seed: int = 42,
     threads: int = 16,
@@ -282,8 +283,9 @@ def read_jsons_into_plots(
     with ProcessPoolExecutor(max_workers=threads) as executor:
         logging.debug("creating location promisses in ProcessPoolExecutor")
         json_files = glob.glob(f"{json_folder}/*.json")
-        # if subsample:
-        #     json_files = rng.choice(json_files, file_subset_size)
+        if subsample_files:
+            json_files = rng.choice(json_files, file_subset_size)
+
         for test_json in json_files:
             with open(str(test_json)) as d:
                 dict_data_json = json.load(d)
@@ -332,7 +334,7 @@ def read_jsons_into_plots(
     n_reads = len(raw_lens)
     if n_reads > read_subset_size:
         idx = rng.choice(np.arange(n_reads), read_subset_size)
-        if subsample:
+        if subsample_reads:
             raw_lens = raw_lens[idx]
             aln_lens = aln_lens[idx]
             segments = segments[idx]
@@ -385,14 +387,15 @@ if __name__ == "__main__":
 
     tracemalloc.start()
 
-    dev = True
+    dev = False
 
     if dev:
         read_jsons_into_plots(
             "/data/projects/ROD_1002_cycseq-093/plot_metadata/jsons/",
             "./metadata.html",
-            subsample=True,
+            subsample_files=False,
             file_subset_size=200,
+            subsample_reads=True,
             read_subset_size=10_000,
             seed=42,
             threads=16,
@@ -405,6 +408,12 @@ if __name__ == "__main__":
 
         parser.add_argument("json_glob_path")
         parser.add_argument("plot_file")
+        parser.add_argument("--subsample_files", default=True)
+        parser.add_argument("--file_subset_size", default=200)
+        parser.add_argument("--subsample_reads", default=True)
+        parser.add_argument("--read_subset_size", default=10_000)
+        parser.add_argument("--seed", default=42)
+        parser.add_argument("--threads", default=16)
         args = parser.parse_args()
 
         read_jsons_into_plots(args.json_glob_path, args.plot_file)

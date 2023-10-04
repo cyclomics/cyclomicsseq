@@ -307,7 +307,7 @@ process PlotQScores{
 process PlotMetadataStats{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
-    label 'many_low_cpu_huge_mem'
+    label 'few_memory_intensive'
     memory { task.memory * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3
@@ -321,7 +321,13 @@ process PlotMetadataStats{
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_metadata.py . metadata_plots.html
+        plot_metadata.py . metadata_plots.html \
+        --subsample_files $params.metadata.subsample_files \
+        --file_subset_size $params.metadata.file_subset_size \
+        --subsample_reads $params.metadata.subsample_reads \
+        --read_subset_size $params.metadata.read_subset_size \
+        --seed $params.metadata.seed \
+        --threads ${task.cpus}
         """
 }
 
