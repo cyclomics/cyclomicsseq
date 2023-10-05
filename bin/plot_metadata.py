@@ -7,7 +7,6 @@ import random
 from collections import Counter
 from math import pi
 from pathlib import Path
-import tracemalloc
 
 import numpy as np
 import pandas as pd
@@ -56,7 +55,7 @@ cycas_class_mapper = {
 
 
 def _calculate_angle_and_color(stats, concat_type_colors):
-    print(stats)
+    # print(stats)
     _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
     _df1.columns = ["type", "count"]
     _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
@@ -385,7 +384,9 @@ def read_jsons_into_plots(
 if __name__ == "__main__":
     import argparse
 
-    tracemalloc.start()
+    # import tracemalloc
+
+    # tracemalloc.start()
 
     dev = False
 
@@ -408,7 +409,7 @@ if __name__ == "__main__":
 
         parser.add_argument("json_glob_path")
         parser.add_argument("plot_file")
-        parser.add_argument("--subsample_files", default=True)
+        parser.add_argument("--subsample_files", default=False)
         parser.add_argument("--file_subset_size", default=200)
         parser.add_argument("--subsample_reads", default=True)
         parser.add_argument("--read_subset_size", default=10_000)
@@ -416,12 +417,20 @@ if __name__ == "__main__":
         parser.add_argument("--threads", default=16)
         args = parser.parse_args()
 
-        read_jsons_into_plots(args.json_glob_path, args.plot_file)
-    # read_jsons_into_plots('dummy_json', 'tmp.html')
+        read_jsons_into_plots(
+            args.json_glob_path,
+            args.plot_file,
+            args.subsample_files,
+            int(args.file_subset_size),
+            args.subsample_reads,
+            int(args.read_subset_size),
+            int(args.seed),
+            int(args.threads),
+        )
 
-    snapshot = tracemalloc.take_snapshot()
-    top_stats = snapshot.statistics("lineno")
+    # snapshot = tracemalloc.take_snapshot()
+    # top_stats = snapshot.statistics("lineno")
 
-    print("[ Top 10 ]")
-    for stat in top_stats[:10]:
-        print(stat)
+    # print("[ Top 10 ]")
+    # for stat in top_stats[:10]:
+    # print(stat)
