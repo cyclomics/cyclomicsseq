@@ -319,9 +319,8 @@ process PlotMetadataStats{
         tuple path("metadata_plots.html"), path("metadata_plots.json")
     
     script:
-        // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_metadata.py . metadata_plots.html
+        plot_metadata.py . metadata_plots.html --subsample_size $params.metadata.subsample_size
         """
 }
 
