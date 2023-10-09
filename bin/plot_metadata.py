@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import logging
 import glob
 import json
@@ -55,7 +56,6 @@ cycas_class_mapper = {
 
 
 def _calculate_angle_and_color(stats, concat_type_colors):
-    # print(stats)
     _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
     _df1.columns = ["type", "count"]
     _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
@@ -217,6 +217,8 @@ def _plot_segmentdist(
 
 def parse_Tidehunter_metadata(
     dict_data,
+    subsample_size,
+    counter: int = 0,
     raw_len_arr=np.array([], dtype=raw_len_dt),
     aln_len_arr=np.array([], dtype=aln_len_dt),
     segment_arr=np.array([], dtype=segment_dt),
@@ -234,12 +236,17 @@ def parse_Tidehunter_metadata(
         aln_len_arr = np.append(aln_len_arr, np.array([aln_len], dtype=aln_len_dt))
         segment_arr = np.append(segment_arr, np.array([segment], dtype=segment_dt))
         classif_arr = np.append(classif_arr, np.array([classification], dtype=class_dt))
+        counter += 1
+        if subsample_size != 0 and counter >= subsample_size:
+            break
 
-    return raw_len_arr, aln_len_arr, segment_arr, classif_arr
+    return counter, raw_len_arr, aln_len_arr, segment_arr, classif_arr
 
 
 def parse_Cycas_metadata(
     dict_data,
+    subsample_size,
+    counter: int = 0,
     raw_len_arr=np.array([], dtype=raw_len_dt),
     aln_len_arr=np.array([], dtype=aln_len_dt),
     segment_arr=np.array([], dtype=segment_dt),
@@ -261,54 +268,45 @@ def parse_Cycas_metadata(
         aln_len_arr = np.append(aln_len_arr, np.array([aln_len], dtype=aln_len_dt))
         segment_arr = np.append(segment_arr, np.array([segment], dtype=segment_dt))
         classif_arr = np.append(classif_arr, np.array([classification], dtype=class_dt))
+        counter += 1
+        if subsample_size != 0 and counter >= subsample_size:
+            break
 
-    return raw_len_arr, aln_len_arr, segment_arr, classif_arr
+    return counter, raw_len_arr, aln_len_arr, segment_arr, classif_arr
 
 
 def read_jsons_into_plots(
     json_folder,
     plot_file,
-    subsample_files: bool = False,
-    file_subset_size: int = 200,
-    subsample_reads: bool = True,
-    read_subset_size: int = 10_000,
-    seed: int = 42,
-    threads: int = 16,
+    subsample_size: int = 10_000,
 ):
-    promises = []
-    rng = np.random.default_rng(seed)
+    nr_reads = 0
+    result_stack = []
+    for data_json in glob.glob(f"{json_folder}/*.json"):
+        with open(str(data_json)) as d:
+            dict_data_json = json.load(d)
+            if type(dict_data_json) == dict:
+                # Parse Cycas
+                result = parse_Cycas_metadata(
+                    dict_data_json, subsample_size, counter=nr_reads
+                )
+            else:
+                # Parse Tidehunter
+                result = parse_Tidehunter_metadata(
+                    dict_data_json, subsample_size, counter=nr_reads
+                )
 
-    # Parse JSON metadata with a process pool
-    with ProcessPoolExecutor(max_workers=threads) as executor:
-        logging.debug("creating location promisses in ProcessPoolExecutor")
-        json_files = glob.glob(f"{json_folder}/*.json")
-        if subsample_files:
-            json_files = rng.choice(json_files, file_subset_size)
+        result_stack.append(result[1:])
+        nr_reads = result[0]
+        if subsample_size != 0 and nr_reads >= subsample_size:
+            break
 
-        for test_json in json_files:
-            with open(str(test_json)) as d:
-                dict_data_json = json.load(d)
-                logging.debug("appending to ProcessPoolExecutor")
-                if type(dict_data_json) == dict:
-                    # Parse Cycas
-                    promises.append(
-                        executor.submit(parse_Cycas_metadata, dict_data_json)
-                    )
-                else:
-                    # Parse Tidehunter
-                    promises.append(
-                        executor.submit(parse_Tidehunter_metadata, dict_data_json)
-                    )
-
-        logging.debug("Asking for results from ProcessPoolExecutor")
-        done, not_done = wait(promises, return_when=ALL_COMPLETED)
-        results = np.hstack([x.result() for x in promises])
-
-        # Separate results into lists of correct np.dtype
-        raw_lens = results[0].astype(raw_len_dt)
-        aln_lens = results[1].astype(aln_len_dt)
-        segments = results[2].astype(segment_dt)
-        classifs = results[3].astype(class_dt)
+    # Separate results into lists of correct np.dtype
+    results = np.hstack(result_stack)
+    raw_lens = results[0].astype(raw_len_dt)
+    aln_lens = results[1].astype(aln_len_dt)
+    segments = results[2].astype(segment_dt)
+    classifs = results[3].astype(class_dt)
 
     # Initialize HTML tab
     tab_name = "Metadata"
@@ -329,47 +327,24 @@ def read_jsons_into_plots(
             f.write(json.dumps(json_obj))
         return
 
-    # Subsample results for lighter plotting
-    n_reads = len(raw_lens)
-    if n_reads > read_subset_size:
-        idx = rng.choice(np.arange(n_reads), read_subset_size)
-        if subsample_reads:
-            raw_lens = raw_lens[idx]
-            aln_lens = aln_lens[idx]
-            segments = segments[idx]
-            classifs = classifs[idx]
-
-            p1 = _plot_donut(
-                classifs,
-                figtitle=f"Per read classification based on consensus caller (n = {read_subset_size:,})",
-            )
-            p2 = _plot_mappability(
-                aln_lens,
-                raw_lens,
-                figtitle=f"Normalized Mappability (n = {read_subset_size:,})",
-            )
-            p3 = _plot_lengthsegments(
-                raw_lens,
-                segments,
-                figtitle=f"Length vs segments identified (n = {read_subset_size:,})",
-            )
-            p4 = _plot_segmentdist(
-                segments,
-                figtitle=f"Distribution of Segments identified (n = {read_subset_size:,})",
-            )
-
-        else:
-            subset_raw_lens = raw_lens[idx]
-            subset_segments = segments[idx]
-
-            p1 = _plot_donut(classifs)
-            p2 = _plot_mappability(aln_lens, raw_lens)
-            p3 = _plot_lengthsegments(
-                subset_raw_lens,
-                subset_segments,
-                figtitle=f"Length vs segments identified (n = {read_subset_size:,})",
-            )
-            p4 = _plot_segmentdist(segments)
+    p1 = _plot_donut(
+        classifs,
+        figtitle=f"Per read classification based on consensus caller (n = {nr_reads:,})",
+    )
+    p2 = _plot_mappability(
+        aln_lens,
+        raw_lens,
+        figtitle=f"Normalized Mappability (n = {nr_reads:,})",
+    )
+    p3 = _plot_lengthsegments(
+        raw_lens,
+        segments,
+        figtitle=f"Length vs segments identified (n = {nr_reads:,})",
+    )
+    p4 = _plot_segmentdist(
+        segments,
+        figtitle=f"Distribution of Segments identified (n = {nr_reads:,})",
+    )
 
     output_file(plot_file, title="metadata plots")
     final_plot = column([p1, p2, p3, p4])
@@ -384,53 +359,24 @@ def read_jsons_into_plots(
 if __name__ == "__main__":
     import argparse
 
-    # import tracemalloc
-
-    # tracemalloc.start()
-
     dev = False
-
     if dev:
         read_jsons_into_plots(
-            "/data/projects/ROD_1002_cycseq-093/plot_metadata/jsons/",
+            "./plot_metadata/jsons/",
             "./metadata.html",
-            subsample_files=False,
-            file_subset_size=200,
-            subsample_reads=True,
-            read_subset_size=10_000,
-            seed=42,
-            threads=16,
+            subsample_size=0,
         )
 
     else:
-        parser = argparse.ArgumentParser(
-            description="Create hist plot from a regex for fastq and fastq.gz files."
-        )
+        parser = argparse.ArgumentParser(description="Plot read metadata statistics.")
 
         parser.add_argument("json_glob_path")
         parser.add_argument("plot_file")
-        parser.add_argument("--subsample_files", default=False)
-        parser.add_argument("--file_subset_size", default=200)
-        parser.add_argument("--subsample_reads", default=True)
-        parser.add_argument("--read_subset_size", default=10_000)
-        parser.add_argument("--seed", default=42)
-        parser.add_argument("--threads", default=16)
+        parser.add_argument("--subsample_size", default=10_000)
         args = parser.parse_args()
 
         read_jsons_into_plots(
             args.json_glob_path,
             args.plot_file,
-            args.subsample_files,
-            int(args.file_subset_size),
-            args.subsample_reads,
-            int(args.read_subset_size),
-            int(args.seed),
-            int(args.threads),
+            int(args.subsample_size),
         )
-
-    # snapshot = tracemalloc.take_snapshot()
-    # top_stats = snapshot.statistics("lineno")
-
-    # print("[ Top 10 ]")
-    # for stat in top_stats[:10]:
-    # print(stat)
