@@ -279,6 +279,7 @@ def read_jsons_into_plots(
     json_folder,
     plot_file,
     subsample_size: int = 10_000,
+    seed: int = 42,
 ):
     nr_reads = 0
     result_stack = []
@@ -315,7 +316,7 @@ def read_jsons_into_plots(
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
     # Write out empty file if there are no metadata
-    if raw_lens.size == 0:
+    if nr_reads == 0:
         f = open(plot_file, "w")
         f.write("<h1>No metadata found.</h1>")
         f.close()
@@ -336,14 +337,22 @@ def read_jsons_into_plots(
         raw_lens,
         figtitle=f"Normalized Mappability (n = {nr_reads:,})",
     )
-    p3 = _plot_lengthsegments(
-        raw_lens,
-        segments,
-        figtitle=f"Length vs segments identified (n = {nr_reads:,})",
-    )
     p4 = _plot_segmentdist(
         segments,
         figtitle=f"Distribution of Segments identified (n = {nr_reads:,})",
+    )
+
+    # The Length vs Segments Identified scatterplot needs to be hard-limited
+    # otherwise the HTML is too large
+    max_points = 10_000
+    if nr_reads > max_points:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(np.arange(nr_reads), max_points)
+
+    p3 = _plot_lengthsegments(
+        raw_lens[idx],
+        segments[idx],
+        figtitle=f"Length vs segments identified (n = {max_points:,})",
     )
 
     output_file(plot_file, title="metadata plots")
@@ -362,9 +371,7 @@ if __name__ == "__main__":
     dev = False
     if dev:
         read_jsons_into_plots(
-            "./plot_metadata/jsons/",
-            "./metadata.html",
-            subsample_size=0,
+            "./plot_metadata/jsons/", "./metadata.html", subsample_size=0, seed=42
         )
 
     else:
@@ -373,10 +380,12 @@ if __name__ == "__main__":
         parser.add_argument("json_glob_path")
         parser.add_argument("plot_file")
         parser.add_argument("--subsample_size", default=10_000)
+        parser.add_argument("--seed", default=42)
         args = parser.parse_args()
 
         read_jsons_into_plots(
             args.json_glob_path,
             args.plot_file,
             int(args.subsample_size),
+            int(args.seed),
         )
