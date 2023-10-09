@@ -32,7 +32,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
             "QUAL": str,
             "FILTER": str,
             "INFO": str,
-            "Sample1": str,
+            "SAMPLE1": str,
         },
         sep="\t",
     ).rename(columns={"#CHROM": "CHROM"})
@@ -51,7 +51,7 @@ def restructure_annotations(
     ref = variants_df["REF"]
     alt = variants_df["ALT"]
 
-    sample1 = variants_df["Sample1"].str.split(":")
+    sample1 = variants_df["SAMPLE1"].str.split(":")
     vaf = sample1.str[3]
     # convert fraction to percentage
     vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"
@@ -152,7 +152,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
             from a pandas DataFrame.
         tab_name: Name of the variant table tab to add to the report, str.
     """
-    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
+    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14 and with variant calling option '--variant_calling validate'</p>"
 
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
@@ -191,8 +191,6 @@ if __name__ == "__main__":
 
     else:
         vcf_file = "FAS12641_filtered_annotated.vcf"
-        # vcf_file = "fastq_annotated.vcf"
-        # vcf_file = "FAU48563_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 

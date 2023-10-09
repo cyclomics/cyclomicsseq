@@ -8,7 +8,7 @@ from typing import Tuple
 
 import numpy as np
 import pysam
-from vcf_tools import VCF_entry
+from variant_calling.vcf_tools import VCF_entry
 
 
 @dataclass

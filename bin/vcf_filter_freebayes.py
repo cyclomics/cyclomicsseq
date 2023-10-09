@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
-from vcf_file import Vcf
+from variant_calling.vcf_file import Vcf
 
 
 def parse_arguments():

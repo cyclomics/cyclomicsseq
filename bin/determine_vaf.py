@@ -6,9 +6,13 @@ from pathlib import Path
 from threading import Lock
 
 import pysam
-from detect_indel import extract_indel_evidence
-from detect_snp import extract_snp_evidence
-from vcf_tools import create_bed_lines, initialize_output_vcf, write_vcf_entry
+from variant_calling.detect_indel import extract_indel_evidence
+from variant_calling.detect_snp import extract_snp_evidence
+from variant_calling.vcf_tools import (
+    create_bed_lines,
+    initialize_output_vcf,
+    write_vcf_entry,
+)
 
 
 def process_pileup_column(

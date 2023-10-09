@@ -52,11 +52,11 @@ process FilterFreebayesVariants{
         tuple path(vcf), val(X), path(perbase_table)
 
     output:
-        tuple path("${vcf.simpleName}_filtered.vcf")
+        path("${vcf.simpleName}_filtered.vcf")
     
     script:
         """
-        variant_calling/vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
+        vcf_filter_freebayes.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_dpq $params.var_filters.min_dpq \

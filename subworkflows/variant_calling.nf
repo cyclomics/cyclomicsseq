@@ -67,11 +67,11 @@ workflow CallVariantsFreebayes{
         SeparateMultiallelicVariants(Freebayes.out)
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
         FilterFreebayesVariants(SeparateMultiallelicVariants.out.combine(PerbaseBaseDepthConsensus.out))
-        AnnotateVCF(FilterFreebayesVariants.out)
+        // AnnotateVCF(FilterFreebayesVariants.out)
 
     emit:
         locations = Freebayes.out
-        variants = AnnotateVCF.out
+        variants = FilterFreebayesVariants.out
 }
 
 workflow Mutect2{

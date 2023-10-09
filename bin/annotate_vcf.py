@@ -77,7 +77,6 @@ class VCF_file:
             df.columns = df.columns.str.upper()
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
-                df.columns[-1]
                 df[fmt] = df.SAMPLE1.apply(
                     lambda x: self.relaxed_float(x.split(":")[i])
                     if (x.split(":")[i])
