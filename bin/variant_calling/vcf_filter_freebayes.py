@@ -2,11 +2,10 @@
 
 import argparse
 from pathlib import Path
-import yaml
 
 import pandas as pd
-
-from vcf.vcf_file import Vcf
+import yaml
+from vcf_file import Vcf
 
 
 def parse_arguments():

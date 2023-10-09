@@ -88,7 +88,7 @@ process FindVariants{
         sleep 1
         ls
         head $reference_genome
-        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf --threads ${task.cpus} 
+        variant_calling/determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf --threads ${task.cpus} 
         """
 }
 
@@ -104,7 +104,8 @@ process FilterValidateVariants{
     
     script:
         """
-        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf -p $perbase_table \
+        variant_calling/vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        -p $perbase_table \
         --min_dir_ratio $params.snp_filters.min_dir_ratio \
         --min_dir_count $params.snp_filters.min_dir_count \
         --min_dpq $params.snp_filters.min_dpq \
@@ -114,7 +115,8 @@ process FilterValidateVariants{
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
 
-        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf -p $perbase_table \
+       variant_calling/vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+       -p $perbase_table \
         --min_dir_ratio $params.indel_filters.min_dir_ratio \
         --min_dir_count $params.indel_filters.min_dir_count \
         --min_dpq $params.indel_filters.min_dpq \
@@ -201,7 +203,7 @@ process AnnotateVCF{
     
     script:
         """
-        annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
+        variant_calling/annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
         """
 }
 

@@ -242,9 +242,10 @@ def main(
         pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
     """
 
-    from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
-    from tqdm import tqdm
     import time
+
+    from tqdm import tqdm
+    from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
 
     # logging.debug("started main")
     # Open input files and create empty output VCF

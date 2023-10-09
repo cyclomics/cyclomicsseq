@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 
 process Freebayes {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/variants", mode: 'copy'
     container 'nfcore/sarek:2.7.1'
     label 'many_cpu_medium'
 
@@ -17,13 +18,29 @@ process Freebayes {
         ref = reference
         """
         freebayes \
-        --min-alternate-fraction $params.min_alt_fraction
-        --min-alternate-count $params.min_alt_count
-        --min-base-quality $params.min_base_qual
-        -t $roi \
         -f $ref \
+        -t $roi \
+        --min-alternate-fraction $params.freebayes.min_alt_fraction \
+        --min-alternate-count $params.freebayes.min_alt_count \
+        --min-base-quality $params.freebayes.min_base_qual \
         --vcf ${input_bam_file.SimpleName}.vcf \
         $input_bam_file
+        """
+}
+
+process SeparateMultiallelicVariants{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+
+    input:
+        path(vcf)
+
+    output:
+        path("${vcf.SimpleName}_norm.vcf")
+
+    script:
+        """
+        bcftools norm -m -any $vcf > ${vcf.SimpleName}_norm.vcf
         """
 }
 
@@ -35,11 +52,11 @@ process FilterFreebayesVariants{
         tuple path(vcf), val(X), path(perbase_table)
 
     output:
-        tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
+        tuple path("${vcf.simpleName}_filtered.vcf")
     
     script:
         """
-        vcf_filter.py -i $vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        variant_calling/vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_dpq $params.var_filters.min_dpq \

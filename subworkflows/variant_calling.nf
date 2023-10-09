@@ -1,5 +1,7 @@
 include {
     Freebayes
+    FilterFreebayesVariants
+    SeparateMultiallelicVariants
 } from "./modules/freebayes"
 
 include {
@@ -14,7 +16,7 @@ include {
 
 include {
     FindVariants
-    FilterVariants
+    FilterValidateVariants
     MergeNoisyVCF
     MergeFilteredVCF
     AnnotateVCF
@@ -62,9 +64,10 @@ workflow CallVariantsFreebayes{
 
     main:
         Freebayes(reads_aligned.combine(reference), positions)
+        SeparateMultiallelicVariants(Freebayes.out)
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
-        FilterVariants(Freebayes.out.combine(PerbaseBaseDepthConsensus.out))
-        AnnotateVCF(FilterVariants.out)
+        FilterFreebayesVariants(SeparateMultiallelicVariants.out.combine(PerbaseBaseDepthConsensus.out))
+        AnnotateVCF(FilterFreebayesVariants.out)
 
     emit:
         locations = Freebayes.out
@@ -96,9 +99,9 @@ workflow ValidatePosibleVariantLocations{
     main:
         FindVariants(reference, reads_aligned, positions)
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
-        FilterVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
+        FilterValidateVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
         MergeNoisyVCF(FindVariants.out)
-        MergeFilteredVCF(FilterVariants.out)
+        MergeFilteredVCF(FilterValidateVariants.out)
         AnnotateVCF(MergeFilteredVCF.out)
 
     emit:
