@@ -1,15 +1,12 @@
 #!/usr/bin/env python
-
-from abc import abstractmethod
+import io
+import json
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Tuple
+
 import pandas as pd
-import io
 import requests
-import sys
-import json
-import logging
 
 
 class NoColocatedVariantsException(Exception):
@@ -77,9 +74,10 @@ class VCF_file:
         ).rename(columns={"#CHROM": "CHROM"})
 
         if not df.empty:
+            df.columns = df.columns.str.upper()
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
-                df[fmt] = df.Sample1.apply(
+                df[fmt] = df.SAMPLE1.apply(
                     lambda x: self.relaxed_float(x.split(":")[i])
                     if (x.split(":")[i])
                     else 0
@@ -104,7 +102,7 @@ class VCF_file:
                     "FILTER",
                     "INFO",
                     "FORMAT",
-                    "Sample1",
+                    "SAMPLE1",
                 ]
             ]
 
@@ -254,7 +252,8 @@ class VCF_file:
             }
         )
 
-        annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items()])
+        annot_text = "ANNOTATION;"
+        annot_text += ";".join([f"{k}={v}" for k, v in annot_dict.items()])
         # If annotation is None, don't print it
         # annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items() if v])
 

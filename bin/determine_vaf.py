@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 import logging
 import time
+from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
+from threading import Lock
 
 import pysam
-from detect_indel import extract_indel_evidence
-from detect_snp import extract_snp_evidence
-from vcf_tools import create_bed_lines, initialize_output_vcf, write_vcf_entry
+from variant_calling.detect_indel import extract_indel_evidence
+from variant_calling.detect_snp import extract_snp_evidence
+from variant_calling.vcf_tools import (
+    create_bed_lines,
+    initialize_output_vcf,
+    write_vcf_entry,
+)
 
-from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
-from threading import Lock
 
 def process_pileup_column(
     contig: str,
@@ -45,17 +49,21 @@ def process_pileup_column(
                 reference = pysam.FastaFile(reference_fasta)
             except:
                 raise OSError(f"Reference genome {reference_fasta} could not be read.")
-            
+
         print(reference.references)
         try:
-            ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+            ref_nuc = str(
+                reference.fetch(reference=contig, start=pos, end=pos + 1)
+            ).upper()
         except KeyError:
             try:
-                ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+                ref_nuc = str(
+                    reference.fetch(reference=contig, start=pos, end=pos + 1)
+                ).upper()
             except KeyError:
                 ref_nuc = "."
                 logging.warning(f"Unable to fetch reference genome at {contig} - {pos}")
-        
+
         del reference
 
     iteration = 0
@@ -148,19 +156,19 @@ def main(
                         minimum_base_quality,
                     )
                 )
-        print('done with submitting')
+        print("done with submitting")
         logging.debug("Asking for results from ProcessPoolExecutor")
         done, not_done = wait(promisses, return_when=ALL_COMPLETED)
-        print('done with collecting')
+        print("done with collecting")
         results = [x.result() for x in promisses]
-        print('done with obtaining results')
+        print("done with obtaining results")
 
     bam_af = pysam.AlignmentFile(bam_path, "r")
 
     snp_vcf = initialize_output_vcf(snp_output_path, bam_af.references)
     indel_vcf = initialize_output_vcf(indel_output_path, bam_af.references)
 
-    print('Started writing vcf files')
+    print("Started writing vcf files")
     for result in results:
         if not result:
             continue
@@ -174,8 +182,8 @@ def main(
 
         if indel_results:
             write_vcf_entry(indel_vcf, contig, position, indel_results)
-    
-    print('finishing writing and closing files.')
+
+    print("finishing writing and closing files.")
     # Wait for all the threads to finish writing
     delay_for_pysam_variantfile = 0.5
     time.sleep(delay_for_pysam_variantfile)

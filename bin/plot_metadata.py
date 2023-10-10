@@ -348,10 +348,12 @@ def read_jsons_into_plots(
     if nr_reads > max_points:
         rng = np.random.default_rng(seed)
         idx = rng.choice(np.arange(nr_reads), max_points)
+        raw_lens = raw_lens[idx]
+        segments = segments[idx]
 
     p3 = _plot_lengthsegments(
-        raw_lens[idx],
-        segments[idx],
+        raw_lens,
+        segments,
         figtitle=f"Length vs segments identified (n = {max_points:,})",
     )
 

@@ -32,7 +32,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
             "QUAL": str,
             "FILTER": str,
             "INFO": str,
-            "Sample1": str,
+            "SAMPLE1": str,
         },
         sep="\t",
     ).rename(columns={"#CHROM": "CHROM"})
@@ -51,7 +51,7 @@ def restructure_annotations(
     ref = variants_df["REF"]
     alt = variants_df["ALT"]
 
-    sample1 = variants_df["Sample1"].str.split(":")
+    sample1 = variants_df["SAMPLE1"].str.split(":")
     vaf = sample1.str[3]
     # convert fraction to percentage
     vaf = (vaf.astype(float) * 100).round(variant_decimal_points).astype(str) + "%"
@@ -62,13 +62,22 @@ def restructure_annotations(
     info = variants_df["INFO"].str.split(";")
 
     # Due to the fact that a list is unhashable we need to do a forloop iso a set.
-    unique = []
-    for x in info:
-        if x not in unique:
-            unique.append(x)
+    # unique = []
+    # for x in info:
+    #     if x not in unique:
+    #         unique.append(x)
 
-    #  if we only have vcf files with empty INFO columns (eg only backbone variants, or non cosmic mutations)
-    if unique == [["."]]:
+    if (info.str[0] == "ANNOTATION").all() and (info.str[1] != ".").all():
+        var_type = info.str[1].str.split("=").str[1]
+        consequence = info.str[2].str.split("=").str[1]
+        symbol = info.str[5].str.split("=").str[1]
+        impact = info.str[6].str.split("=").str[1]
+        biotype = info.str[7].str.split("=").str[1]
+        sift = info.str[10].str.split("=").str[1]
+        polyphen = info.str[11].str.split("=").str[1]
+        cosmic_ids = info.str[3].str.split("=").str[1]
+        legacy_ids = info.str[4].str.split("=").str[1]
+    else:
         var_type = pd.Series(["N/A"] * len(location))
         consequence = pd.Series(["N/A"] * len(location))
         symbol = pd.Series(["N/A"] * len(location))
@@ -78,17 +87,6 @@ def restructure_annotations(
         polyphen = pd.Series(["N/A"] * len(location))
         cosmic_ids = pd.Series(["N/A"] * len(location))
         legacy_ids = pd.Series(["N/A"] * len(location))
-
-    else:
-        var_type = info.str[0].str.split("=").str[1]
-        consequence = info.str[1].str.split("=").str[1]
-        symbol = info.str[4].str.split("=").str[1]
-        impact = info.str[5].str.split("=").str[1]
-        biotype = info.str[6].str.split("=").str[1]
-        sift = info.str[9].str.split("=").str[1]
-        polyphen = info.str[10].str.split("=").str[1]
-        cosmic_ids = info.str[2].str.split("=").str[1]
-        legacy_ids = info.str[3].str.split("=").str[1]
 
     annot_columns = [
         "Location",
@@ -152,7 +150,7 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
             from a pandas DataFrame.
         tab_name: Name of the variant table tab to add to the report, str.
     """
-    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
+    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14 and with variant calling option '--variant_calling validate'</p>"
 
     variants_df = load_vcf(vcf_file)
     annotation_df = restructure_annotations(variants_df)
@@ -190,9 +188,7 @@ if __name__ == "__main__":
         main(args.vcf_file, args.variant_table_file, args.tab_name)
 
     else:
-        vcf_file = "FAS12641_filtered_annotated.vcf"
-        # vcf_file = "fastq_annotated.vcf"
-        # vcf_file = "FAU48563_annotated.vcf"
+        vcf_file = "/data/projects/ROD_tmp/65/08147aed79107ea52881035e4be36a/FAW08675_filtered_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
 

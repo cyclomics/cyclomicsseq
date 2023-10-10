@@ -56,7 +56,7 @@ workflow StandardReport {
         consensus_bam
         roi
         noisy_vcf
-        annotated_vcf
+        variants_vcf
 
     main:
         // dont add the ID to the process
@@ -82,7 +82,7 @@ workflow StandardReport {
         PlotReadStructure(merged_split_bam)
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
-        CountNonBackboneVariants(annotated_vcf)
+        CountNonBackboneVariants(variants_vcf)
         meta_data = read_info.map(it -> it[1]).collect()
         PlotMetadataStats(meta_data)
 
@@ -97,37 +97,21 @@ workflow StandardReport {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
 
-        if (params.variant_calling == "validate") {
-            PasteVariantTable(annotated_vcf)
-            PlotReportStd(
-                PlotRawFastqHist.out.combine(
-                PlotFilteredHist.out).combine(
-                PlotConFastqHist.out).combine(
-                PlotReadStructure.out).combine(
-                PlotQScores.out).combine(
-                PlotVcf.out).combine(
-                PlotMetadataStats.out).combine(
-                PasteVariantTable.out).combine(
-                SamtoolsFlagstats.out).combine(
-                CountNonBackboneVariants.out).combine(
-                SamtoolsIdxStats.out
-                )
+        PasteVariantTable(variants_vcf)
+        PlotReportStd(
+            PlotRawFastqHist.out.combine(
+            PlotFilteredHist.out).combine(
+            PlotConFastqHist.out).combine(
+            PlotReadStructure.out).combine(
+            PlotQScores.out).combine(
+            PlotVcf.out).combine(
+            PlotMetadataStats.out).combine(
+            PasteVariantTable.out).combine(
+            SamtoolsFlagstats.out).combine(
+            CountNonBackboneVariants.out).combine(
+            SamtoolsIdxStats.out
             )
-        } else {
-            PlotReportStd(
-                PlotRawFastqHist.out.combine(
-                PlotFilteredHist.out).combine(
-                PlotConFastqHist.out).combine(
-                PlotReadStructure.out).combine(
-                PlotQScores.out).combine(
-                PlotVcf.out).combine(
-                PlotMetadataStats.out).combine(
-                SamtoolsFlagstats.out).combine(
-                CountNonBackboneVariants.out).combine(
-                SamtoolsIdxStats.out
-                )
-            )
-        }
+        )
 }
 
 workflow DetailedReport {
@@ -142,7 +126,7 @@ workflow DetailedReport {
         consensus_bam
         roi
         noisy_vcf
-        annotated_vcf
+        variants_vcf
 
     main:
         // dont add the ID to the process
@@ -168,7 +152,7 @@ workflow DetailedReport {
         PlotReadStructure(merged_split_bam)
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
-        CountNonBackboneVariants(annotated_vcf)
+        CountNonBackboneVariants(variants_vcf)
         meta_data = read_info.map(it -> it[1]).collect()
         PlotMetadataStats(meta_data)
 
@@ -183,35 +167,19 @@ workflow DetailedReport {
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
 
-        if (params.variant_calling == "validate") {
-            PasteVariantTable(annotated_vcf)
-            PlotReportDetailed(
-                PlotRawFastqHist.out.combine(
-                PlotFilteredHist.out).combine(
-                PlotConFastqHist.out).combine(
-                PlotReadStructure.out).combine(
-                PlotQScores.out).combine(
-                PlotVcf.out).combine(
-                PlotMetadataStats.out).combine(
-                PasteVariantTable.out).combine(
-                SamtoolsFlagstats.out).combine(
-                CountNonBackboneVariants.out).combine(
-                SamtoolsIdxStats.out
-                )
+        PasteVariantTable(variants_vcf)
+        PlotReportDetailed(
+            PlotRawFastqHist.out.combine(
+            PlotFilteredHist.out).combine(
+            PlotConFastqHist.out).combine(
+            PlotReadStructure.out).combine(
+            PlotQScores.out).combine(
+            PlotVcf.out).combine(
+            PlotMetadataStats.out).combine(
+            PasteVariantTable.out).combine(
+            SamtoolsFlagstats.out).combine(
+            CountNonBackboneVariants.out).combine(
+            SamtoolsIdxStats.out
             )
-        } else {
-            PlotReportDetailed(
-                PlotRawFastqHist.out.combine(
-                PlotFilteredHist.out).combine(
-                PlotConFastqHist.out).combine(
-                PlotReadStructure.out).combine(
-                PlotQScores.out).combine(
-                PlotVcf.out).combine(
-                PlotMetadataStats.out).combine(
-                SamtoolsFlagstats.out).combine(
-                CountNonBackboneVariants.out).combine(
-                SamtoolsIdxStats.out
-                )
-            )
-        }
+        )
 }
