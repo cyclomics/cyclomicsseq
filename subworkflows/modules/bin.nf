@@ -284,7 +284,6 @@ process PasteVariantTable{
     script:
         """
         write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table'
-
         """
 }
 

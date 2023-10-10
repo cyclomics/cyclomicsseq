@@ -4,7 +4,6 @@ nextflow.enable.dsl = 2
 process Freebayes {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
-    container 'nfcore/sarek:2.7.1'
     label 'many_cpu_medium'
 
     input:

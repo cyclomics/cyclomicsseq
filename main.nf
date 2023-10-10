@@ -33,7 +33,7 @@ params.output_dir = "$HOME/Data/CyclomicsSeq"
 params.report                   = "detailed"
 params.consensus_calling        = "cycas"
 params.alignment                = "bwamem"
-params.variant_calling          = "freebayes"
+params.variant_calling          = "validate"
 params.report                   = true
 params.split_on_adapter         = false
 params.sequence_summary_tagging = false
@@ -284,16 +284,7 @@ workflow {
     locations = ""
     variant_vcf = ""
 
-    if (params.variant_calling == "freebayes") {
-        CallVariantsFreebayes(
-            reads_aligned_filtered,
-            regions,
-            PrepareGenome.out.fasta_combi
-        )
-        locations = CallVariantsFreebayes.out.locations
-        variant_vcf = CallVariantsFreebayes.out.variants
-    }
-    else if (params.variant_calling == "validate") {
+    if (params.variant_calling == "validate") {
         ValidatePosibleVariantLocations(
             reads_aligned_filtered,
             regions,
@@ -301,6 +292,15 @@ workflow {
         )
         locations = ValidatePosibleVariantLocations.out.locations
         variant_vcf = ValidatePosibleVariantLocations.out.variants
+    }
+    else if (params.variant_calling == "freebayes") {
+        CallVariantsFreebayes(
+            reads_aligned_filtered,
+            regions,
+            PrepareGenome.out.fasta_combi
+        )
+        locations = CallVariantsFreebayes.out.locations
+        variant_vcf = CallVariantsFreebayes.out.variants
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"

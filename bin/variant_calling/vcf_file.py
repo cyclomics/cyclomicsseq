@@ -87,6 +87,7 @@ class Vcf:
         with open(path, "w") as file:
             file.writelines(self.header)
             self.table = self.table.rename(columns={"CHROM": "#CHROM"})
+            self.table.columns = self.table.columns.str.upper()
             file.writelines(self.table.to_csv(sep="\t", index=False))
 
     @staticmethod

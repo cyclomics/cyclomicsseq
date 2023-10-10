@@ -252,7 +252,8 @@ class VCF_file:
             }
         )
 
-        annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items()])
+        annot_text = "ANNOTATION;"
+        annot_text += ";".join([f"{k}={v}" for k, v in annot_dict.items()])
         # If annotation is None, don't print it
         # annot_text = ";".join([f"{k}={v}" for k, v in annot_dict.items() if v])
 
