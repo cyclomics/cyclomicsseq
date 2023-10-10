@@ -51,6 +51,9 @@ else if (params.backbone == "BB41T") {
 else if (params.backbone == "BB42") {
     backbone_file = "$projectDir/backbones/BB42.fasta"
 }
+else if (params.backbone == "BB43") {
+    backbone_file = "$projectDir/backbones/BB43.fasta"
+}
 else if (params.backbone == "BB22") {
     backbone_file = "$projectDir/backbones/BB22.fasta"
 }
@@ -131,7 +134,7 @@ include {
 
 include {
     ProcessTargetRegions
-    FreebayesSimple
+    CallVariantsFreebayes
     Mutect2
     ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
@@ -284,16 +287,7 @@ workflow {
     locations = ""
     variant_vcf = ""
 
-    if (params.variant_calling == "freebayes") {
-        FreebayesSimple(
-            reads_aligned_filtered,
-            regions,
-            PrepareGenome.out.fasta_combi
-        )
-        locations = FreebayesSimple.out.locations
-        variant_vcf = FreebayesSimple.out.variants
-    }
-    else if (params.variant_calling == "validate") {
+    if (params.variant_calling == "validate") {
         ValidatePosibleVariantLocations(
             reads_aligned_filtered,
             regions,
@@ -301,6 +295,15 @@ workflow {
         )
         locations = ValidatePosibleVariantLocations.out.locations
         variant_vcf = ValidatePosibleVariantLocations.out.variants
+    }
+    else if (params.variant_calling == "freebayes") {
+        CallVariantsFreebayes(
+            reads_aligned_filtered,
+            regions,
+            PrepareGenome.out.fasta_combi
+        )
+        locations = CallVariantsFreebayes.out.locations
+        variant_vcf = CallVariantsFreebayes.out.variants
     }
     else {
         error "Invalid variant_calling selector: ${params.variant_calling}"

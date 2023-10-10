@@ -1,320 +1,300 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
-    "title": "Cyclomics/CyclomicsSeq",
-    "description": "Create high quality alignment data with variant identification for the Cyclomics CyclomicsSeq protocol.",
-    "type": "object",
-    "definitions": {
-        "output_options": {
-            "title": "output_options",
-            "type": "object",
-            "description": "",
-            "default": "",
-            "properties": {
-                "output_dir": {
-                    "type": "string",
-                    "default": null
-                }
-            },
-            "required": [
-                "output_dir"
-            ]
-        },
-        "input_options": {
-            "title": "Input Options",
-            "type": "object",
-            "description": "Options that define where the workflow will take data from for analysis.",
-            "default": "",
-            "properties": {
-                "reference": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Reference genome of the sequenced sample. Ideally bwa indexed prior to the run.",
-                    "help_text": "reference genome of the sequenced material in fasta format. Will be used in several stages of the workflow. \n We suggest GRCh38.p14, since this has been tested to work with the Effect prediction API. Please see the readme tab for instructions to obtain this reference genome.",
-                    "default": null
-                },
-                "input_read_dir": {
-                    "type": "string",
-                    "format": "path",
-                    "description": "Folder containing reads in fastq or fastq.gz format, usually the fastq_pass folder made by MinKnow.",
-                    "help_text": "An example whould be /data/sequencing/experiment_name/sample_name/20230213_0900_MN12345_FAA12345_1e411152/fastq_pass \n This folder contains a folder called fastq_pass and a sequencing summary.",
-                    "default": null
-                },
-                "backbone": {
-                    "type": "string",
-                    "description": "Backbone used in the CyclomicsSeq protocol.",
-                    "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option  under advanced user options to a fasta file with the sequence of the custom backbone as the only input where the name starts with `BB`.",
-                    "default": "BB42",
-                    "enum": [
-                        "BB22",
-                        "BB25",
-                        "BBCS",
-                        "BBCR",
-                        "BB41",
-                        "BB42",
-                        "Custom*"
-                    ]
-                },
-                "report": {
-                    "type": "string",
-                    "description": "type of report to generate at the end of the pipeline.",
-                    "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
-                    "default": "standard",
-                    "enum": [
-                        "standard",
-                        "detailed",
-                        "skip"
-                    ]
-                }
-            },
-            "required": [
-                "reference",
-                "input_read_dir"
-            ]
-        },
-        "variant_identivication_options_snp": {
-            "title": "SNP variant identification thresholds",
-            "type": "object",
-            "description": "Options to fine tune SNP variants that are reported by the workflow.",
-            "default": "",
-            "properties": {
-                "snp_filters.min_dir_ratio": {
-                    "type": "number",
-                    "description": "Minimum ratio of variant-supporting reads in each direction.",
-                    "help_text": "Default:  001",
-                    "default": 0.001
-                },
-                "snp_filters.min_dir_count" :{
-                    "type": "integer",
-                    "description": "Minimum number of variant-supporting reads in each direction.",
-                    "help_text": "Default: 5",
-                    "default": 5
-                },
-                "snp_filters.min_dpq" :{
-                    "type": "integer",
-                    "description": "Minimum positional depth after Q filtering.",
-                    "help_text": "Default: 5000 ",
-                    "default": 5000
-                },
-                "snp_filters.min_dpq_n" :{
-                    "type": "integer",
-                    "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
-                    "help_text": "Default: 25 ",
-                    "default": 25
-                },
-                "snp_filters.min_dpq_ratio" :{
-                    "type": "number",
-                    "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
-                    "help_text": "Default: 0.3 ",
-                    "default": 0.3
-                },
-                "snp_filters.min_vaf" :{
-                    "type": "number",
-                    "description": "Minimum variant allele frequency.",
-                    "help_text": "Default:  0030",
-                    "default": 0.0030
-                },
-                "snp_filters.min_rel_ratio" :{
-                    "type": "number",
-                    "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
-                    "help_text": "Default: 0.3 ",
-                    "default": 0.3
-                },
-                "snp_filters.min_abq" :{
-                    "type": "integer",
-                    "description": "Minimum average base quality.",
-                    "help_text": "Default: 70 ",
-                    "default": 70
-                }
-            }
-        },
-        "variant_identivication_options_indel": {
-            "title": "Indel variant identification thresholds",
-            "type": "object",
-            "description": "Options to fine tune Indel variants that are reported by the workflow.",
-            "default": "",
-            "properties": {
-                "indel_filters.min_dir_ratio": {
-                    "type": "number",
-                    "description": "Minimum ratio of variant-supporting reads in each direction.",
-                    "default": 0.002
-                },
-                "indel_filters.min_dir_count" :{
-                    "type": "integer",
-                    "description": "Minimum number of variant-supporting reads in each direction.",
-                    "help_text": "Default: 5",
-                    "default": 5
-                },
-                "indel_filters.min_dpq" :{
-                    "type": "integer",
-                    "description": "Minimum positional depth after Q filtering.",
-                    "help_text": "Default: 5000 ",
-                    "default": 5000
-                },
-                "indel_filters.min_dpq_n" :{
-                    "type": "integer",
-                    "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
-                    "help_text": "Default: 25 ",
-                    "default": 25
-                },
-                "indel_filters.min_dpq_ratio" :{
-                    "type": "number",
-                    "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
-                    "help_text": "Default: 0.3 ",
-                    "default": 0.3
-                },
-                "indel_filters.min_vaf" :{
-                    "type": "number",
-                    "description": "Minimum variant allele frequency.",
-                    "help_text": "Default:  0040",
-                    "default": 0.0040
-                },
-                "indel_filters.min_rel_ratio" :{
-                    "type": "number",
-                    "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
-                    "help_text": "Default: 0.4 ",
-                    "default": 0.4
-                },
-                "indel_filters.min_abq" :{
-                    "type": "integer",
-                    "description": "Minimum average base quality.",
-                    "help_text": "Default: 70 ",
-                    "default": 70
-                }
-            }
-        },
-        "pipeline_options": {
-            "title": "pipeline options",
-            "type": "object",
-            "description": "Options that alter the behaviour of the pipeline, for advanced users.",
-            "default": "",
-            "properties": {
-                "qc": {
-                    "type": "string",
-                    "default": "full",
-                    "description": "Currently there is no option yet to do a more minimal QC.",
-                    "help_text": "",
-                    "enum": [
-                        "full"
-                    ]
-                },
-                "consensus_calling": {
-                    "type": "string",
-                    "default": "cycas",
-                    "description": "Tool used to convert raw reads to the high quality cyclomics consensus reads.",
-                    "help_text": "Our current testing shows best results with cycas.",
-                    "enum": [
-                        "tidehunter",
-                        "cycas",
-                        "medaka"
-                    ]
-                },
-                "alignment": {
-                    "type": "string",
-                    "default": "bwamem",
-                    "description": "Alignment tool to use for the final alignment.",
-                    "help_text": "We suggest to use bwa mem, however this requires more indexing that can take up to 1.5 hours to generate if not provided. Therefor there is also the option to use minimap2.",
-                    "enum": [
-                        "bwamem",
-                        "minimap"
-                    ]
-                },
-                "variant_calling": {
-                    "type": "string",
-                    "default": "validate",
-                    "description": "Strategy used to identify variants.",
-                    "help_text": "We've created a custom identification pipeline tailored to the characteristics of the protocol, There is however the option to use freebayes.",
-                    "enum": [
-                        "freebayes",
-                        "validate"
-                    ]
-                },
-                "split_on_adapter": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Identifies adapter sequences and splits reads when encoutered.",
-                    "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads."
-                }
-            }
-        },
-        "advanced_user_options": {
-            "title": "Advanced user options",
-            "type": "object",
-            "description": "Additional Input options that the user rarely needs to interact with",
-            "default": "",
-            "properties": {
-                "max_cpus": {
-                    "type": "integer",
-                    "description": "Maximum number of threads (not cores) assigned to a single process in the workflow.",
-                    "help_text": "To increase the speed of some steps of the workflow this value can be increased. for example to 16 or even 32.",
-                    "default": 8
-                },
-                "max_mem_gb": {
-                    "type": "integer",
-                    "description": "Maximum memory assigned to a single process in the workflow in GB",
-                    "help_text": "Increase if error 137 or another out of memmory error occurs",
-                    "default": 31
-                },
-                "economy_mode": {
-                    "type": "boolean",
-                    "description": "Drastically reduce the amount of computational resources used, takes much longer.",
-                    "help_text": "Sets the resource allocation to the maximum of our CI setup of 2 cores and 4 Gb of RAM.",
-                    "default": false
-                },
-                "backbone_file": {
-                    "type": "string",
-                    "format": "file-path",
-                    "description": "Only used when the backbone under Input Options is set to Custom.",
-                    "default": null
-                },
-                "min_repeat_count": {
-                    "type": "integer",
-                    "description": "Minimal number of repeats to keep in the analysis. Currently only supported by Cycas.",
-                    "default": 3
-                },
-                "region_file": {
-                    "type": "string",
-                    "description": "Region of interest, either `auto` or a path to a file in bed format corresponding to the reference used.",
-                    "help_text": "When provided, only locations in the bedfile will be examined in the variant identification process. The auto strategy selects all sites with a coverage above 100.",
-                    "default": "auto"
-                },
-                "read_pattern": {
-                    "type": "string",
-                    "description": "Regular expression for fastq files used in the analysis.",
-                    "help_text": "By default the regex looks for the folder pass and fastq_pass. pass is used when rebasecalling data. fastq_pass is created normally by MinKnow.\n You can limit the amount of data by altering this value e.g. by changing it to \n {pass,fastq_pass}/**{1,2}.{fq,fastq,fq.gz,fastq.gz} \n will only take in fastq files ending in 1 and 2.",
-                    "default": "**.{fq,fastq,fq.gz,fastq.gz}"
-                },
-                "reads_aligned_tagged": {
-                    "type": "boolean",
-                    "description": "When enabled, tags will be added to the BAM based on information from the sequencing_summary.",
-                    "help_text": "This step is quite memory intensive at this point.",
-                    "default": false
-                },
-                "sequencing_summary_path": {
-                    "type": "string",
-                    "format": "file-path",
-                    "default": "${projectDir}/sequencing_summary*.txt",
-                    "description": "Sequencing summary file in txt format created by MinKnow for this experiment.",
-                    "help_text": "The sequencing summary file contains additional information that will be added to the final bam file when provided."
-                }
-            }
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
+  "title": "Cyclomics/CyclomicsSeq",
+  "description": "Create high quality alignment data with variant identification for the Cyclomics CyclomicsSeq protocol.",
+  "type": "object",
+  "definitions": {
+    "output_options": {
+      "title": "output_options",
+      "type": "object",
+      "description": "",
+      "default": "",
+      "properties": {
+        "output_dir": {
+          "type": "string",
+          "default": ""
         }
+      },
+      "required": ["output_dir"]
     },
-    "allOf": [
-        {
-            "$ref": "#/definitions/output_options"
+    "input_options": {
+      "title": "Input Options",
+      "type": "object",
+      "description": "Options that define where the workflow will take data from for analysis.",
+      "default": "",
+      "properties": {
+        "reference": {
+          "type": "string",
+          "format": "file-path",
+          "description": "Reference genome of the sequenced sample. Ideally bwa indexed prior to the run.",
+          "help_text": "reference genome of the sequenced material in fasta format. Will be used in several stages of the workflow. \n We suggest GRCh38.p14, since this has been tested to work with the Effect prediction API. Please see the readme tab for instructions to obtain this reference genome.",
+          "default": ""
         },
-        {
-            "$ref": "#/definitions/input_options"
+        "input_read_dir": {
+          "type": "string",
+          "format": "path",
+          "description": "Folder containing reads in fastq or fastq.gz format, usually the fastq_pass folder made by MinKnow.",
+          "help_text": "An example whould be /data/sequencing/experiment_name/sample_name/20230213_0900_MN12345_FAA12345_1e411152/fastq_pass \n This folder contains a folder called fastq_pass and a sequencing summary.",
+          "default": ""
         },
-        {
-            "$ref": "#/definitions/variant_identivication_options_snp"
+        "backbone": {
+          "type": "string",
+          "description": "Backbone used in the CyclomicsSeq protocol.",
+          "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option  under advanced user options to a fasta file with the sequence of the custom backbone as the only input where the name starts with `BB`.",
+          "default": "BBCS",
+          "enum": [
+            "BB22",
+            "BB25",
+            "BBCS",
+            "BBCR",
+            "BB41",
+            "BB42",
+            "BB43",
+            "Custom*"
+          ]
         },
-        {
-            "$ref": "#/definitions/pipeline_options"
-        },
-        {
-            "$ref": "#/definitions/advanced_user_options"
+        "report": {
+          "type": "string",
+          "description": "type of report to generate at the end of the pipeline.",
+          "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
+          "default": "standard",
+          "enum": ["standard", "detailed", "skip"]
         }
-    ]
+      },
+      "required": ["reference", "input_read_dir"]
+    },
+    "variant_identivication_options_snp": {
+      "title": "SNP variant identification thresholds",
+      "type": "object",
+      "description": "Options to fine tune SNP variants that are reported by the workflow.",
+      "default": "",
+      "properties": {
+        "snp_filters.min_dir_ratio": {
+          "type": "number",
+          "description": "Minimum ratio of variant-supporting reads in each direction.",
+          "help_text": "Default:  001",
+          "default": 0.001
+        },
+        "snp_filters.min_dir_count": {
+          "type": "integer",
+          "description": "Minimum number of variant-supporting reads in each direction.",
+          "help_text": "Default: 5",
+          "default": 5
+        },
+        "snp_filters.min_dpq": {
+          "type": "integer",
+          "description": "Minimum positional depth after Q filtering.",
+          "help_text": "Default: 5000 ",
+          "default": 5000
+        },
+        "snp_filters.min_dpq_n": {
+          "type": "integer",
+          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
+          "help_text": "Default: 25 ",
+          "default": 25
+        },
+        "snp_filters.min_dpq_ratio": {
+          "type": "number",
+          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "snp_filters.min_vaf": {
+          "type": "number",
+          "description": "Minimum variant allele frequency.",
+          "help_text": "Default:  0030",
+          "default": 0.003
+        },
+        "snp_filters.min_rel_ratio": {
+          "type": "number",
+          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "snp_filters.min_abq": {
+          "type": "integer",
+          "description": "Minimum average base quality.",
+          "help_text": "Default: 70 ",
+          "default": 70
+        }
+      }
+    },
+    "variant_identivication_options_indel": {
+      "title": "Indel variant identification thresholds",
+      "type": "object",
+      "description": "Options to fine tune Indel variants that are reported by the workflow.",
+      "default": "",
+      "properties": {
+        "indel_filters.min_dir_ratio": {
+          "type": "number",
+          "description": "Minimum ratio of variant-supporting reads in each direction.",
+          "default": 0.002
+        },
+        "indel_filters.min_dir_count": {
+          "type": "integer",
+          "description": "Minimum number of variant-supporting reads in each direction.",
+          "help_text": "Default: 5",
+          "default": 5
+        },
+        "indel_filters.min_dpq": {
+          "type": "integer",
+          "description": "Minimum positional depth after Q filtering.",
+          "help_text": "Default: 5000 ",
+          "default": 5000
+        },
+        "indel_filters.min_dpq_n": {
+          "type": "integer",
+          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
+          "help_text": "Default: 25 ",
+          "default": 25
+        },
+        "indel_filters.min_dpq_ratio": {
+          "type": "number",
+          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "indel_filters.min_vaf": {
+          "type": "number",
+          "description": "Minimum variant allele frequency.",
+          "help_text": "Default:  0040",
+          "default": 0.004
+        },
+        "indel_filters.min_rel_ratio": {
+          "type": "number",
+          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
+          "help_text": "Default: 0.4 ",
+          "default": 0.4
+        },
+        "indel_filters.min_abq": {
+          "type": "integer",
+          "description": "Minimum average base quality.",
+          "help_text": "Default: 70 ",
+          "default": 70
+        }
+      }
+    },
+    "pipeline_options": {
+      "title": "pipeline options",
+      "type": "object",
+      "description": "Options that alter the behaviour of the pipeline, for advanced users.",
+      "default": "",
+      "properties": {
+        "qc": {
+          "type": "string",
+          "default": "full",
+          "description": "Currently there is no option yet to do a more minimal QC.",
+          "help_text": "",
+          "enum": ["full"]
+        },
+        "consensus_calling": {
+          "type": "string",
+          "default": "cycas",
+          "description": "Tool used to convert raw reads to the high quality cyclomics consensus reads.",
+          "help_text": "Our current testing shows best results with cycas.",
+          "enum": ["tidehunter", "cycas", "medaka"]
+        },
+        "alignment": {
+          "type": "string",
+          "default": "bwamem",
+          "description": "Alignment tool to use for the final alignment.",
+          "help_text": "We suggest to use bwa mem, however this requires more indexing that can take up to 1.5 hours to generate if not provided. Therefor there is also the option to use minimap2.",
+          "enum": ["bwamem", "minimap"]
+        },
+        "variant_calling": {
+          "type": "string",
+          "default": "validate",
+          "description": "Strategy used to identify variants.",
+          "help_text": "We've created a custom identification pipeline tailored to the characteristics of the protocol, There is however the option to use freebayes.",
+          "enum": ["freebayes", "validate"]
+        },
+        "split_on_adapter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Identifies adapter sequences and splits reads when encoutered.",
+          "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads."
+        }
+      }
+    },
+    "advanced_user_options": {
+      "title": "Advanced user options",
+      "type": "object",
+      "description": "Additional Input options that the user rarely needs to interact with",
+      "default": "",
+      "properties": {
+        "max_cpus": {
+          "type": "integer",
+          "description": "Maximum number of threads (not cores) assigned to a single process in the workflow.",
+          "help_text": "To increase the speed of some steps of the workflow this value can be increased. for example to 16 or even 32.",
+          "default": 8
+        },
+        "max_mem_gb": {
+          "type": "integer",
+          "description": "Maximum memory assigned to a single process in the workflow in GB",
+          "help_text": "Increase if error 137 or another out of memmory error occurs",
+          "default": 31
+        },
+        "economy_mode": {
+          "type": "boolean",
+          "description": "Drastically reduce the amount of computational resources used, takes much longer.",
+          "help_text": "Sets the resource allocation to the maximum of our CI setup of 2 cores and 4 Gb of RAM.",
+          "default": false
+        },
+        "backbone_file": {
+          "type": "string",
+          "format": "file-path",
+          "description": "Only used when the backbone under Input Options is set to Custom.",
+          "default": ""
+        },
+        "min_repeat_count": {
+          "type": "integer",
+          "description": "Minimal number of repeats to keep in the analysis. Currently only supported by Cycas.",
+          "default": 3
+        },
+        "region_file": {
+          "type": "string",
+          "description": "Region of interest, either `auto` or a path to a file in bed format corresponding to the reference used.",
+          "help_text": "When provided, only locations in the bedfile will be examined in the variant identification process. The auto strategy selects all sites with a coverage above 100.",
+          "default": "auto"
+        },
+        "read_pattern": {
+          "type": "string",
+          "description": "Regular expression for fastq files used in the analysis.",
+          "help_text": "By default the regex looks for the folder pass and fastq_pass. pass is used when rebasecalling data. fastq_pass is created normally by MinKnow.\n You can limit the amount of data by altering this value e.g. by changing it to \n {pass,fastq_pass}/**{1,2}.{fq,fastq,fq.gz,fastq.gz} \n will only take in fastq files ending in 1 and 2.",
+          "default": "**.{fq,fastq,fq.gz,fastq.gz}"
+        },
+        "reads_aligned_tagged": {
+          "type": "boolean",
+          "description": "When enabled, tags will be added to the BAM based on information from the sequencing_summary.",
+          "help_text": "This step is quite memory intensive at this point.",
+          "default": false
+        },
+        "sequencing_summary_path": {
+          "type": "string",
+          "format": "file-path",
+          "default": "${projectDir}/sequencing_summary*.txt",
+          "description": "Sequencing summary file in txt format created by MinKnow for this experiment.",
+          "help_text": "The sequencing summary file contains additional information that will be added to the final bam file when provided."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/definitions/output_options"
+    },
+    {
+      "$ref": "#/definitions/input_options"
+    },
+    {
+      "$ref": "#/definitions/variant_identivication_options_snp"
+    },
+    {
+      "$ref": "#/definitions/pipeline_options"
+    },
+    {
+      "$ref": "#/definitions/advanced_user_options"
+    }
+  ]
 }

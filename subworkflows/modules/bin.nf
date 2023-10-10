@@ -92,7 +92,7 @@ process FindVariants{
         """
 }
 
-process FilterVariants{
+process FilterValidateVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
@@ -104,7 +104,8 @@ process FilterVariants{
     
     script:
         """
-        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf -p $perbase_table \
+        vcf_filter_validate.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        -p $perbase_table \
         --min_dir_ratio $params.snp_filters.min_dir_ratio \
         --min_dir_count $params.snp_filters.min_dir_count \
         --min_dpq $params.snp_filters.min_dpq \
@@ -114,7 +115,8 @@ process FilterVariants{
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
 
-        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf -p $perbase_table \
+       vcf_filter_validate.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+       -p $perbase_table \
         --min_dir_ratio $params.indel_filters.min_dir_ratio \
         --min_dir_count $params.indel_filters.min_dir_count \
         --min_dpq $params.indel_filters.min_dpq \
@@ -282,7 +284,6 @@ process PasteVariantTable{
     script:
         """
         write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table'
-
         """
 }
 
@@ -319,9 +320,8 @@ process PlotMetadataStats{
         tuple path("metadata_plots.html"), path("metadata_plots.json")
     
     script:
-        // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_metadata.py . metadata_plots.html
+        plot_metadata.py . metadata_plots.html --subsample_size $params.metadata.subsample_size
         """
 }
 

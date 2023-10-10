@@ -1,5 +1,7 @@
 include {
     Freebayes
+    FilterFreebayesVariants
+    SeparateMultiallelicVariants
 } from "./modules/freebayes"
 
 include {
@@ -14,7 +16,7 @@ include {
 
 include {
     FindVariants
-    FilterVariants
+    FilterValidateVariants
     MergeNoisyVCF
     MergeFilteredVCF
     AnnotateVCF
@@ -54,7 +56,7 @@ workflow ProcessTargetRegions{
 
 }
 
-workflow FreebayesSimple{
+workflow CallVariantsFreebayes{
     take:
         reads_aligned
         positions
@@ -62,11 +64,14 @@ workflow FreebayesSimple{
 
     main:
         Freebayes(reads_aligned.combine(reference), positions)
-        AnnotateVCF(Freebayes.out)
+        SeparateMultiallelicVariants(Freebayes.out)
+        PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
+        FilterFreebayesVariants(SeparateMultiallelicVariants.out.combine(PerbaseBaseDepthConsensus.out))
+        // AnnotateVCF(FilterFreebayesVariants.out)
 
     emit:
         locations = Freebayes.out
-        variants = AnnotateVCF.out
+        variants = FilterFreebayesVariants.out
 }
 
 workflow Mutect2{
@@ -94,9 +99,9 @@ workflow ValidatePosibleVariantLocations{
     main:
         FindVariants(reference, reads_aligned, positions)
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
-        FilterVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
+        FilterValidateVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
         MergeNoisyVCF(FindVariants.out)
-        MergeFilteredVCF(FilterVariants.out)
+        MergeFilteredVCF(FilterValidateVariants.out)
         AnnotateVCF(MergeFilteredVCF.out)
 
     emit:
