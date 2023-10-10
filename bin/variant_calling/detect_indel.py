@@ -375,7 +375,8 @@ def main(
                     else:
                         fld_entry = str(fld_value)
 
-                    r.samples["Sample1"][fld.name] = fld_entry
+                    r.samples["SAMPLE1"][fld.name] = fld_entry
+
 
                 vcf.write(r)
 
