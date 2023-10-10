@@ -4,7 +4,10 @@ nextflow.enable.dsl = 2
 process Freebayes {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/variants", mode: 'copy'
-    label 'many_cpu_medium'
+    label 'many_low_cpu_huge_mem'
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
 
     input:
         tuple val(X), path(input_bam_file), path(input_bai_file), path(reference)
