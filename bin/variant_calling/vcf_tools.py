@@ -91,7 +91,7 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
         else:
             fld_entry = str(fld_value)
 
-        r.samples["Sample1"][fld.name] = fld_entry
+        r.samples["SAMPLE1"][fld.name] = fld_entry
 
     vcf.write(r)
 
@@ -111,7 +111,7 @@ def initialize_output_vcf(vcf_path, contigs):
     # Create a VCF header
     vcfh = pysam.VariantHeader()
     # Add a sample named "ahstram" to our VCF header
-    vcfh.add_sample("Sample1")
+    vcfh.add_sample("SAMPLE1")
     # Add a "FILTER" value, other than "PASS"
     vcfh.add_meta(
         "FILTER",
