@@ -207,37 +207,31 @@ def make_scatter_plots(data, roi):
     return column(*plots)
 
 
-def main(vcf_file, plot_file):
+def main(vcf_file, plot_file, priority_limit: int):
     data = read_vcf(vcf_file)
     tab_name = "Variants"
-    add_info = {}
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
-
-    if data.empty:
-        f = open(plot_file, "w")
-        f.write("<h1>No variants found</h1>")
-        f.close()
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
-            "",
-            "<h1>One of the pileups was not deep enough.</h1>",
-        )
-        json_obj[tab_name]["priority"] = TAB_PRIORITY
-
-        with open(Path(plot_file).with_suffix(".json"), "w") as f:
-            f.write(json.dumps(json_obj))
-        return
-
-    roi = get_roi_pileup_df(data)
-    # print(data)
-    plot = make_scatter_plots(data, roi)
-    output_file(plot_file, title="variant plots")
-    save(plot)
-
-    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
-    json_obj["additional_info"] = add_info
     json_obj[tab_name]["priority"] = TAB_PRIORITY
+
+    if TAB_PRIORITY < priority_limit:
+        if data.empty:
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+                "",
+                "<h1>One of the pileups was not deep enough.</h1>",
+            )
+            with open(Path(plot_file).with_suffix(".json"), "w") as f:
+                f.write(json.dumps(json_obj))
+            return
+
+        roi = get_roi_pileup_df(data)
+        # print(data)
+        plot = make_scatter_plots(data, roi)
+        output_file(plot_file, title="variant plots")
+        save(plot)
+
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
@@ -254,21 +248,14 @@ if __name__ == "__main__":
 
         parser.add_argument("vcf_file")
         parser.add_argument("plot_file")
+        parser.add_argument("priority_limit", type=int, default=89)
         args = parser.parse_args()
-        # vcf = '/home/dami/projects/variantcalling/depth/datasets/000010_v4_bb41/2000/potential_vars_1000.vcf'
-        # true_vcf = '/home/dami/projects/variantcalling/depth/datasets_cyclomics/000010_v4_bb41/Native/real_variants.vcf'
 
-        main(args.vcf_file, args.plot_file)
+        main(args.vcf_file, args.plot_file, args.priority_limit)
 
     else:
-        # PNK
-        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test/variants/FAS12641_annotated.vcf"
         vcf_file = "ABZ922.noisy_merged.vcf"
         plot_file = "ABZ922.noisy_merged.html"
+        priority_limit = 9999
 
-        # TP53 - T2T
-        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25_T2T/variants/FAU48563_annotated.vcf"
-        # vcf_file = "/scratch/projects/ROD_0908_63_variantcalling/results/PR_test_25_T2T/variants/manually_merged.vcf"
-        # plot_file = "vcf_25_T2T.json"
-
-        main(vcf_file, plot_file)
+        main(vcf_file, plot_file, priority_limit)

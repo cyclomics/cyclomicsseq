@@ -278,9 +278,22 @@ def parse_Cycas_metadata(
 def read_jsons_into_plots(
     json_folder,
     plot_file,
+    priority_limit: int,
     subsample_size: int = 10_000,
     seed: int = 42,
 ):
+    # Initialize HTML tab
+    tab_name = "Metadata"
+    json_obj = {}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]["name"] = tab_name
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
+
+    if TAB_PRIORITY > priority_limit:
+        with open(Path(plot_file).with_suffix(".json"), "w") as f:
+            f.write(json.dumps(json_obj))
+        return
+
     nr_reads = 0
     result_stack = []
     for data_json in glob.glob(f"{json_folder}/*.json"):
@@ -309,17 +322,8 @@ def read_jsons_into_plots(
     segments = results[2].astype(segment_dt)
     classifs = results[3].astype(class_dt)
 
-    # Initialize HTML tab
-    tab_name = "Metadata"
-    json_obj = {}
-    json_obj[tab_name] = {}
-    json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["priority"] = TAB_PRIORITY
     # Write out empty file if there are no metadata
     if nr_reads == 0:
-        f = open(plot_file, "w")
-        f.write("<h1>No metadata found.</h1>")
-        f.close()
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
             "",
             "<h1>No metadata found: metadata JSON files were empty.</h1>",
@@ -373,7 +377,11 @@ if __name__ == "__main__":
     dev = False
     if dev:
         read_jsons_into_plots(
-            "./plot_metadata/jsons/", "./metadata.html", subsample_size=0, seed=42
+            "./plot_metadata/jsons/",
+            "./metadata.html",
+            priority_limit=9999,
+            subsample_size=0,
+            seed=42,
         )
 
     else:
@@ -381,13 +389,16 @@ if __name__ == "__main__":
 
         parser.add_argument("json_glob_path")
         parser.add_argument("plot_file")
-        parser.add_argument("--subsample_size", default=10_000)
-        parser.add_argument("--seed", default=42)
+        parser.add_argument("priority_limit", type=int, default=89)
+        parser.add_argument("--subsample_size", type=int, default=10_000)
+        parser.add_argument("--seed", type=int, default=42)
+
         args = parser.parse_args()
 
         read_jsons_into_plots(
             args.json_glob_path,
             args.plot_file,
-            int(args.subsample_size),
-            int(args.seed),
+            args.priority_limit,
+            args.subsample_size,
+            args.seed,
         )

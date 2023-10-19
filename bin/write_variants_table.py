@@ -140,7 +140,7 @@ def restructure_annotations(
     return annotation_df
 
 
-def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
+def main(vcf_file: Path, variant_table_file: Path, tab_name: str, priority_limit: int):
     """
     Write variants in VCF file to a JSON file to be loaded into the HTML report.
 
@@ -150,24 +150,27 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str):
             from a pandas DataFrame.
         tab_name: Name of the variant table tab to add to the report, str.
     """
-    version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14 and with variant calling option '--variant_calling validate'</p>"
+    json_obj = {}
+    json_obj[tab_name] = {}
+    json_obj[tab_name]["name"] = tab_name
+    json_obj[tab_name]["priority"] = TAB_PRIORITY
 
-    variants_df = load_vcf(vcf_file)
-    annotation_df = restructure_annotations(variants_df)
-    vcf_table = annotation_df.to_html(na_rep="N/A")
-    vcf_table = vcf_table.replace(
-        'class="dataframe"', 'class="table table-sm table-hover table-striped"'
-    )
-    vcf_table = vcf_table.replace('border="1"', "")
-    # f"width={cyclomics_defaults.width}")
+    if TAB_PRIORITY < priority_limit:
+        version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14 and with variant calling option '--variant_calling validate'</p>"
 
-    with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
-        json_obj = {}
-        json_obj[tab_name] = {}
-        json_obj[tab_name]["name"] = tab_name
+        variants_df = load_vcf(vcf_file)
+        annotation_df = restructure_annotations(variants_df)
+        vcf_table = annotation_df.to_html(na_rep="N/A")
+        vcf_table = vcf_table.replace(
+            'class="dataframe"', 'class="table table-sm table-hover table-striped"'
+        )
+        vcf_table = vcf_table.replace('border="1"', "")
+        # f"width={cyclomics_defaults.width}")
+
         json_obj[tab_name]["script"] = ""
         json_obj[tab_name]["div"] = "<div>" + vcf_table + version_notice + "</div>"
-        json_obj[tab_name]["priority"] = TAB_PRIORITY
+
+    with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
 
 
@@ -183,13 +186,15 @@ if __name__ == "__main__":
         parser.add_argument("vcf_file")
         parser.add_argument("variant_table_file")
         parser.add_argument("tab_name", default="Variant Table")
+        parser.add_argument("priority_limit", type=int, default=89)
         args = parser.parse_args()
 
-        main(args.vcf_file, args.variant_table_file, args.tab_name)
+        main(args.vcf_file, args.variant_table_file, args.tab_name, args.priority_limit)
 
     else:
         vcf_file = "/data/projects/ROD_tmp/65/08147aed79107ea52881035e4be36a/FAW08675_filtered_annotated.vcf"
         variant_table_file = "variant_table.json"
         tab_name = "variant_table"
+        priority_limit = 9999
 
-        main(vcf_file, variant_table_file, tab_name)
+        main(vcf_file, variant_table_file, tab_name, priority_limit)

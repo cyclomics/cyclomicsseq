@@ -157,42 +157,51 @@ def initialize_counters():
     return concat_type_stats, concat_type_stats_by_bases
 
 
-def create_assembly_count_plot(chromosome_counts, output_file_name, my_title):
+def create_assembly_count_plot(
+    chromosome_counts, output_file_name, my_title, priority_limit: int
+):
     """
     Create a barplot for the assembly statistics.
     """
-    ##Segments count
-    # _d = Counter(split_table.RNAME.values)
-    segments = (
-        pd.DataFrame.from_dict(chromosome_counts, orient="index")
-        .reset_index()
-        .rename(columns={"index": "CHROM", 0: "count"})
-    )
-    print(segments)
-    source = ColumnDataSource(data=segments)
-
-    output_file(filename=output_file_name, title=my_title)
-
-    p = figure(plot_height=500, plot_width=1000, x_range=segments.CHROM, title=my_title)
-    p.vbar(x="CHROM", top="count", width=0.8, source=source)
-    p.xaxis.major_label_orientation = "vertical"
-    save(p)
-
     tab_name = "Alignment"
     add_info = {}
-
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
-    json_obj["additional_info"] = add_info
     json_obj[tab_name]["priority"] = TAB_PRIORITY_CONTIG_COUNT
+
+    if TAB_PRIORITY_CONTIG_COUNT < priority_limit:
+        ##Segments count
+        # _d = Counter(split_table.RNAME.values)
+        segments = (
+            pd.DataFrame.from_dict(chromosome_counts, orient="index")
+            .reset_index()
+            .rename(columns={"index": "CHROM", 0: "count"})
+        )
+        print(segments)
+        source = ColumnDataSource(data=segments)
+
+        output_file(filename=output_file_name, title=my_title)
+
+        p = figure(
+            plot_height=500, plot_width=1000, x_range=segments.CHROM, title=my_title
+        )
+        p.vbar(x="CHROM", top="count", width=0.8, source=source)
+        p.xaxis.major_label_orientation = "vertical"
+        save(p)
+
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
+        json_obj["additional_info"] = add_info
 
     return json_obj
 
 
 def create_readtype_donuts(
-    concat_type_stats, concat_type_stats_by_bases, plot_file, plot_title
+    concat_type_stats,
+    concat_type_stats_by_bases,
+    plot_file,
+    plot_title,
+    priority_limit: int,
 ):
     """
     Create a donut plot for the read structures.
@@ -283,51 +292,60 @@ def create_readtype_donuts(
         donut_plot.title.text_font_size = "16pt"
         return donut_plot
 
-    output_file(filename=plot_file, title=plot_title)
-    _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
-    _df2 = _calculate_angle_and_color(concat_type_stats_by_bases, concat_type_colors)
-
-    add_info = {}
-    add_info["read_struc_prec_bbi"] = _df1[_df1.type == "BB-I"].percentage[0]
-
-    donut_plot_height = 400
-    donut_plot_width = 600
-    donut_plot_x_range = (-0.6, 1.4)
-    donut_plot_y_range = (0, 2)
-    p1 = _plot_donut(
-        _df1,
-        donut_plot_height,
-        donut_plot_width,
-        donut_plot_x_range,
-        donut_plot_y_range,
-        "per read",
-    )
-    p2 = _plot_donut(
-        _df2,
-        donut_plot_height,
-        donut_plot_width,
-        donut_plot_x_range,
-        donut_plot_y_range,
-        "per base",
-    )
-
-    donut_row = row(p1, p2)
-    donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
-    tab_name = "Read structure"
-
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
-    json_obj["additional_info"] = add_info
     json_obj[tab_name]["priority"] = TAB_PRIORITY_DONUT
-    save(donut_plot)
+
+    if TAB_PRIORITY_DONUT < priority_limit:
+        output_file(filename=plot_file, title=plot_title)
+        _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
+        _df2 = _calculate_angle_and_color(
+            concat_type_stats_by_bases, concat_type_colors
+        )
+
+        add_info = {}
+        add_info["read_struc_prec_bbi"] = _df1[_df1.type == "BB-I"].percentage[0]
+
+        donut_plot_height = 400
+        donut_plot_width = 600
+        donut_plot_x_range = (-0.6, 1.4)
+        donut_plot_y_range = (0, 2)
+        p1 = _plot_donut(
+            _df1,
+            donut_plot_height,
+            donut_plot_width,
+            donut_plot_x_range,
+            donut_plot_y_range,
+            "per read",
+        )
+        p2 = _plot_donut(
+            _df2,
+            donut_plot_height,
+            donut_plot_width,
+            donut_plot_x_range,
+            donut_plot_y_range,
+            "per base",
+        )
+
+        donut_row = row(p1, p2)
+        donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
+        tab_name = "Read structure"
+
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
+        json_obj["additional_info"] = add_info
+        save(donut_plot)
 
     return json_obj
 
 
 def main(
-    bam_path, assembly_plot_file, assembly_plot_title, donut_plot_file, donut_plot_title
+    bam_path,
+    assembly_plot_file,
+    assembly_plot_title,
+    donut_plot_file,
+    donut_plot_title,
+    priority_limit: int,
 ):
     """
     Extract data from bam and plot it using two functions that further select data
@@ -338,10 +356,10 @@ def main(
     read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
 
     assembly_info = create_assembly_count_plot(
-        chromosome_counts, assembly_plot_file, assembly_plot_title
+        chromosome_counts, assembly_plot_file, assembly_plot_title, priority_limit
     )
     donut_info = create_readtype_donuts(
-        read_counts, base_counts, donut_plot_file, donut_plot_title
+        read_counts, base_counts, donut_plot_file, donut_plot_title, priority_limit
     )
 
     json_obj = chain(assembly_info.items(), donut_info.items())
@@ -362,6 +380,7 @@ if __name__ == "__main__":
     parser.add_argument("bam_file")
     parser.add_argument("assembly_plot")
     parser.add_argument("donut_plot_readstructure")
+    parser.add_argument("priority_limit", type=int, default=89)
     args = parser.parse_args()
 
     main(
@@ -370,6 +389,7 @@ if __name__ == "__main__":
         "Segment count per assembly in reference",
         args.donut_plot_readstructure,
         "Read structure based on chromosomal presence per readname",
+        args.priority_limit,
     )
 
     # split_bam = (

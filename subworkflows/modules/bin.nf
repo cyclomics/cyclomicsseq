@@ -223,7 +223,7 @@ process PlotFastqsQUalAndLength{
     
     script:
         """
-        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name
+        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name $params.priority_limit
         """
 }
 
@@ -246,7 +246,7 @@ process PlotReadStructure{
         // This takes a lot of RAM when the sequencing summary is big!
         """
         samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
-        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
+        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html $params.priority_limit
         """
 }
 
@@ -267,7 +267,7 @@ process PlotVcf{
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_vcf.py $vcf ${vcf.simpleName}.html
+        plot_vcf.py $vcf ${vcf.simpleName}.html $params.priority_limit
         """
 }
 
@@ -283,7 +283,7 @@ process PasteVariantTable{
     
     script:
         """
-        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table'
+        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table' $params.priority_limit
         """
 }
 
@@ -301,7 +301,7 @@ process PlotQScores{
     
     script:
         """
-        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
+        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html $params.priority_limit
         """
 }
 
@@ -321,11 +321,11 @@ process PlotMetadataStats{
     
     script:
         """
-        plot_metadata.py . metadata_plots.html --subsample_size $params.metadata.subsample_size
+        plot_metadata.py . metadata_plots.html $params.priority_limit --subsample_size $params.metadata.subsample_size
         """
 }
 
-process PlotReportDetailed{
+process PlotReport{
     publishDir "${params.output_dir}", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
@@ -337,22 +337,6 @@ process PlotReportDetailed{
     
     script:
         """
-        generate_report.py '${params}' $workflow.manifest.version 9999
-        """
-}
-
-process PlotReportStd{
-    publishDir "${params.output_dir}", mode: 'copy'
-    label 'many_low_cpu_high_mem'
-
-    input:
-        path(jsons)
-
-    output:
-        path("report.html")
-    
-    script:
-        """
-        generate_report.py '${params}' $workflow.manifest.version 89
+        generate_report.py '${params}' $workflow.manifest.version $params.priority_limit
         """
 }

@@ -454,10 +454,7 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
     return layout
 
 
-def main(perbase_path1, perbase_path2, output_plot_file):
-    df1 = perbase_table_to_df(perbase_path1)
-    df2 = perbase_table_to_df(perbase_path2)
-
+def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
     tab_name = "Consensus quality"
     add_info = {}
     json_obj = {}
@@ -465,35 +462,42 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
 
-    if df1.empty or df2.empty:
-        f = open(output_plot_file, "w")
-        f.write("<h1>One of the pileups was not deep enough.</h1>")
-        f.close()
-        f = open(output_plot_file.with_suffix(".csv"), "w")
-        f.write("One of the pileups was not deep.")
-        f.close()
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
-            "",
-            "<h1>One of the pileups was not deep enough.</h1>",
-        )
+    if TAB_PRIORITY < priority_limit:
+        df1 = perbase_table_to_df(perbase_path1)
+        df2 = perbase_table_to_df(perbase_path2)
 
-    else:
-        roi = get_roi_pileup_df(df1)
+        if df1.empty or df2.empty:
+            f = open(output_plot_file, "w")
+            f.write("<h1>One of the pileups was not deep enough.</h1>")
+            f.close()
+            f = open(output_plot_file.with_suffix(".csv"), "w")
+            f.write("One of the pileups was not deep.")
+            f.close()
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+                "",
+                "<h1>One of the pileups was not deep enough.</h1>",
+            )
 
-        positional_accuracy = plot_compare_accuracy(
-            roi, [df1, df2], "Variant unaware Q"
-        )
-        q_score_plot = make_qscore_scatter(
-            df1, df2, output_plot_file.with_suffix(".csv")
-        )
+        else:
+            roi = get_roi_pileup_df(df1)
 
-        output_file(output_plot_file, title="Cyclomics accuracy")
-        final_plot = column([q_score_plot, positional_accuracy])
+            positional_accuracy = plot_compare_accuracy(
+                roi, [df1, df2], "Variant unaware Q"
+            )
+            q_score_plot = make_qscore_scatter(
+                df1, df2, output_plot_file.with_suffix(".csv")
+            )
 
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
-        json_obj["additional_info"] = add_info
+            output_file(output_plot_file, title="Cyclomics accuracy")
+            final_plot = column([q_score_plot, positional_accuracy])
 
-        save(final_plot)
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(
+                final_plot
+            )
+            json_obj["additional_info"] = add_info
+
+            save(final_plot)
+
     print("writing json")
     print(Path(output_plot_file).with_suffix(".json"))
     with open(Path(output_plot_file).with_suffix(".json"), "w") as f:
@@ -510,9 +514,10 @@ if __name__ == "__main__":
     parser.add_argument("pileup_split", type=Path)
     parser.add_argument("pileup_consensus", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("priority_limit", type=int, default=89)
 
     args = parser.parse_args()
-    main(args.pileup_split, args.pileup_consensus, args.output)
+    main(args.pileup_split, args.pileup_consensus, args.output, args.priority_limit)
 
     # pileup_split = Path('/home/dami/Data/dev/000010_5/split.tsv')
     # pileup_cons = Path('/home/dami/Data/dev/000010_5/consensus.tsv')
