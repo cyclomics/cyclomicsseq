@@ -23,7 +23,6 @@ SIDE_DIST_PLOT_SIZE = 100
 TAB_PRIORITY = 91
 
 
-
 def get_roi_pileup_df(
     df: pd.DataFrame, distance: int = 100
 ) -> List[chromosomal_region]:
@@ -213,7 +212,6 @@ def pileup_to_df(pileup_path: str) -> pd.DataFrame:
     print("pileup_to_df)")
 
     with open(pileup_path, "r") as pu:
-
         lines = pu.readlines()
         lines = [x.split("\t") for x in lines]
         df1 = pd.DataFrame(
@@ -242,7 +240,8 @@ def perbase_table_to_df(table_path):
     except pd.errors.EmptyDataError:
         return pd.DataFrame()
     df["REF_BASE_UPPER"] = df.REF_BASE.str.upper()
-    df["REF_COUNT"] = df.lookup(df.index, df["REF_BASE_UPPER"])
+    idx, cols = pd.factorize(df["REF_BASE_UPPER"])
+    df["REF_COUNT"] = df.reindex(cols, axis=1).to_numpy()[np.arange(len(df)), idx]
     df["ACCURACY"] = df.REF_COUNT / df.DEPTH
     df["Q"] = df.ACCURACY.apply(acc_to_Q)
     df["CHROM"] = df["REF"]
@@ -456,7 +455,6 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
 
 
 def main(perbase_path1, perbase_path2, output_plot_file):
-
     df1 = perbase_table_to_df(perbase_path1)
     df2 = perbase_table_to_df(perbase_path2)
 
@@ -503,7 +501,6 @@ def main(perbase_path1, perbase_path2, output_plot_file):
 
 
 if __name__ == "__main__":
-
     import argparse
 
     parser = argparse.ArgumentParser(
