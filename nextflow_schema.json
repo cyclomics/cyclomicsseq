@@ -64,119 +64,8 @@
       },
       "required": ["reference", "input_read_dir"]
     },
-    "variant_identivication_options_snp": {
-      "title": "SNP variant identification thresholds",
-      "type": "object",
-      "description": "Options to fine tune SNP variants that are reported by the workflow.",
-      "default": "",
-      "properties": {
-        "snp_filters.min_dir_ratio": {
-          "type": "number",
-          "description": "Minimum ratio of variant-supporting reads in each direction.",
-          "help_text": "Default:  001",
-          "default": 0.001
-        },
-        "snp_filters.min_dir_count": {
-          "type": "integer",
-          "description": "Minimum number of variant-supporting reads in each direction.",
-          "help_text": "Default: 5",
-          "default": 5
-        },
-        "snp_filters.min_dpq": {
-          "type": "integer",
-          "description": "Minimum positional depth after Q filtering.",
-          "help_text": "Default: 5000 ",
-          "default": 5000
-        },
-        "snp_filters.min_dpq_n": {
-          "type": "integer",
-          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
-          "help_text": "Default: 25 ",
-          "default": 25
-        },
-        "snp_filters.min_dpq_ratio": {
-          "type": "number",
-          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
-          "help_text": "Default: 0.3 ",
-          "default": 0.3
-        },
-        "snp_filters.min_vaf": {
-          "type": "number",
-          "description": "Minimum variant allele frequency.",
-          "help_text": "Default:  0030",
-          "default": 0.003
-        },
-        "snp_filters.min_rel_ratio": {
-          "type": "number",
-          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
-          "help_text": "Default: 0.3 ",
-          "default": 0.3
-        },
-        "snp_filters.min_abq": {
-          "type": "integer",
-          "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
-        }
-      }
-    },
-    "variant_identivication_options_indel": {
-      "title": "Indel variant identification thresholds",
-      "type": "object",
-      "description": "Options to fine tune Indel variants that are reported by the workflow.",
-      "default": "",
-      "properties": {
-        "indel_filters.min_dir_ratio": {
-          "type": "number",
-          "description": "Minimum ratio of variant-supporting reads in each direction.",
-          "default": 0.002
-        },
-        "indel_filters.min_dir_count": {
-          "type": "integer",
-          "description": "Minimum number of variant-supporting reads in each direction.",
-          "help_text": "Default: 5",
-          "default": 5
-        },
-        "indel_filters.min_dpq": {
-          "type": "integer",
-          "description": "Minimum positional depth after Q filtering.",
-          "help_text": "Default: 5000 ",
-          "default": 5000
-        },
-        "indel_filters.min_dpq_n": {
-          "type": "integer",
-          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
-          "help_text": "Default: 25 ",
-          "default": 25
-        },
-        "indel_filters.min_dpq_ratio": {
-          "type": "number",
-          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
-          "help_text": "Default: 0.3 ",
-          "default": 0.3
-        },
-        "indel_filters.min_vaf": {
-          "type": "number",
-          "description": "Minimum variant allele frequency.",
-          "help_text": "Default:  0040",
-          "default": 0.004
-        },
-        "indel_filters.min_rel_ratio": {
-          "type": "number",
-          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
-          "help_text": "Default: 0.4 ",
-          "default": 0.4
-        },
-        "indel_filters.min_abq": {
-          "type": "integer",
-          "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
-        }
-      }
-    },
     "pipeline_options": {
-      "title": "pipeline options",
+      "title": "Pipeline options",
       "type": "object",
       "description": "Options that alter the behaviour of the pipeline, for advanced users.",
       "default": "",
@@ -278,6 +167,153 @@
           "help_text": "The sequencing summary file contains additional information that will be added to the final bam file when provided."
         }
       }
+    },
+    "advanced_variants_validate": {
+      "title": "Advanced: Variant classification options for 'validate'",
+      "type": "object",
+      "description": "Options to fine tune SNP and indel variants that are reported by the workflow, using the 'validate' option.",
+      "default": "",
+      "properties": {
+        "snp_filters.min_dir_ratio": {
+          "type": "number",
+          "description": "Minimum ratio of variant-supporting reads in each direction.",
+          "help_text": "Default:  001",
+          "default": 0.001
+        },
+        "snp_filters.min_dir_count": {
+          "type": "integer",
+          "description": "Minimum number of variant-supporting reads in each direction.",
+          "help_text": "Default: 5",
+          "default": 5
+        },
+        "snp_filters.min_dpq": {
+          "type": "integer",
+          "description": "Minimum positional depth after Q filtering.",
+          "help_text": "Default: 5000 ",
+          "default": 5000
+        },
+        "snp_filters.min_dpq_n": {
+          "type": "integer",
+          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
+          "help_text": "Default: 25 ",
+          "default": 25
+        },
+        "snp_filters.min_dpq_ratio": {
+          "type": "number",
+          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "snp_filters.min_vaf": {
+          "type": "number",
+          "description": "Minimum variant allele frequency.",
+          "help_text": "Default:  0030",
+          "default": 0.003
+        },
+        "snp_filters.min_rel_ratio": {
+          "type": "number",
+          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "snp_filters.min_abq": {
+          "type": "integer",
+          "description": "Minimum average base quality.",
+          "help_text": "Default: 70 ",
+          "default": 70
+        },
+        "indel_filters.min_dir_ratio": {
+          "type": "number",
+          "description": "Minimum ratio of variant-supporting reads in each direction.",
+          "default": 0.002
+        },
+        "indel_filters.min_dir_count": {
+          "type": "integer",
+          "description": "Minimum number of variant-supporting reads in each direction.",
+          "help_text": "Default: 5",
+          "default": 5
+        },
+        "indel_filters.min_dpq": {
+          "type": "integer",
+          "description": "Minimum positional depth after Q filtering.",
+          "help_text": "Default: 5000 ",
+          "default": 5000
+        },
+        "indel_filters.min_dpq_n": {
+          "type": "integer",
+          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
+          "help_text": "Default: 25 ",
+          "default": 25
+        },
+        "indel_filters.min_dpq_ratio": {
+          "type": "number",
+          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "indel_filters.min_vaf": {
+          "type": "number",
+          "description": "Minimum variant allele frequency.",
+          "help_text": "Default:  0040",
+          "default": 0.004
+        },
+        "indel_filters.min_rel_ratio": {
+          "type": "number",
+          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
+          "help_text": "Default: 0.4 ",
+          "default": 0.4
+        },
+        "indel_filters.min_abq": {
+          "type": "integer",
+          "description": "Minimum average base quality.",
+          "help_text": "Default: 70 ",
+          "default": 70
+        }
+      }
+    },
+    "advanced_variants_freebayes": {
+      "title": "Advanced: Variant classification options for 'freebayes'",
+      "type": "object",
+      "description": "Options to fine tune all variants that are reported by the workflow, using the 'freebayes' option.",
+      "default": "",
+      "properties": {
+        "var_filters.min_dpq": {
+          "type": "integer",
+          "description": "Minimum positional depth after Q filtering.",
+          "help_text": "Default: 5000 ",
+          "default": 5000
+        },
+        "var_filters.min_dpq_n": {
+          "type": "integer",
+          "description": "Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation",
+          "help_text": "Default: 25 ",
+          "default": 25
+        },
+        "var_filters.min_dpq_ratio": {
+          "type": "number",
+          "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "var_filters.max_sap": {
+          "type": "integer",
+          "description": "Maximum SAP: strand balance probability for the alternate allele: Phred-scaled upper-bounds estimate of the probability of observing the deviation between SAF and SAR given E(SAF/SAR) ~ 0.5, derived using Hoeffding's inequality",
+          "help_text": "Default: 60",
+          "default": 60
+        },
+        "var_filters.min_rel_ratio": {
+          "type": "number",
+          "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
+          "help_text": "Default: 0.3 ",
+          "default": 0.3
+        },
+        "var_filters.min_abq": {
+          "type": "integer",
+          "description": "Minimum average base quality.",
+          "help_text": "Default: 70 ",
+          "default": 70
+        }
+      }
     }
   },
   "allOf": [
@@ -288,13 +324,16 @@
       "$ref": "#/definitions/input_options"
     },
     {
-      "$ref": "#/definitions/variant_identivication_options_snp"
-    },
-    {
       "$ref": "#/definitions/pipeline_options"
     },
     {
       "$ref": "#/definitions/advanced_user_options"
+    },
+    {
+      "$ref": "#/definitions/advanced_variants_validate"
+    },
+    {
+      "$ref": "#/definitions/advanced_variants_freebayes"
     }
   ]
 }
