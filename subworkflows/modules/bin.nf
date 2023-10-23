@@ -208,6 +208,7 @@ process PlotFastqsQUalAndLength{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         path(fastq)
@@ -231,7 +232,7 @@ process PlotReadStructure{
     label 'many_cpu_medium'
 
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
@@ -256,7 +257,7 @@ process PlotVcf{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
@@ -276,6 +277,7 @@ process PlotVcf{
 process PasteVariantTable{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         path(vcf_file)
@@ -315,7 +317,7 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_huge_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
