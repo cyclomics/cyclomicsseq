@@ -518,13 +518,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args.pileup_split, args.pileup_consensus, args.output, args.priority_limit)
-
-    # pileup_split = Path('/home/dami/Data/dev/000010_5/split.tsv')
-    # pileup_cons = Path('/home/dami/Data/dev/000010_5/consensus.tsv')
-    # output = Path('testQ.html')
-    # main(pileup_split, pileup_cons, output)
-
-    # df1 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test_split.tsv')
-    # df2 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test.tsv')
-    # plots = plot_compare_accuracy([('chr17',7579983,7580193)], [df1,df2])
-    # show(plots)

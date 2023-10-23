@@ -156,34 +156,34 @@ def main(args):
             "Sequencing reads",
             "fa-dna",
             "readsRaw fastq info",
-            "text-succes",
+            "text-dark",
         ),  # count from input material
         (
             "Post split & QC reads",
             "fa-filter",
             "readsFiltered fastq info",
-            "text-succes",
+            "text-dark",
         ),
         (
             "Aligning reads",
             "fa-align-center",
             "Reference_aligned_with_backbone",
-            "text-succes",
+            "text-dark",
         ),  # reads aligning in initial alignment
         (
             "Consensus inserts",
             "fa-bars",
             "total_reference_mapping_reads",
-            "text-succes",
+            "text-dark",
         ),
         (
             "Variants found",
             "fa-map-marker-alt",
             "variants_found_non_backbone",
-            "text-succes",
+            "text-dark",
         ),
-        ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-succes"),
-        ("Pipeline version", "fa-code-branch", "git_version", "text-succes"),
+        ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-dark"),
+        ("Pipeline version", "fa-code-branch", "git_version", "text-dark"),
     ]:
         try:
             data["cards"].append(
@@ -191,6 +191,17 @@ def main(args):
             )
         except KeyError:
             data["cards"].append(SummaryCard(i[0], i[1], "nan", i[3]))
+
+    if ("exit_status", 1) in data["additional_info"].items():
+        data["cards"].append(
+            SummaryCard(
+                "Plotting error",
+                "fas fa-times-circle",
+                "Warning!",
+                "text-warning",
+            )
+        )
+
     print(data["additional_info"])
     # print(tabs)
     with open(REPORT, "w") as fh:

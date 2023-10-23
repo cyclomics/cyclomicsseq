@@ -1,6 +1,3 @@
-
-
-
 process AddDepthToJson{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
@@ -219,11 +216,12 @@ process PlotFastqsQUalAndLength{
         val tab_name
 
     output:
-        tuple path("${plot_file_prefix}_histograms.html"), path("${plot_file_prefix}_histograms.json")
+        path("${plot_file_prefix}_histograms.json")
     
     script:
         """
-        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name $params.priority_limit
+        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${plot_file_prefix}_histograms.json
         """
 }
 
@@ -240,13 +238,17 @@ process PlotReadStructure{
         tuple val(X), path(bam), path(bai)
 
     output:
-        tuple path("${bam.simpleName}_aligned_segments.html"), path("${bam.simpleName}_read_structure.html"), path("${bam.simpleName}_read_structure.json")
+        path("${bam.simpleName}_read_structure.json")
 
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
         samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
-        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html $params.priority_limit
+        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam \
+        ${bam.simpleName}_aligned_segments.html \
+        ${bam.simpleName}_read_structure.html \
+        $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${bam.simpleName}_read_structure.json
         """
 }
 
@@ -262,12 +264,13 @@ process PlotVcf{
         path(vcf)
 
     output:
-        tuple path("${vcf.simpleName}.html"), path("${vcf.simpleName}.json")
+        path("${vcf.simpleName}.json")
     
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_vcf.py $vcf ${vcf.simpleName}.html $params.priority_limit
+        plot_vcf.py $vcf ${vcf.simpleName}.html $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf.simpleName}.json
         """
 }
 
@@ -283,7 +286,8 @@ process PasteVariantTable{
     
     script:
         """
-        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table' $params.priority_limit
+        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table' $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf_file.simpleName}_table.json
         """
 }
 
@@ -291,17 +295,19 @@ process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         tuple val(X), path(split_pileup)
         tuple val(Y), path(consensus_pileup)
 
     output:
-        tuple path("${consensus_pileup.simpleName}.html"), path("${consensus_pileup.simpleName}.csv"), path("${consensus_pileup.simpleName}.json")
+        path("${consensus_pileup.simpleName}.json")
     
     script:
         """
-        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html $params.priority_limit
+        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${consensus_pileup.simpleName}.json
         """
 }
 
@@ -317,11 +323,12 @@ process PlotMetadataStats{
         path(jsons)
 
     output:
-        tuple path("metadata_plots.html"), path("metadata_plots.json")
+        path("metadata_plots.json")
     
     script:
         """
-        plot_metadata.py . metadata_plots.html $params.priority_limit --subsample_size $params.metadata.subsample_size
+        plot_metadata.py . metadata_plots.html $params.priority_limit --subsample_size $params.metadata.subsample_size \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt metadata_plots.json
         """
 }
 

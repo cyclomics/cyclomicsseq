@@ -11,8 +11,7 @@ include {
     PasteVariantTable
     PlotQScores
     PlotMetadataStats
-    PlotReportDetailed
-    PlotReportStd
+    PlotReport
 } from "./modules/bin"
 
 include {
@@ -100,12 +99,12 @@ workflow Report {
         SamtoolsFlagstats(merged_split_bam_filtered)
 
         PasteVariantTable(variants_vcf)
-        PlotReportDetailed(
+        PlotReport(
             PlotRawFastqHist.out.combine(
             PlotFilteredHist.out).combine(
             PlotConFastqHist.out).combine(
             PlotReadStructure.out).combine(
-            PlotQScores.out).combine(
+            PlotQScores.out).combine( // try making this fail
             PlotVcf.out).combine(
             PlotMetadataStats.out).combine(
             PasteVariantTable.out).combine(

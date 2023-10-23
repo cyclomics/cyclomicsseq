@@ -110,8 +110,6 @@ if (params.profile_selected == "conda"){
 ========================================================================================
 */
 include {
-    DetailedReport
-    StandardReport
     Report
 } from "./subworkflows/QC"
 

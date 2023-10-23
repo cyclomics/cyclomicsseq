@@ -292,6 +292,7 @@ def create_readtype_donuts(
         donut_plot.title.text_font_size = "16pt"
         return donut_plot
 
+    tab_name = "Read structure"
     json_obj = {}
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
@@ -330,7 +331,6 @@ def create_readtype_donuts(
 
         donut_row = row(p1, p2)
         donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
-        tab_name = "Read structure"
 
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
         json_obj["additional_info"] = add_info
