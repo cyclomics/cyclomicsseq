@@ -7,9 +7,8 @@ import numpy as np
 from pathlib import Path
 import json
 
-from bokeh.io import save, output_file
-from bokeh.plotting import figure, show
-from bokeh.layouts import row, column
+from bokeh.plotting import figure
+from bokeh.layouts import column
 from bokeh.models import HoverTool
 from bokeh.embed import components
 
@@ -228,8 +227,6 @@ def main(vcf_file, plot_file, priority_limit: int):
         roi = get_roi_pileup_df(data)
         # print(data)
         plot = make_scatter_plots(data, roi)
-        output_file(plot_file, title="variant plots")
-        save(plot)
 
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
 

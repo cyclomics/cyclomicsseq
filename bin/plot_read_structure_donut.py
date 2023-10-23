@@ -11,7 +11,6 @@ import pandas as pd
 import pysam
 
 from bokeh.embed import components
-from bokeh.io import save, output_file
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
 from bokeh.layouts import row, column
@@ -157,9 +156,7 @@ def initialize_counters():
     return concat_type_stats, concat_type_stats_by_bases
 
 
-def create_assembly_count_plot(
-    chromosome_counts, output_file_name, my_title, priority_limit: int
-):
+def create_assembly_count_plot(chromosome_counts, my_title, priority_limit: int):
     """
     Create a barplot for the assembly statistics.
     """
@@ -181,14 +178,11 @@ def create_assembly_count_plot(
         print(segments)
         source = ColumnDataSource(data=segments)
 
-        output_file(filename=output_file_name, title=my_title)
-
         p = figure(
             plot_height=500, plot_width=1000, x_range=segments.CHROM, title=my_title
         )
         p.vbar(x="CHROM", top="count", width=0.8, source=source)
         p.xaxis.major_label_orientation = "vertical"
-        save(p)
 
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
         json_obj["additional_info"] = add_info
@@ -199,7 +193,6 @@ def create_assembly_count_plot(
 def create_readtype_donuts(
     concat_type_stats,
     concat_type_stats_by_bases,
-    plot_file,
     plot_title,
     priority_limit: int,
 ):
@@ -299,7 +292,6 @@ def create_readtype_donuts(
     json_obj[tab_name]["priority"] = TAB_PRIORITY_DONUT
 
     if TAB_PRIORITY_DONUT < priority_limit:
-        output_file(filename=plot_file, title=plot_title)
         _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
         _df2 = _calculate_angle_and_color(
             concat_type_stats_by_bases, concat_type_colors
@@ -334,16 +326,14 @@ def create_readtype_donuts(
 
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
         json_obj["additional_info"] = add_info
-        save(donut_plot)
 
     return json_obj
 
 
 def main(
     bam_path,
-    assembly_plot_file,
     assembly_plot_title,
-    donut_plot_file,
+    plot_file,
     donut_plot_title,
     priority_limit: int,
 ):
@@ -356,10 +346,10 @@ def main(
     read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
 
     assembly_info = create_assembly_count_plot(
-        chromosome_counts, assembly_plot_file, assembly_plot_title, priority_limit
+        chromosome_counts, assembly_plot_title, priority_limit
     )
     donut_info = create_readtype_donuts(
-        read_counts, base_counts, donut_plot_file, donut_plot_title, priority_limit
+        read_counts, base_counts, donut_plot_title, priority_limit
     )
 
     json_obj = chain(assembly_info.items(), donut_info.items())
@@ -368,7 +358,7 @@ def main(
     json_obj["additional_info"] = assembly_info["additional_info"]
     json_obj["additional_info"].update(donut_info["additional_info"])
 
-    with open(Path(donut_plot_file).with_suffix(".json"), "w") as f:
+    with open(Path(plot_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
 
 
@@ -378,16 +368,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
 
     parser.add_argument("bam_file")
-    parser.add_argument("assembly_plot")
-    parser.add_argument("donut_plot_readstructure")
+    parser.add_argument("plot_file")
     parser.add_argument("priority_limit", type=int, default=89)
     args = parser.parse_args()
 
     main(
         args.bam_file,
-        args.assembly_plot,
         "Segment count per assembly in reference",
-        args.donut_plot_readstructure,
+        args.plot_file,
         "Read structure based on chromosomal presence per readname",
         args.priority_limit,
     )

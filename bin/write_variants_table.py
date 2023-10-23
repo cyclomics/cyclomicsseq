@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import io
 
-from plotting_defaults import cyclomics_defaults, human_format
+from plotting_defaults import human_format
 
 TAB_PRIORITY = 2
 

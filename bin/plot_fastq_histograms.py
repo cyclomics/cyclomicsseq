@@ -11,10 +11,9 @@ from pyfastx import Fastq
 import pandas as pd
 import numpy as np
 
-from bokeh.io import save, output_file, show
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
-from bokeh.layouts import row, column
+from bokeh.layouts import column
 from bokeh.embed import components
 
 from plotting_defaults import cyclomics_defaults
@@ -106,9 +105,6 @@ def main(
         total = sum(Q_scores.values())
         overall_Q = [[ord(k) - 33, v / total, v] for k, v in Q_scores.items()]
 
-        # print(overall_Q)
-        output_file(filename=output_file_name, title="fastq information")
-
         q_hist = plot_overall_Q_hist(overall_Q, my_title_q)
 
         len_hist = plot_length_hist(lengths, my_title_len)
@@ -120,8 +116,6 @@ def main(
 
     with open(Path(output_file_name).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
-
-    save(final_plot)
 
 
 if __name__ == "__main__":
@@ -147,9 +141,3 @@ if __name__ == "__main__":
         args.tab_name,
         args.priority_limit,
     )
-
-    # fastq_file_name = "/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/raw_data/Cyclomics/000014/HC01_CG_001/20220630_1612_MN40283_FAT55621_6a2c8b02/fastq_pass/*13.fastq.gz"
-    # my_title_q = f"Q scores in all Fastq files found using {fastq_file_name}"
-    # my_title_len = f"Length distribution"
-    # output_file_name = "qscore.html"
-    # main(fastq_file_name, output_file_name, my_title_q,  my_title_len)

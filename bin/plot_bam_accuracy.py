@@ -12,9 +12,8 @@ import pandas as pd
 import numpy as np
 import re
 
-from bokeh.io import save, output_file
-from bokeh.plotting import figure, show
-from bokeh.layouts import row, column
+from bokeh.plotting import figure
+from bokeh.layouts import column
 from bokeh.embed import components
 from bokeh.layouts import gridplot
 
@@ -467,12 +466,6 @@ def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
         df2 = perbase_table_to_df(perbase_path2)
 
         if df1.empty or df2.empty:
-            f = open(output_plot_file, "w")
-            f.write("<h1>One of the pileups was not deep enough.</h1>")
-            f.close()
-            f = open(output_plot_file.with_suffix(".csv"), "w")
-            f.write("One of the pileups was not deep.")
-            f.close()
             json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
                 "",
                 "<h1>One of the pileups was not deep enough.</h1>",
@@ -484,19 +477,14 @@ def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
             positional_accuracy = plot_compare_accuracy(
                 roi, [df1, df2], "Variant unaware Q"
             )
-            q_score_plot = make_qscore_scatter(
-                df1, df2, output_plot_file.with_suffix(".csv")
-            )
+            q_score_plot = make_qscore_scatter(df1, df2)
 
-            output_file(output_plot_file, title="Cyclomics accuracy")
             final_plot = column([q_score_plot, positional_accuracy])
 
             json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(
                 final_plot
             )
             json_obj["additional_info"] = add_info
-
-            save(final_plot)
 
     print("writing json")
     print(Path(output_plot_file).with_suffix(".json"))

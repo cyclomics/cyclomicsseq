@@ -245,8 +245,7 @@ process PlotReadStructure{
         """
         samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
         plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam \
-        ${bam.simpleName}_aligned_segments.html \
-        ${bam.simpleName}_read_structure.html \
+        ${bam.simpleName}_read_structure.json \
         $params.priority_limit \
         2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${bam.simpleName}_read_structure.json
         """

@@ -12,14 +12,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from bokeh.embed import components
-from bokeh.io import output_file, save
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, HoverTool, LabelSet
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
 from plotting_defaults import cyclomics_defaults
-from concurrent.futures import ProcessPoolExecutor, wait, ALL_COMPLETED
-from threading import Lock
 
 raw_len_dt = np.int32
 aln_len_dt = np.int32
@@ -361,14 +358,11 @@ def read_jsons_into_plots(
         figtitle=f"Length vs segments identified (n = {max_points:,})",
     )
 
-    output_file(plot_file, title="metadata plots")
     final_plot = column([p1, p2, p3, p4])
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
         f.write(json.dumps(json_obj))
-
-    save(final_plot)
 
 
 if __name__ == "__main__":
