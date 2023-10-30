@@ -179,7 +179,7 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
     # Output variant found information and statistics
     if insert_indicator:
         variant.found = True
-        variant.type = "insertion"
+        variant.type = "ins"
         variant.variant_nucleotide = new_insert_fwd
         variant.length = len(new_insert_fwd)
         variant.support_count = new_insert_count
@@ -193,7 +193,7 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
 
     elif deletion_indicator:
         variant.found = True
-        variant.type = "deletion"
+        variant.type = "del"
         variant.variant_nucleotide = new_deletion_fwd
         variant.length = len(new_deletion_fwd)
         variant.support_count = new_deletion_count
@@ -238,11 +238,12 @@ def extract_indel_evidence(
 
     vcf_entry = VCF_entry()
     alleles = (".", ".")
+    info = "."
 
     if not end_of_amplicon:
         indel = check_indel(pileupcolumn)
         if indel.found:
-            if indel.type == "deletion":
+            if indel.type == "del":
                 # Adjust reference allele to include deleted seq
                 with Lock() as lock:
                     reference = pysam.FastaFile(reference_fa)
@@ -255,7 +256,6 @@ def extract_indel_evidence(
                 alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
 
             # Update variant statistics with the found indel
-            indel_type = indel.type
             depth = indel.depth
             depth_q = indel.depth_q
             total_count = indel.support_count
@@ -303,7 +303,16 @@ def extract_indel_evidence(
             vcf_entry.OBQ = obq
             vcf_entry.HCR = hcr
 
-    return (assembly, alleles, vcf_entry)
+            info = {
+                "TYPE": indel.type,
+                "DP": vcf_entry.DP,
+                "QA": vcf_entry.ABQ,
+                "AO": vcf_entry.TOTC,
+                "SAF": vcf_entry.FWDC,
+                "SAR": vcf_entry.REVC,
+            }
+
+    return (assembly, alleles, vcf_entry, info)
 
 
 def main(
@@ -353,7 +362,7 @@ def main(
                 pileupcolumn=pileupcolumn,
                 assembly=contig,
                 ref_nt=str(ref_seq).upper(),
-                reference=reference,
+                reference_fa=fasta,
                 pos=pos,
                 end_of_amplicon=amplicon_ending,
             )
@@ -377,6 +386,8 @@ def main(
 
                     r.samples["SAMPLE1"][fld.name] = fld_entry
 
+                for k, v in result[3].items():
+                    r.info[k] = v
 
                 vcf.write(r)
 
@@ -407,15 +418,14 @@ if __name__ == "__main__":
         main(args.bam, args.bed, args.fasta, args.vcf_out)
 
     if dev:
-        # EGFR
         fasta = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/GCA_000001405_BB42.fasta"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/GRCh38_renamed_BBCS.fasta"
         )
         bed = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214_roi.bed"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675_roi.bed"
         )
         bam = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214.YM_gt_3.bam"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675.YM_gt_3.bam"
         )
         vcf_out = Path("./test.vcf")
 

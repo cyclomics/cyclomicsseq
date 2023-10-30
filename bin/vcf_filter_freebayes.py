@@ -128,8 +128,14 @@ if __name__ == "__main__":
         vcf.write(args.output_vcf)
 
     if dev:
-        depth_table = get_depth_table("./L7154-000200.tsv")
-        dynamic_vaf_params = get_dynamic_vaf_params("./bin/vcf/dynamic_vaf_params.yml")
-        vcf = Vcf("./200.norm.vcf")
-        vcf.filter(depth_table, dynamic_vaf_params)
-        vcf.write("./filtered_200.norm.vcf")
+        depth_table = get_depth_table(
+            "/data/projects/ROD_tmp/da/e71cac3aa901e3f633be128a5e406d/consensus.tsv"
+        )
+        dynamic_vaf_params = get_dynamic_vaf_params(
+            "./bin/variant_calling/dynamic_vaf_params.yml"
+        )
+        vcf = Vcf(
+            "/data/projects/ROD_tmp/da/e71cac3aa901e3f633be128a5e406d/FAW08675.snp.vcf"
+        )
+        vcf.filter(depth_table, dynamic_vaf_params, max_sap=0)
+        vcf.write("./filtered_snp.vcf")

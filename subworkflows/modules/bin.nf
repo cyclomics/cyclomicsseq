@@ -92,6 +92,42 @@ process FindVariants{
         """
 }
 
+// process FilterValidateVariants{
+//     publishDir "${params.output_dir}/variants", mode: 'copy'
+//     label 'many_low_cpu_high_mem'
+
+//     input:
+//         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
+
+//     output:
+//         tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
+    
+//     script:
+//         """
+//         vcf_filter_validate.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+//         -p $perbase_table \
+//         --min_dir_ratio $params.snp_filters.min_dir_ratio \
+//         --min_dir_count $params.snp_filters.min_dir_count \
+//         --min_dpq $params.snp_filters.min_dpq \
+//         --min_dpq_n $params.snp_filters.min_dpq_n \
+//         --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
+//         --min_vaf $params.snp_filters.min_vaf \
+//         --min_rel_ratio $params.snp_filters.min_rel_ratio \
+//         --min_abq $params.snp_filters.min_abq
+
+//        vcf_filter_validate.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+//        -p $perbase_table \
+//         --min_dir_ratio $params.indel_filters.min_dir_ratio \
+//         --min_dir_count $params.indel_filters.min_dir_count \
+//         --min_dpq $params.indel_filters.min_dpq \
+//         --min_dpq_n $params.indel_filters.min_dpq_n \
+//         --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
+//         --min_vaf $params.indel_filters.min_vaf \
+//         --min_rel_ratio $params.indel_filters.min_rel_ratio \
+//         --min_abq $params.indel_filters.min_abq
+//         """
+// }
+
 process FilterValidateVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
@@ -104,27 +140,25 @@ process FilterValidateVariants{
     
     script:
         """
-        vcf_filter_validate.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
-        -p $perbase_table \
-        --min_dir_ratio $params.snp_filters.min_dir_ratio \
-        --min_dir_count $params.snp_filters.min_dir_count \
+        vcf_filter_freebayes.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        --perbase_table $perbase_table \
+        --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_dpq $params.snp_filters.min_dpq \
         --min_dpq_n $params.snp_filters.min_dpq_n \
         --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
-        --min_vaf $params.snp_filters.min_vaf \
+        --max_sap 0 \
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
 
-       vcf_filter_validate.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
-       -p $perbase_table \
-        --min_dir_ratio $params.indel_filters.min_dir_ratio \
-        --min_dir_count $params.indel_filters.min_dir_count \
+        vcf_filter_freebayes.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+        --perbase_table $perbase_table \
+        --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_dpq $params.indel_filters.min_dpq \
         --min_dpq_n $params.indel_filters.min_dpq_n \
         --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
-        --min_vaf $params.indel_filters.min_vaf \
+        --max_sap 0 \
         --min_rel_ratio $params.indel_filters.min_rel_ratio \
-        --min_abq $params.indel_filters.min_abq
+        --min_abq $params.indel_filters.min_abq   
         """
 }
 
