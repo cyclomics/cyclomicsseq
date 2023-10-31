@@ -306,7 +306,7 @@ def extract_indel_evidence(
             info = {
                 "TYPE": indel.type,
                 "DP": vcf_entry.DP,
-                "QA": vcf_entry.ABQ,
+                "QA": vcf_entry.ABQ * vcf_entry.TOTC,
                 "AO": vcf_entry.TOTC,
                 "SAF": vcf_entry.FWDC,
                 "SAR": vcf_entry.REVC,

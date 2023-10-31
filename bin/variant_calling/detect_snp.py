@@ -226,10 +226,12 @@ def extract_snp_evidence(
         vcf_entry.OBQ = quals_mean
         vcf_entry.HCR = hc_ratio
 
+        if pileupcolumn.reference_pos == 7675087:
+            print("hi")
         info = {
             "TYPE": "snp",
             "DP": vcf_entry.DP,
-            "QA": vcf_entry.ABQ,
+            "QA": vcf_entry.ABQ * vcf_entry.TOTC,
             "AO": vcf_entry.TOTC,
             "SAF": vcf_entry.FWDC,
             "SAR": vcf_entry.REVC,
@@ -336,13 +338,13 @@ if __name__ == "__main__":
 
     if dev:
         fasta = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/GRCh38_renamed_BBCS.fasta"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/GRCh38_renamed_BBCS.fasta"
         )
         bed = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675_roi.bed"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/FAU75373_roi.bed"
         )
         bam = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675.YM_gt_3.bam"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/FAU75373.YM_gt_3.bam"
         )
         vcf_out = Path("./test.vcf")
 

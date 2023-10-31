@@ -193,7 +193,7 @@ class Vcf:
         self,
         depth_table: pd.DataFrame,
         dynamic_vaf_params: dict,
-        min_ao: int = 0,
+        min_ao: int = 10,
         min_dpq: int = 5_000,
         min_dpq_n: int = 25,
         min_dpq_ratio: float = 0.3,
@@ -208,19 +208,18 @@ class Vcf:
             depth_table: Perbase depth table as a pandas DataFrame, used with
                 min_dpq_n and min_dpq_ratio to calculate local depth maxima and
                 apply a minimum depth filter based on local maxima.
-            min_dir_ratio: Minimum ratio of variant-supporting reads in
-                each direction (default: 0.001).
-            min_dir_count: Minimum number of variant-supporting reads in
-                each direction (default: 5).
-            min_dpq: Minimum positional depth after Q filtering (default: 5_000).
+            dynamic_vaf_params: Input file with params for Dynamic VAF filtering.
+            min_ao: Minimum number of variant-supporting reads.
+            min_dpq: Minimum positional depth after Q filtering.
             min_dpq_n: Number of flanking nucleotides to the each position that will
-                determine the window size for local maxima calculation (default: 25).
+                determine the window size for local maxima calculation.
             min_dpq_ratio: Ratio of local depth maxima that will determine the
-                minimum depth at each position (default: 0.3).
-            min_vaf: Minimum variant allele frequency (default: 0.003).
+                minimum depth at each position.
+            max_sap: Maximum Phred-scaled strand balance probability before
+                alternative allele is considered strand-imbalanced.
             min_rel_ratio: Minimum relative ratio between forward and reverse
-                variant-supporting reads (default: 0.3).
-            min_abq: Minimum average base quality (default: 70).
+                variant-supporting reads.
+            min_abq: Minimum average base quality.
         """
         # nothing to filter
         if self.table.empty:

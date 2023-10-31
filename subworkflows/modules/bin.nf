@@ -1,6 +1,3 @@
-
-
-
 process AddDepthToJson{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
@@ -70,7 +67,7 @@ process CollectClassificationTypes{
 }
 
 process FindVariants{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'max_performance'
 
     input:
@@ -92,57 +89,22 @@ process FindVariants{
         """
 }
 
-// process FilterValidateVariants{
-//     publishDir "${params.output_dir}/variants", mode: 'copy'
-//     label 'many_low_cpu_high_mem'
-
-//     input:
-//         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
-
-//     output:
-//         tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
-    
-//     script:
-//         """
-//         vcf_filter_validate.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
-//         -p $perbase_table \
-//         --min_dir_ratio $params.snp_filters.min_dir_ratio \
-//         --min_dir_count $params.snp_filters.min_dir_count \
-//         --min_dpq $params.snp_filters.min_dpq \
-//         --min_dpq_n $params.snp_filters.min_dpq_n \
-//         --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
-//         --min_vaf $params.snp_filters.min_vaf \
-//         --min_rel_ratio $params.snp_filters.min_rel_ratio \
-//         --min_abq $params.snp_filters.min_abq
-
-//        vcf_filter_validate.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
-//        -p $perbase_table \
-//         --min_dir_ratio $params.indel_filters.min_dir_ratio \
-//         --min_dir_count $params.indel_filters.min_dir_count \
-//         --min_dpq $params.indel_filters.min_dpq \
-//         --min_dpq_n $params.indel_filters.min_dpq_n \
-//         --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
-//         --min_vaf $params.indel_filters.min_vaf \
-//         --min_rel_ratio $params.indel_filters.min_rel_ratio \
-//         --min_abq $params.indel_filters.min_abq
-//         """
-// }
-
 process FilterValidateVariants{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
 
     output:
-        tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
+        tuple path("${snp_vcf.simpleName}.filtered.snp.vcf"), path("${indel_vcf.simpleName}.filtered.indel.vcf")
     
     script:
         """
-        vcf_filter_freebayes.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}.filtered.snp.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
+        --min_ao $params.snp_filters.min_ao \
         --min_dpq $params.snp_filters.min_dpq \
         --min_dpq_n $params.snp_filters.min_dpq_n \
         --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
@@ -150,9 +112,10 @@ process FilterValidateVariants{
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
 
-        vcf_filter_freebayes.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}.filtered.indel.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
+        --min_ao $params.indel_filters.min_ao \
         --min_dpq $params.indel_filters.min_dpq \
         --min_dpq_n $params.indel_filters.min_dpq_n \
         --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
@@ -170,7 +133,7 @@ process MergeNoisyVCF{
         tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
 
     output:
-        path("${noisy_snp_vcf.simpleName}.noisy_merged.vcf")
+        path("${noisy_snp_vcf.simpleName}.vcf")
     
     script:
         """
@@ -185,9 +148,9 @@ process MergeNoisyVCF{
         tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
         bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
-        -O v -o ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
-        bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf --temp-dir tmpdir
-        rm ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
+        -O v -o ${noisy_snp_vcf.simpleName}.tmp.vcf
+        bcftools sort ${noisy_snp_vcf.simpleName}.tmp.vcf -o ${noisy_snp_vcf.simpleName}.vcf --temp-dir tmpdir
+        rm ${noisy_snp_vcf.simpleName}.tmp.vcf
 
 	    rm -r tmpdir
         """
@@ -201,24 +164,24 @@ process MergeFilteredVCF{
         tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
 
     output:
-        path("${filtered_snp_vcf.simpleName}.filtered_merged.vcf")
+        path("${filtered_snp_vcf.simpleName}_filtered.vcf")
     
     script:
         """
 	    mkdir tmpdir
 
-        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}.sorted.snp.vcf --temp-dir tmpdir
-        bgzip ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
-        tabix ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz
+        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf --temp-dir tmpdir
+        bgzip ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf
+        tabix ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz
 
-        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}.sorted.indel.vcf --temp-dir tmpdir
-        bgzip ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
-        tabix ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz
+        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf --temp-dir tmpdir
+        bgzip ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf
+        tabix ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz
 
-        bcftools concat -a ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
-        -O v -o ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
-        bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf --temp-dir tmpdir
-        rm ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
+        bcftools concat -a ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz \
+        -O v -o ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
+        bcftools sort ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf -o ${filtered_snp_vcf.simpleName}_filtered.vcf --temp-dir tmpdir
+        rm ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
 
 	    rm -r tmpdir
         """
