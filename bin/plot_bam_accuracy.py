@@ -12,16 +12,14 @@ import pandas as pd
 import numpy as np
 import re
 
-from bokeh.io import save, output_file
-from bokeh.plotting import figure, show
-from bokeh.layouts import row, column
+from bokeh.plotting import figure
+from bokeh.layouts import column
 from bokeh.embed import components
 from bokeh.layouts import gridplot
 
 chromosomal_region = Tuple[str, int, int]
 SIDE_DIST_PLOT_SIZE = 100
 TAB_PRIORITY = 91
-
 
 
 def get_roi_pileup_df(
@@ -213,7 +211,6 @@ def pileup_to_df(pileup_path: str) -> pd.DataFrame:
     print("pileup_to_df)")
 
     with open(pileup_path, "r") as pu:
-
         lines = pu.readlines()
         lines = [x.split("\t") for x in lines]
         df1 = pd.DataFrame(
@@ -242,7 +239,8 @@ def perbase_table_to_df(table_path):
     except pd.errors.EmptyDataError:
         return pd.DataFrame()
     df["REF_BASE_UPPER"] = df.REF_BASE.str.upper()
-    df["REF_COUNT"] = df.lookup(df.index, df["REF_BASE_UPPER"])
+    idx, cols = pd.factorize(df["REF_BASE_UPPER"])
+    df["REF_COUNT"] = df.reindex(cols, axis=1).to_numpy()[np.arange(len(df)), idx]
     df["ACCURACY"] = df.REF_COUNT / df.DEPTH
     df["Q"] = df.ACCURACY.apply(acc_to_Q)
     df["CHROM"] = df["REF"]
@@ -455,11 +453,7 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
     return layout
 
 
-def main(perbase_path1, perbase_path2, output_plot_file):
-
-    df1 = perbase_table_to_df(perbase_path1)
-    df2 = perbase_table_to_df(perbase_path2)
-
+def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
     tab_name = "Consensus quality"
     add_info = {}
     json_obj = {}
@@ -467,35 +461,31 @@ def main(perbase_path1, perbase_path2, output_plot_file):
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
 
-    if df1.empty or df2.empty:
-        f = open(output_plot_file, "w")
-        f.write("<h1>One of the pileups was not deep enough.</h1>")
-        f.close()
-        f = open(output_plot_file.with_suffix(".csv"), "w")
-        f.write("One of the pileups was not deep.")
-        f.close()
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
-            "",
-            "<h1>One of the pileups was not deep enough.</h1>",
-        )
+    if TAB_PRIORITY < priority_limit:
+        df1 = perbase_table_to_df(perbase_path1)
+        df2 = perbase_table_to_df(perbase_path2)
 
-    else:
-        roi = get_roi_pileup_df(df1)
+        if df1.empty or df2.empty:
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
+                "",
+                "<h1>One of the pileups was not deep enough.</h1>",
+            )
 
-        positional_accuracy = plot_compare_accuracy(
-            roi, [df1, df2], "Variant unaware Q"
-        )
-        q_score_plot = make_qscore_scatter(
-            df1, df2, output_plot_file.with_suffix(".csv")
-        )
+        else:
+            roi = get_roi_pileup_df(df1)
 
-        output_file(output_plot_file, title="Cyclomics accuracy")
-        final_plot = column([q_score_plot, positional_accuracy])
+            positional_accuracy = plot_compare_accuracy(
+                roi, [df1, df2], "Variant unaware Q"
+            )
+            q_score_plot = make_qscore_scatter(df1, df2)
 
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
-        json_obj["additional_info"] = add_info
+            final_plot = column([q_score_plot, positional_accuracy])
 
-        save(final_plot)
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(
+                final_plot
+            )
+            json_obj["additional_info"] = add_info
+
     print("writing json")
     print(Path(output_plot_file).with_suffix(".json"))
     with open(Path(output_plot_file).with_suffix(".json"), "w") as f:
@@ -503,7 +493,6 @@ def main(perbase_path1, perbase_path2, output_plot_file):
 
 
 if __name__ == "__main__":
-
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -513,16 +502,7 @@ if __name__ == "__main__":
     parser.add_argument("pileup_split", type=Path)
     parser.add_argument("pileup_consensus", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("priority_limit", type=int, default=89)
 
     args = parser.parse_args()
-    main(args.pileup_split, args.pileup_consensus, args.output)
-
-    # pileup_split = Path('/home/dami/Data/dev/000010_5/split.tsv')
-    # pileup_cons = Path('/home/dami/Data/dev/000010_5/consensus.tsv')
-    # output = Path('testQ.html')
-    # main(pileup_split, pileup_cons, output)
-
-    # df1 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test_split.tsv')
-    # df2 = perbase_table_to_df('/media/dami/a2bc89fb-be6b-4e23-912a-0c7137cd69ad/results/Cyclomics_rc/000010/perbase_test.tsv')
-    # plots = plot_compare_accuracy([('chr17',7579983,7580193)], [df1,df2])
-    # show(plots)
+    main(args.pileup_split, args.pileup_consensus, args.output, args.priority_limit)
