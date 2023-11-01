@@ -38,6 +38,7 @@ params.report                   = true
 params.split_on_adapter         = false
 params.sequence_summary_tagging = false
 params.backbone_file            = ""
+params.priority_limit = (params.report == "detailed") ? 9999 : 89
 
 // Pipeline performance metrics
 params.min_repeat_count = 3
@@ -109,8 +110,7 @@ if (params.profile_selected == "conda"){
 ========================================================================================
 */
 include {
-    DetailedReport
-    StandardReport
+    Report
 } from "./subworkflows/QC"
 
 include {
@@ -139,9 +139,9 @@ include {
     ValidatePosibleVariantLocations
 } from "./subworkflows/variant_calling"
 
-include {
-    Report
-} from "./subworkflows/report"
+// include {
+//     Report
+// } from "./subworkflows/report"
 
 /*
 ========================================================================================
@@ -314,23 +314,8 @@ workflow {
 04.    Reporting
 ========================================================================================
 */  
-    if (params.report == "detailed"){
-        DetailedReport(
-            PrepareGenome.out.fasta_combi,
-            read_fastq,
-            read_fastq_filtered,
-            split_bam,
-            split_bam_filtered,
-            base_unit_reads,
-            read_info_json,
-            reads_aligned_filtered,
-            regions,
-            locations,
-            variant_vcf,
-        )
-    }
-    else if (params.report == "standard") {
-        StandardReport(
+    if (params.report in ["detailed", "standard"]){
+        Report(
             PrepareGenome.out.fasta_combi,
             read_fastq,
             read_fastq_filtered,

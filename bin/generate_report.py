@@ -15,7 +15,12 @@ from bokeh.embed import components
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.models import Div
 
-from plotting_defaults import cyclomics_defaults, TEMPLATE_STR, nextflow_params_parser, human_format
+from plotting_defaults import (
+    cyclomics_defaults,
+    TEMPLATE_STR,
+    nextflow_params_parser,
+    human_format,
+)
 
 REPORT = "report.html"
 
@@ -95,19 +100,24 @@ class ReportTabCollection:
         return [x.script for x in self.tabs]
 
     def generate_tabs(self, overall_width=cyclomics_defaults.width, priority_limit=89):
-        self.tabs.sort(key=lambda x : x.priority)
+        self.tabs.sort(key=lambda x: x.priority)
 
         pre_tabs = []
         for i, tab in enumerate(self.tabs, start=1):
             plot = tab.plot
             # we set the width here and it propogates to the overall width of the tab selector
             # https://github.com/bokeh/bokeh/issues/8726
-            pre_tabs.append((
-                Panel(child=Div(text=plot, width=overall_width), title=f"{i}. {tab.name}"),
-                tab.priority
-            ))
+            pre_tabs.append(
+                (
+                    Panel(
+                        child=Div(text=plot, width=overall_width),
+                        title=f"{i}. {tab.name}",
+                    ),
+                    tab.priority,
+                )
+            )
 
-        pre_tabs.sort(key = lambda x: x[1] )
+        pre_tabs.sort(key=lambda x: x[1])
         pre_tabs = [x[0] for x in pre_tabs if x[1] < priority_limit]
 
         return components(Tabs(tabs=pre_tabs))
@@ -146,34 +156,34 @@ def main(args):
             "Sequencing reads",
             "fa-dna",
             "readsRaw fastq info",
-            "text-succes",
+            "text-dark",
         ),  # count from input material
         (
             "Post split & QC reads",
             "fa-filter",
             "readsFiltered fastq info",
-            "text-succes",
+            "text-dark",
         ),
         (
             "Aligning reads",
             "fa-align-center",
             "Reference_aligned_with_backbone",
-            "text-succes",
+            "text-dark",
         ),  # reads aligning in initial alignment
         (
             "Consensus inserts",
             "fa-bars",
             "total_reference_mapping_reads",
-            "text-succes",
+            "text-dark",
         ),
         (
             "Variants found",
             "fa-map-marker-alt",
             "variants_found_non_backbone",
-            "text-succes",
+            "text-dark",
         ),
-        ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-succes"),
-        ("Pipeline version", "fa-code-branch", "git_version", "text-succes"),
+        ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-dark"),
+        ("Pipeline version", "fa-code-branch", "git_version", "text-dark"),
     ]:
         try:
             data["cards"].append(
@@ -181,6 +191,17 @@ def main(args):
             )
         except KeyError:
             data["cards"].append(SummaryCard(i[0], i[1], "nan", i[3]))
+
+    if ("exit_status", 1) in data["additional_info"].items():
+        data["cards"].append(
+            SummaryCard(
+                "Plotting error",
+                "fas fa-times-circle",
+                "Warning!",
+                "text-warning",
+            )
+        )
+
     print(data["additional_info"])
     # print(tabs)
     with open(REPORT, "w") as fh:
@@ -196,7 +217,7 @@ if __name__ == "__main__":
 
     parser.add_argument("nextflow_params", type=str)
     parser.add_argument("version", type=str)
-    parser.add_argument("priority_limit",type=int, default= 89)
+    parser.add_argument("priority_limit", type=int, default=89)
 
     args = parser.parse_args()
     print(args)
