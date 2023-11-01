@@ -43,6 +43,13 @@ def parse_arguments():
         help="Input file with params for Dynamic VAF filtering.",
     )
     parser.add_argument(
+        "--min_ao",
+        type=float,
+        required=False,
+        default=10,
+        help="Minimum number of variant-supporting reads (default: 10).",
+    )
+    parser.add_argument(
         "--min_dpq",
         type=float,
         required=False,
@@ -118,6 +125,7 @@ if __name__ == "__main__":
         vcf.filter(
             depth_table,
             dynamic_vaf_params,
+            args.min_ao,
             args.min_dpq,
             args.min_dpq_n,
             args.min_dpq_ratio,
@@ -128,8 +136,12 @@ if __name__ == "__main__":
         vcf.write(args.output_vcf)
 
     if dev:
-        depth_table = get_depth_table("./L7154-000200.tsv")
-        dynamic_vaf_params = get_dynamic_vaf_params("./bin/vcf/dynamic_vaf_params.yml")
-        vcf = Vcf("./200.norm.vcf")
-        vcf.filter(depth_table, dynamic_vaf_params)
-        vcf.write("./filtered_200.norm.vcf")
+        depth_table = get_depth_table(
+            "/data/projects/ROD_tmp/12/185a02b62002797de024cbdb0a374c/consensus.tsv"
+        )
+        dynamic_vaf_params = get_dynamic_vaf_params(
+            "./bin/variant_calling/dynamic_vaf_params.yml"
+        )
+        vcf = Vcf("./test.vcf")
+        vcf.filter(depth_table, dynamic_vaf_params, max_sap=0)
+        vcf.write("./filtered_snp.vcf")

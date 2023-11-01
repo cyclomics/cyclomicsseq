@@ -34,6 +34,7 @@ def extract_snp_evidence(
 
     vcf_entry = VCF_entry()
     alleles = (ref_nt, ".")
+    info = "."
 
     total = 0
     counted_nucs = 0
@@ -225,7 +226,16 @@ def extract_snp_evidence(
         vcf_entry.OBQ = quals_mean
         vcf_entry.HCR = hc_ratio
 
-    return (assembly, alleles, vcf_entry)
+        info = {
+            "TYPE": "snp",
+            "DP": vcf_entry.DP,
+            "QA": vcf_entry.ABQ * vcf_entry.TOTC,
+            "AO": vcf_entry.TOTC,
+            "SAF": vcf_entry.FWDC,
+            "SAR": vcf_entry.REVC,
+        }
+
+    return (assembly, alleles, vcf_entry, info)
 
 
 def main(
@@ -291,7 +301,12 @@ def main(
                     else:
                         fld_entry = str(fld_value)
 
-                    r.samples["SAMPLE"][fld.name] = fld_entry
+                    r.samples["SAMPLE1"][fld.name] = fld_entry
+
+                # Write info tag values to VCF output
+                # These values will be used to filter the VCF
+                for tag_id, value in result[3].items():
+                    r.info[tag_id] = value
 
                 vcf.write(r)
 
@@ -322,16 +337,15 @@ if __name__ == "__main__":
         main(args.bam, args.variant_bed, args.file_out)
 
     if dev:
-        # PNK_01
         fasta = Path(
-            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/GCA_000001405_BB42.fasta"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/GRCh38_renamed_BBCS.fasta"
         )
         bed = Path(
-            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214_roi.bed"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/FAU75373_roi.bed"
         )
         bam = Path(
-            "/scratch/nxf_work/rodrigo/fe/531d9c9f51cadbc31e59f657fdd523/FAV97214.YM_gt_3.bam"
+            "/data/projects/ROD_tmp/0a/cbe3196164fe5d443ba018f1bb5098/FAU75373.YM_gt_3.bam"
         )
-        vcf_out = Path("./test2_snp.vcf")
+        vcf_out = Path("./test.vcf")
 
         main(bam, bed, fasta, vcf_out)

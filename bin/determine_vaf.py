@@ -210,25 +210,14 @@ if __name__ == "__main__":
         main(args.fasta, args.bed, args.bam, args.snp_vcf_out, args.indel_vcf_out)
 
     if dev:
-        # EGFR
-        # fasta = Path(
-        #     "/data/references/Homo_sapiens/GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna"
-        # )
-        # bed = Path("/data/projects/ROD_1125_variant_improvements/EGFR.bed")
-        # bam = Path(
-        #     "/data/projects/ROD_1125_variant_improvements/ONT_20221121_EGFR/consensus_aligned/284.taged.bam"
-        # )
-        # snp_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testsnp_EGFR.vcf")
-        # indel_vcf_out = Path("/data/projects/DAM_0111_vc_multi/testindel_EGFR.vcf")
-
         fasta = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/GCA_000001405_BB42.fasta"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/GRCh38_renamed_BBCS.fasta"
         )
         bed = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214_roi.bed"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675_roi.bed"
         )
         bam = Path(
-            "/scratch/nxf_work/dami/b6/b1293bac824269db94893b246f0829/FAV97214.YM_gt_3.bam"
+            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675.YM_gt_3.bam"
         )
         snp_vcf_out = Path("./test_snp.vcf")
         indel_vcf_out = Path("./test_indel.vcf")

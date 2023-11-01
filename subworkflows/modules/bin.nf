@@ -1,6 +1,3 @@
-
-
-
 process AddDepthToJson{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
@@ -70,7 +67,7 @@ process CollectClassificationTypes{
 }
 
 process FindVariants{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'max_performance'
 
     input:
@@ -93,38 +90,38 @@ process FindVariants{
 }
 
 process FilterValidateVariants{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
         tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
 
     output:
-        tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${snp_vcf.simpleName}_filtered.indel.vcf")
+        tuple path("${snp_vcf.simpleName}.filtered.snp.vcf"), path("${indel_vcf.simpleName}.filtered.indel.vcf")
     
     script:
         """
-        vcf_filter_validate.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
-        -p $perbase_table \
-        --min_dir_ratio $params.snp_filters.min_dir_ratio \
-        --min_dir_count $params.snp_filters.min_dir_count \
+        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}.filtered.snp.vcf \
+        --perbase_table $perbase_table \
+        --dynamic_vaf_params $params.dynamic_vaf_params_file \
+        --min_ao $params.snp_filters.min_ao \
         --min_dpq $params.snp_filters.min_dpq \
         --min_dpq_n $params.snp_filters.min_dpq_n \
         --min_dpq_ratio $params.snp_filters.min_dpq_ratio \
-        --min_vaf $params.snp_filters.min_vaf \
+        --max_sap 0 \
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
 
-       vcf_filter_validate.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
-       -p $perbase_table \
-        --min_dir_ratio $params.indel_filters.min_dir_ratio \
-        --min_dir_count $params.indel_filters.min_dir_count \
+        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}.filtered.indel.vcf \
+        --perbase_table $perbase_table \
+        --dynamic_vaf_params $params.dynamic_vaf_params_file \
+        --min_ao $params.indel_filters.min_ao \
         --min_dpq $params.indel_filters.min_dpq \
         --min_dpq_n $params.indel_filters.min_dpq_n \
         --min_dpq_ratio $params.indel_filters.min_dpq_ratio \
-        --min_vaf $params.indel_filters.min_vaf \
+        --max_sap 0 \
         --min_rel_ratio $params.indel_filters.min_rel_ratio \
-        --min_abq $params.indel_filters.min_abq
+        --min_abq $params.indel_filters.min_abq   
         """
 }
 
@@ -136,7 +133,7 @@ process MergeNoisyVCF{
         tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
 
     output:
-        path("${noisy_snp_vcf.simpleName}.noisy_merged.vcf")
+        path("${noisy_snp_vcf.simpleName}.vcf")
     
     script:
         """
@@ -151,9 +148,9 @@ process MergeNoisyVCF{
         tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
 
         bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
-        -O v -o ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
-        bcftools sort ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf -o ${noisy_snp_vcf.simpleName}.noisy_merged.vcf --temp-dir tmpdir
-        rm ${noisy_snp_vcf.simpleName}.noisy_merged.tmp.vcf
+        -O v -o ${noisy_snp_vcf.simpleName}.tmp.vcf
+        bcftools sort ${noisy_snp_vcf.simpleName}.tmp.vcf -o ${noisy_snp_vcf.simpleName}.vcf --temp-dir tmpdir
+        rm ${noisy_snp_vcf.simpleName}.tmp.vcf
 
 	    rm -r tmpdir
         """
@@ -167,24 +164,24 @@ process MergeFilteredVCF{
         tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
 
     output:
-        path("${filtered_snp_vcf.simpleName}.filtered_merged.vcf")
+        path("${filtered_snp_vcf.simpleName}_filtered.vcf")
     
     script:
         """
 	    mkdir tmpdir
 
-        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}.sorted.snp.vcf --temp-dir tmpdir
-        bgzip ${filtered_snp_vcf.simpleName}.sorted.snp.vcf
-        tabix ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz
+        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf --temp-dir tmpdir
+        bgzip ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf
+        tabix ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz
 
-        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}.sorted.indel.vcf --temp-dir tmpdir
-        bgzip ${filtered_indel_vcf.simpleName}.sorted.indel.vcf
-        tabix ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz
+        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf --temp-dir tmpdir
+        bgzip ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf
+        tabix ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz
 
-        bcftools concat -a ${filtered_snp_vcf.simpleName}.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}.sorted.indel.vcf.gz \
-        -O v -o ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
-        bcftools sort ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf -o ${filtered_snp_vcf.simpleName}.filtered_merged.vcf --temp-dir tmpdir
-        rm ${filtered_snp_vcf.simpleName}.filtered_merged.tmp.vcf
+        bcftools concat -a ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz \
+        -O v -o ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
+        bcftools sort ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf -o ${filtered_snp_vcf.simpleName}_filtered.vcf --temp-dir tmpdir
+        rm ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
 
 	    rm -r tmpdir
         """
@@ -211,6 +208,7 @@ process PlotFastqsQUalAndLength{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         path(fastq)
@@ -219,11 +217,12 @@ process PlotFastqsQUalAndLength{
         val tab_name
 
     output:
-        tuple path("${plot_file_prefix}_histograms.html"), path("${plot_file_prefix}_histograms.json")
+        path("${plot_file_prefix}_histograms.json")
     
     script:
         """
-        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name
+        plot_fastq_histograms.py $grep_pattern ${plot_file_prefix}_histograms.html $tab_name $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${plot_file_prefix}_histograms.json
         """
 }
 
@@ -233,20 +232,23 @@ process PlotReadStructure{
     label 'many_cpu_medium'
 
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
         tuple val(X), path(bam), path(bai)
 
     output:
-        tuple path("${bam.simpleName}_aligned_segments.html"), path("${bam.simpleName}_read_structure.html"), path("${bam.simpleName}_read_structure.json")
+        path("${bam.simpleName}_read_structure.json")
 
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
         samtools sort -n -o tmp_readname_sorted_${bam.simpleName}.bam ${bam}
-        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam ${bam.simpleName}_aligned_segments.html ${bam.simpleName}_read_structure.html
+        plot_read_structure_donut.py tmp_readname_sorted_${bam.simpleName}.bam \
+        ${bam.simpleName}_read_structure.json \
+        $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${bam.simpleName}_read_structure.json
         """
 }
 
@@ -255,25 +257,27 @@ process PlotVcf{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
         path(vcf)
 
     output:
-        tuple path("${vcf.simpleName}.html"), path("${vcf.simpleName}.json")
+        path("${vcf.simpleName}.json")
     
     script:
         // This takes a lot of RAM when the sequencing summary is big!
         """
-        plot_vcf.py $vcf ${vcf.simpleName}.html
+        plot_vcf.py $vcf ${vcf.simpleName}.html $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf.simpleName}.json
         """
 }
 
 process PasteVariantTable{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         path(vcf_file)
@@ -283,7 +287,8 @@ process PasteVariantTable{
     
     script:
         """
-        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table'
+        write_variants_table.py $vcf_file ${vcf_file.simpleName}_table.json 'Variant table' $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf_file.simpleName}_table.json
         """
 }
 
@@ -291,17 +296,19 @@ process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
 
     input:
         tuple val(X), path(split_pileup)
         tuple val(Y), path(consensus_pileup)
 
     output:
-        tuple path("${consensus_pileup.simpleName}.html"), path("${consensus_pileup.simpleName}.csv"), path("${consensus_pileup.simpleName}.json")
+        path("${consensus_pileup.simpleName}.json")
     
     script:
         """
-        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html
+        plot_bam_accuracy.py $split_pileup $consensus_pileup ${consensus_pileup.simpleName}.html $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${consensus_pileup.simpleName}.json
         """
 }
 
@@ -310,22 +317,23 @@ process PlotMetadataStats{
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_huge_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 3
 
     input:
         path(jsons)
 
     output:
-        tuple path("metadata_plots.html"), path("metadata_plots.json")
+        path("metadata_plots.json")
     
     script:
         """
-        plot_metadata.py . metadata_plots.html --subsample_size $params.metadata.subsample_size
+        plot_metadata.py . metadata_plots.html $params.priority_limit --subsample_size $params.metadata.subsample_size \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt metadata_plots.json
         """
 }
 
-process PlotReportDetailed{
+process PlotReport{
     publishDir "${params.output_dir}", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
@@ -337,22 +345,6 @@ process PlotReportDetailed{
     
     script:
         """
-        generate_report.py '${params}' $workflow.manifest.version 9999
-        """
-}
-
-process PlotReportStd{
-    publishDir "${params.output_dir}", mode: 'copy'
-    label 'many_low_cpu_high_mem'
-
-    input:
-        path(jsons)
-
-    output:
-        path("report.html")
-    
-    script:
-        """
-        generate_report.py '${params}' $workflow.manifest.version 89
+        generate_report.py '${params}' $workflow.manifest.version $params.priority_limit
         """
 }

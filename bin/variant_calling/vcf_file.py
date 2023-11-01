@@ -91,8 +91,14 @@ class Vcf:
             file.writelines(self.table.to_csv(sep="\t", index=False))
 
     @staticmethod
+    def _apply_min_ao(row, ao_filter: int) -> bool:
+        result = int(row["INFO"]["AO"]) > ao_filter
+
+        return result
+
+    @staticmethod
     def _apply_min_abq(row, abq_filter: int) -> bool:
-        result = int(row["INFO"]["QA"]) / int(row["INFO"]["AO"]) > abq_filter
+        result = float(row["INFO"]["QA"]) / int(row["INFO"]["AO"]) > abq_filter
 
         return result
 
@@ -149,7 +155,7 @@ class Vcf:
 
     @staticmethod
     def _apply_dynamic_min_vaf(row, params) -> bool:
-        type = row["INFO"]["DP"]
+        type = row["INFO"]["TYPE"]
         candidate_depth = int(row["INFO"]["DP"])
         candidate_vaf = int(row["INFO"]["AO"]) / candidate_depth
 
@@ -187,6 +193,7 @@ class Vcf:
         self,
         depth_table: pd.DataFrame,
         dynamic_vaf_params: dict,
+        min_ao: int = 10,
         min_dpq: int = 5_000,
         min_dpq_n: int = 25,
         min_dpq_ratio: float = 0.3,
@@ -201,25 +208,25 @@ class Vcf:
             depth_table: Perbase depth table as a pandas DataFrame, used with
                 min_dpq_n and min_dpq_ratio to calculate local depth maxima and
                 apply a minimum depth filter based on local maxima.
-            min_dir_ratio: Minimum ratio of variant-supporting reads in
-                each direction (default: 0.001).
-            min_dir_count: Minimum number of variant-supporting reads in
-                each direction (default: 5).
-            min_dpq: Minimum positional depth after Q filtering (default: 5_000).
+            dynamic_vaf_params: Input file with params for Dynamic VAF filtering.
+            min_ao: Minimum number of variant-supporting reads.
+            min_dpq: Minimum positional depth after Q filtering.
             min_dpq_n: Number of flanking nucleotides to the each position that will
-                determine the window size for local maxima calculation (default: 25).
+                determine the window size for local maxima calculation.
             min_dpq_ratio: Ratio of local depth maxima that will determine the
-                minimum depth at each position (default: 0.3).
-            min_vaf: Minimum variant allele frequency (default: 0.003).
+                minimum depth at each position.
+            max_sap: Maximum Phred-scaled strand balance probability before
+                alternative allele is considered strand-imbalanced.
             min_rel_ratio: Minimum relative ratio between forward and reverse
-                variant-supporting reads (default: 0.3).
-            min_abq: Minimum average base quality (default: 70).
+                variant-supporting reads.
+            min_abq: Minimum average base quality.
         """
         # nothing to filter
         if self.table.empty:
             return
 
         # Define filtering partial functions
+        min_ao_filter = partial(self._apply_min_ao, ao_filter=min_ao)
         min_abq_filter = partial(self._apply_min_abq, abq_filter=min_abq)
         min_depth_filter = partial(self._apply_min_depth, depth_filter=min_dpq)
         local_depth_filter = partial(
@@ -237,13 +244,15 @@ class Vcf:
 
         # List of filters to be applied
         filters = [
+            min_ao_filter,
             min_abq_filter,
             min_depth_filter,
             local_depth_filter,
             dynamic_vaf_filter,
-            max_sap_filter,
             min_ratio_filter,
         ]
+        if max_sap > 0:
+            filters.append(max_sap_filter)
 
         # Loop over list of filters and apply them in succession
         for filter_function in filters:
