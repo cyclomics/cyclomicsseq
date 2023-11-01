@@ -2,8 +2,7 @@
 nextflow.enable.dsl = 2
 
 process Freebayes {
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_huge_mem'
     memory { task.memory * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
@@ -14,7 +13,7 @@ process Freebayes {
         tuple val(X), path(roi)
 
     output:
-        path("${input_bam_file.SimpleName}.vcf")
+        path("${input_bam_file.SimpleName}.multiallelic.vcf")
 
     script:
         ref = reference
@@ -25,7 +24,7 @@ process Freebayes {
         --min-alternate-fraction $params.freebayes.min_alt_fraction \
         --min-alternate-count $params.freebayes.min_alt_count \
         --min-base-quality $params.freebayes.min_base_qual \
-        --vcf ${input_bam_file.SimpleName}.vcf \
+        --vcf ${input_bam_file.SimpleName}.multiallelic.vcf \
         $input_bam_file
         """
 }
@@ -38,11 +37,11 @@ process SeparateMultiallelicVariants{
         path(vcf)
 
     output:
-        path("${vcf.SimpleName}_norm.vcf")
+        path("${vcf.SimpleName}.vcf")
 
     script:
         """
-        bcftools norm -m -any $vcf > ${vcf.SimpleName}_norm.vcf
+        bcftools norm -m -any $vcf > ${vcf.SimpleName}.vcf
         """
 }
 
@@ -58,9 +57,10 @@ process FilterFreebayesVariants{
     
     script:
         """
-        vcf_filter_freebayes.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
+        vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
+        --min_ao $params.var_filters.min_ao \
         --min_dpq $params.var_filters.min_dpq \
         --min_dpq_n $params.var_filters.min_dpq_n \
         --min_dpq_ratio $params.var_filters.min_dpq_ratio \

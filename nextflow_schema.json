@@ -174,17 +174,11 @@
       "description": "Options to fine tune SNP and indel variants that are reported by the workflow, using the 'validate' option.",
       "default": "",
       "properties": {
-        "snp_filters.min_dir_ratio": {
-          "type": "number",
-          "description": "Minimum ratio of variant-supporting reads in each direction.",
-          "help_text": "Default:  001",
-          "default": 0.001
-        },
-        "snp_filters.min_dir_count": {
+        "snp_filters.min_ao": {
           "type": "integer",
-          "description": "Minimum number of variant-supporting reads in each direction.",
-          "help_text": "Default: 5",
-          "default": 5
+          "description": "Minimum number of variant-supporting reads.",
+          "help_text": "Default: 10 ",
+          "default": 10
         },
         "snp_filters.min_dpq": {
           "type": "integer",
@@ -204,12 +198,6 @@
           "help_text": "Default: 0.3 ",
           "default": 0.3
         },
-        "snp_filters.min_vaf": {
-          "type": "number",
-          "description": "Minimum variant allele frequency.",
-          "help_text": "Default:  0030",
-          "default": 0.003
-        },
         "snp_filters.min_rel_ratio": {
           "type": "number",
           "description": "Minimum relative ratio between forward and reverse variant-supporting reads",
@@ -222,16 +210,11 @@
           "help_text": "Default: 70 ",
           "default": 70
         },
-        "indel_filters.min_dir_ratio": {
-          "type": "number",
-          "description": "Minimum ratio of variant-supporting reads in each direction.",
-          "default": 0.002
-        },
-        "indel_filters.min_dir_count": {
+        "indel_filters.min_ao": {
           "type": "integer",
-          "description": "Minimum number of variant-supporting reads in each direction.",
-          "help_text": "Default: 5",
-          "default": 5
+          "description": "Minimum number of variant-supporting reads.",
+          "help_text": "Default: 10 ",
+          "default": 10
         },
         "indel_filters.min_dpq": {
           "type": "integer",
@@ -250,12 +233,6 @@
           "description": "Ratio of local depth maxima that will determine the minimum depth at each position",
           "help_text": "Default: 0.3 ",
           "default": 0.3
-        },
-        "indel_filters.min_vaf": {
-          "type": "number",
-          "description": "Minimum variant allele frequency.",
-          "help_text": "Default:  0040",
-          "default": 0.004
         },
         "indel_filters.min_rel_ratio": {
           "type": "number",
@@ -277,6 +254,12 @@
       "description": "Options to fine tune all variants that are reported by the workflow, using the 'freebayes' option.",
       "default": "",
       "properties": {
+        "var_filters.min_ao": {
+          "type": "integer",
+          "description": "Minimum number of variant-supporting reads.",
+          "help_text": "Default: 10 ",
+          "default": 10
+        },
         "var_filters.min_dpq": {
           "type": "integer",
           "description": "Minimum positional depth after Q filtering.",

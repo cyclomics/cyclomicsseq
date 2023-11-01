@@ -93,6 +93,9 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
 
         r.samples["SAMPLE1"][fld.name] = fld_entry
 
+    for k, v in vcf_entry[3].items():
+        r.info[k] = v
+
     vcf.write(r)
 
 
@@ -121,7 +124,7 @@ def initialize_output_vcf(vcf_path, contigs):
     for contig in contigs:
         vcfh.add_meta("contig", items=[("ID", contig)])
 
-    # Add GT to FORMAT in our VCF header
+    # Add to FORMAT in our VCF header
     vcfh.add_meta(
         "FORMAT",
         items=[
@@ -258,6 +261,62 @@ def initialize_output_vcf(vcf_path, contigs):
             ("Number", 1),
             ("Type", "String"),
             ("Description", "high quality ratio"),
+        ],
+    )
+
+    # Add to INFO in our VCF header
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "QA"),
+            ("Number", 1),
+            ("Type", "Float"),
+            ("Description", "Alternate allele quality sum in phred"),
+        ],
+    )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "AO"),
+            ("Number", 1),
+            ("Type", "Integer"),
+            ("Description", "Count of full observations of this alternate haplotype."),
+        ],
+    )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "DP"),
+            ("Number", 1),
+            ("Type", "Integer"),
+            ("Description", "Total read depth at the locus"),
+        ],
+    )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "TYPE"),
+            ("Number", 1),
+            ("Type", "String"),
+            ("Description", "The type of allele, either snp, ins, or del."),
+        ],
+    )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "SAF"),
+            ("Number", 1),
+            ("Type", "Integer"),
+            ("Description", "Number of alternate observations on the forward strand"),
+        ],
+    )
+    vcfh.add_meta(
+        "INFO",
+        items=[
+            ("ID", "SAR"),
+            ("Number", 1),
+            ("Type", "Integer"),
+            ("Description", "Number of alternate observations on the reverse strand"),
         ],
     )
     vcfh.add_meta(
