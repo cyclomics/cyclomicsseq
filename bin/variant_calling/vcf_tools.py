@@ -93,8 +93,10 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
 
         r.samples["SAMPLE1"][fld.name] = fld_entry
 
-    for k, v in vcf_entry[3].items():
-        r.info[k] = v
+    # Write info tag values to VCF output
+    # These values will be used to filter the VCF
+    for tag_id, value in vcf_entry[3].items():
+        r.info[tag_id] = value
 
     vcf.write(r)
 
