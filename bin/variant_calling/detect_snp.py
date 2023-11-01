@@ -226,8 +226,6 @@ def extract_snp_evidence(
         vcf_entry.OBQ = quals_mean
         vcf_entry.HCR = hc_ratio
 
-        if pileupcolumn.reference_pos == 7675087:
-            print("hi")
         info = {
             "TYPE": "snp",
             "DP": vcf_entry.DP,
