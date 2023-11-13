@@ -1,5 +1,9 @@
 # changelog
 
+## 0.10.1
+
+- Fix version number shown in EPI2ME
+
 ## 0.10.0
 
 - Changes to EPI2ME interface, improving advanced variant calling options
