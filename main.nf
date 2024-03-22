@@ -26,7 +26,7 @@ params.region_file                = "auto"
 
 params.reference = ""
 // reference indexes are expected to be in reference folder
-params.output_dir = "$HOME/Data/CyclomicsSeq"
+params.output_dir    = "CyclomicsSeq_${workflow.revision}_${workflow.runName}_${workflow.sessionId}"
 
 
 // method selection
@@ -98,89 +98,13 @@ log.info """
         profile                  : $params.profile_selected
 """
 
-if (params.profile_selected == "conda"){
-    log.info """
-        conda environment : $params.user_conda_location
-    """
-}
-
-/*
-========================================================================================
-    Include statements
-========================================================================================
-*/
-include {
-    Report
-} from "./subworkflows/QC"
 
 include {
-    FilterWithAdapterDetection
-} from "./subworkflows/filtering"
+    FilterShortReads
+} from "./nextflow_utils/sequence_analysis/modules/seqkit"
 
-include {
-    ReverseMapping
-    TidehunterBackBoneQual
-    CycasConsensus
-    CycasMedaka
-} from "./subworkflows/consensus"
-
-include {
-    Minimap2Align
-    BWAAlign
-    AnnotateBam
-    FilterBam
-    PrepareGenome
-} from "./subworkflows/align"
-
-include {
-    ProcessTargetRegions
-    CallVariantsFreebayes
-    Mutect2
-    ValidatePosibleVariantLocations
-} from "./subworkflows/variant_calling"
-
-// include {
-//     Report
-// } from "./subworkflows/report"
-
-/*
-========================================================================================
-    Workflow
-========================================================================================
-*/
 workflow {
-    /*
-    ========================================================================================
-    AA. Parameter processing 
-    ========================================================================================
-    */
-    // check environments
-    if (params.region_file != "auto"){
-        if (params.variant_calling != "validate") {
-            log.warn "Not All variant calling strategies support the setting of a region file!"
-        }
-        region_file = params.region_file
-        // check if exist for fail fast behaviour
-        Channel.fromPath( region_file, type: 'file', checkIfExists: true)
-    }
-    else {
-        region_file = params.region_file
-    }
-
-    // if (params.profile_selected == 'none') {
-    //     log.warn "please set the -profile flag to `conda`, `docker` or `singularity`"
-    //     log.warn "exiting..."
-    //     exit(1)
-    // }
-    if (params.profile_selected == 'local') {
-        log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
-    }
-    if (params.profile_selected != 'docker') {
-            if (params.consensus_calling == 'tidehunter'){
-                println('Tidehunter only works with docker in this version, due to a bug in the Tidehunter release.')
-                exit(1)
-            }
-        }
+     log.info """Cyclomics consensus pipeline started"""
 
     // Process inputs:
     // add the trailing slash if its missing 
@@ -190,154 +114,17 @@ workflow {
     else {
         read_pattern = "${params.input_read_dir}/${params.read_pattern}"
     }
-
     read_dir_ch = Channel.fromPath( params.input_read_dir, type: 'dir', checkIfExists: true)
-    read_fastq = Channel.fromPath(read_pattern, checkIfExists: true)
-    seq_summary = Channel.fromPath(params.sequencing_summary_path, checkIfExists: true)
-    backbone_fasta = Channel.fromPath(backbone_file, checkIfExists: true)
+    // Create an item where we have the path and the sample ID.
+    //  If the path is a directory with fastq's in it directly,
+    // The sample ID will be that directory name. eg. fastq_pass/ could be the sample ID.
+    // Alternatively, the sample ID could be barcode01/barcode02 etc.
+    reads = Channel.fromPath(read_pattern, checkIfExists: true) \
+        | map(x -> [x.Parent.simpleName, x.simpleName,x])
+    if (params.devtooling.show_data_structures) {reads.view()}
     
-    reference_genome = Channel.fromPath(params.reference, checkIfExists: true)
-    // form a pair for both .fa as well as .fasta ref genomes
-    reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
-    bwa_index = file( "${params.reference}.{,amb,ann,bwt,pac,sa}")
+    reads_filtered = FilterShortReads(reads)
+    if (params.devtooling.show_data_structures) {reads_filtered.view()}
 
-    read_info_json = ""
-    PrepareGenome(reference_genome, params.reference, backbone_fasta)
-
-    read_fastq_filtered = FilterWithAdapterDetection(read_fastq.flatten())
-/*
-========================================================================================
-01.    Repeat identification: results in a list of read consensus in the format: val(X), path(fastq)
-========================================================================================
-*/
-    if( params.consensus_calling == "tidehunter" ) {
-        
-        base_unit_reads = TidehunterBackBoneQual(read_fastq_filtered,
-            reference_genome_indexed,
-            backbone_fasta,
-            params.tidehunter.primer_length,
-            params.backbone_name,
-            PrepareGenome.out.mmi_combi
-        )
-        read_info_json = TidehunterBackBoneQual.out.json
-        base_unit_reads = TidehunterBackBoneQual.out.fastq
-        split_bam = TidehunterBackBoneQual.out.split_bam
-        split_bam_filtered = TidehunterBackBoneQual.out.split_bam_filtered
-    }
-    else if (params.consensus_calling == "cycas"){
-        CycasConsensus( read_fastq_filtered,
-            PrepareGenome.out.mmi_combi,
-            backbone_fasta,
-        )
-        base_unit_reads = CycasConsensus.out.fastq
-        read_info_json = CycasConsensus.out.json
-        split_bam = CycasConsensus.out.split_bam
-        split_bam_filtered = CycasConsensus.out.split_bam_filtered
-    }
-    else if(params.consensus_calling == "medaka" ) {
-        CycasMedaka( read_fastq_filtered,
-            PrepareGenome.out.mmi_combi,
-            backbone_fasta,
-        )
-        base_unit_reads = CycasMedaka.out.fastq
-        read_info_json = CycasMedaka.out.json
-        // reference_genome_raw = 
-    }
-    else if(params.consensus_calling == "skip" ) {
-        println "Skipping consensus_calling"
-    }
-    else {
-        error "Invalid consensus_calling selector: ${params.consensus_calling}"
-    }
-/*
-========================================================================================
-02.    Alignment
-========================================================================================
-*/    
-    if( params.alignment == "minimap" ) {
-        Minimap2Align(base_unit_reads, PrepareGenome.out.mmi_combi, read_info_json, params.consensus_calling)
-        reads_aligned = Minimap2Align.out.bam
-    }
-    else if( params.alignment == "bwamem" ) {
-        BWAAlign(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
-        reads_aligned = BWAAlign.out.bam
-    }
-    else if( params.alignment == "skip" ) {
-        println "Skipping alignment"
-    }
-    else {
-        error "Invalid alignment selector: ${params.alignment}"
-    }
-    
-    // We only get the sequencing summary once we've obtained all the fastq's
-    if (params.sequence_summary_tagging) {
-        reads_aligned_tagged = AnnotateBam(reads_aligned, seq_summary) 
-    }
-    else {
-        reads_aligned_tagged = reads_aligned
-    }
-    reads_aligned_filtered = FilterBam(reads_aligned_tagged, params.min_repeat_count)
-/*
-========================================================================================
-03.A   Variant calling
-========================================================================================
-*/  
-    ProcessTargetRegions(region_file, reads_aligned_filtered)
-    regions = ProcessTargetRegions.out
-    locations = ""
-    variant_vcf = ""
-
-    if (params.variant_calling == "validate") {
-        ValidatePosibleVariantLocations(
-            reads_aligned_filtered,
-            regions,
-            PrepareGenome.out.fasta_combi
-        )
-        locations = ValidatePosibleVariantLocations.out.locations
-        variant_vcf = ValidatePosibleVariantLocations.out.variants
-    }
-    else if (params.variant_calling == "freebayes") {
-        CallVariantsFreebayes(
-            reads_aligned_filtered,
-            regions,
-            PrepareGenome.out.fasta_combi
-        )
-        locations = CallVariantsFreebayes.out.locations
-        variant_vcf = CallVariantsFreebayes.out.variants
-    }
-    else {
-        error "Invalid variant_calling selector: ${params.variant_calling}"
-    }
-
-/*
-========================================================================================
-04.    Reporting
-========================================================================================
-*/  
-    if (params.report in ["detailed", "standard"]){
-        Report(
-            PrepareGenome.out.fasta_combi,
-            read_fastq,
-            read_fastq_filtered,
-            split_bam,
-            split_bam_filtered,
-            base_unit_reads,
-            read_info_json,
-            reads_aligned_filtered,
-            regions,
-            locations,
-            variant_vcf,
-        )
-    }
-    else if (params.report == "skip") {
-        println('Skipping report generation entirely')
-    }
-    else {
-        error "Invalid reporting selector: ${params.report}"
-    }
-
-}
-
-workflow.onComplete {
-	log.info ( workflow.success ? "\nDone. The results are available in following folder --> $params.output_dir\n" : "something went wrong in the pipeline" )
+    consensus = CygnusConsensusGeneration()
 }

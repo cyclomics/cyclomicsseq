@@ -1,0 +1,3 @@
+[submodule "nextflow_utils"]
+	path = nextflow_utils
+	url = https://github.com/cyclomics/nextflow_utils
