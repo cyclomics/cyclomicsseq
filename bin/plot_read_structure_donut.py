@@ -179,7 +179,11 @@ def create_assembly_count_plot(chromosome_counts, my_title, priority_limit: int)
         source = ColumnDataSource(data=segments)
 
         p = figure(
-            plot_height=500, plot_width=1000, x_range=segments.CHROM, title=my_title
+            plot_height=500,
+            plot_width=1000,
+            x_range=segments.CHROM,
+            title=my_title,
+            tooltips="@CHROM: @count",
         )
         p.vbar(x="CHROM", top="count", width=0.8, source=source)
         p.xaxis.major_label_orientation = "vertical"
