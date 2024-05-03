@@ -15,6 +15,19 @@ Cycas uses the alignment against the reference genome to determine the type of r
 
 ## Changelog
 
+### 0.4.8
+- Optimized `minimal_deletion_ratio` to new optimum (`minimal_deletion_ratio=55`) as described in ELAB experiment 300
+
+### 0.4.7
+- Fix Unknown with new SingleInsertUncertain and DoubleInsertUncertain classifications
+
+### 0.4.6
+- Fix CI pipeline settings
+- Add category for reads with large unmapped repeating segments.
+- Add start and stop lines for the read to make read ending less ambiguous.
+- Fix spelling mistake in classification.
+- Add additional rules for classification
+
 ### 0.4.5
 - Change distance to detect groups.
 - Add requirement that at least 10% of bases need to be present at a location to create consensus.

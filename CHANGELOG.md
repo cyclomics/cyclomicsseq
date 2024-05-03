@@ -1,5 +1,13 @@
 # changelog
 
+## 0.11.0
+
+- Added GPLv3 license
+- Added a hover tooltip to the alignment count figure in the report HTML
+- Fixed calculation of amplicon/region of interest edges, resolving issues with indel detection
+- Updated Cycas to version 0.4.8
+- Minor refactoring
+
 ## 0.10.1
 
 - Fix version number shown in EPI2ME
