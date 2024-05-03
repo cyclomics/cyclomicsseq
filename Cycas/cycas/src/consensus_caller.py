@@ -1,12 +1,10 @@
-from ast import Str
 import math
 from abc import ABC, abstractmethod
 from collections import Counter
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from Bio.Seq import Seq
 from loguru import logger
-from numpy import insert
 
 from .barcode_extractor import BarcodeExtrator
 
@@ -236,7 +234,6 @@ class BaseConsensusCaller(ABC):
 
 
 class ConsensusCallerMetadata(BaseConsensusCaller):
-
     """
     Return a consensus sequence and quality in the following format
     backbone0: {
@@ -259,7 +256,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
     }
     """
 
-    def __init__(self, max_qual=93, minimal_deletion_ratio=0.65):
+    def __init__(self, max_qual=93, minimal_deletion_ratio=0.55):
         logger.debug(f"Consensus caller: {self.__class__.__name__}")
         # lowest ascii char that is human readable, converter takes care of the offset
         self.min_qual = 0
