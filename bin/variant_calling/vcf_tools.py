@@ -63,8 +63,14 @@ def create_bed_positions(bed_file, end_warning_length=4):
         if not is_intable(L[2]):
             logging.critical("error in bed file")
         for pos in range(int(L[1]), int(L[2])):
-            close_to_end = pos + end_warning_length >= int(L[2])
-            yield L[0], pos, close_to_end
+            close_to_edge = (
+                # close to start
+                pos - end_warning_length <= int(L[1])
+                or
+                # close to end
+                pos + end_warning_length >= int(L[2])
+            )
+            yield L[0], pos, close_to_edge
 
 
 def write_vcf_entry(vcf, contig, pos, vcf_entry):

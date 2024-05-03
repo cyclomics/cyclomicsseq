@@ -112,14 +112,9 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
         new_insert_fwd_count = Counter(inserts_fwd).most_common(1)[0][1]
         new_insert_rev_count = Counter(inserts_rev).most_common(1)[0][1]
         new_insert_count = new_insert_fwd_count + new_insert_rev_count
-        new_insert_orientation_ratio = min(
-            new_insert_fwd_count / new_insert_rev_count,
-            new_insert_rev_count / new_insert_fwd_count,
-        )
 
     except IndexError:
         new_insert_count = 0
-        new_insert_orientation_ratio = 0
         new_insert_fwd, new_insert_rev = "", ""
 
     try:
@@ -128,14 +123,9 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
         new_deletion_fwd_count = Counter(deletions_fwd).most_common(1)[0][1]
         new_deletion_rev_count = Counter(deletions_rev).most_common(1)[0][1]
         new_deletion_count = new_deletion_fwd_count + new_deletion_rev_count
-        new_deletion_orientation_ratio = min(
-            new_deletion_fwd_count / new_deletion_rev_count,
-            new_deletion_rev_count / new_deletion_fwd_count,
-        )
 
     except IndexError:
         new_deletion_count = 0
-        new_deletion_orientation_ratio = 0
         new_deletion_fwd, new_deletion_rev = "", ""
 
     # Decide if we have found either an Insert or a Deletion
@@ -215,7 +205,7 @@ def extract_indel_evidence(
     reference_fa: str,
     pos: int,
     high_base_quality_cutoff: int = 80,
-    end_of_amplicon: bool = False,
+    edge_of_amplicon: bool = False,
 ) -> Tuple[str, Tuple[str, str], VCF_entry]:
     """
     Find Indel in a given pileup position.
@@ -228,8 +218,8 @@ def extract_indel_evidence(
         pos: Position in the alignment pileup to check for variants.
         high_base_quality_cutoff: Cutoff to calculate ratios on high base
             quality nucleotides only (Default = 80).
-        end_of_amplicon: Flag to determine if we are reaching
-            the end of the amplicon, based on positions in BED file.
+        edge_of_amplicon: Flag to determine if we are in either the start
+            or end of the amplicon.
 
     Returns:
         A tuple with reference name, reference and alternative alleles,
@@ -240,7 +230,7 @@ def extract_indel_evidence(
     alleles = (".", ".")
     info = "."
 
-    if not end_of_amplicon:
+    if not edge_of_amplicon:
         indel = check_indel(pileupcolumn)
         if indel.found:
             if indel.type == "del":
@@ -332,7 +322,7 @@ def main(
     import time
 
     from tqdm import tqdm
-    from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
+    from vcf_tools import create_bed_positions, initialize_output_vcf
 
     # logging.debug("started main")
     # Open input files and create empty output VCF
@@ -341,7 +331,7 @@ def main(
     vcf = initialize_output_vcf(output_path, bam_af.references)
 
     # Iterate over positions in search space indicated in BED file
-    for contig, pos, amplicon_ending in tqdm(create_bed_positions(bed)):
+    for contig, pos, amplicon_edge in tqdm(create_bed_positions(bed)):
         # Check statistics for this position,
         # potentially finding a new variant
 
@@ -364,7 +354,7 @@ def main(
                 ref_nt=str(ref_seq).upper(),
                 reference_fa=fasta,
                 pos=pos,
-                end_of_amplicon=amplicon_ending,
+                edge_of_amplicon=amplicon_edge,
             )
 
             if result[1][0] != ".":
@@ -377,9 +367,9 @@ def main(
                 # Write found variant as a new entry to VCF output
                 for fld in fields(result[2]):
                     fld_value = getattr(result[2], fld.name)
-                    if type(fld_value) in [float, np.float64, np.float32]:
+                    if isinstance(fld_value, (float, np.float64, np.float32)):
                         fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
-                    elif type(fld_value) == int:
+                    elif isinstance(fld_value, int):
                         fld_entry = str(f"{getattr(result[2], fld.name)}")
                     else:
                         fld_entry = str(fld_value)

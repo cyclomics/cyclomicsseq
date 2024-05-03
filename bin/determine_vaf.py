@@ -8,11 +8,8 @@ from threading import Lock
 import pysam
 from variant_calling.detect_indel import extract_indel_evidence
 from variant_calling.detect_snp import extract_snp_evidence
-from variant_calling.vcf_tools import (
-    create_bed_lines,
-    initialize_output_vcf,
-    write_vcf_entry,
-)
+from variant_calling.vcf_tools import (create_bed_lines, initialize_output_vcf,
+                                       write_vcf_entry)
 
 
 def process_pileup_column(
@@ -20,7 +17,7 @@ def process_pileup_column(
     pos: int,
     bam: str,
     reference_fasta: str,
-    amplicon_ending: bool = False,
+    amplicon_edge: bool = False,
     pileup_depth: int = 1_000_000,
     minimum_base_quality: int = 10,
 ):
@@ -32,7 +29,7 @@ def process_pileup_column(
         pos: Genomic locations within the contig.
         bam: path to the bam file, BAM.
         fasta: path to the reference genome, Fasta.
-        amplicon_ending: Bolean to indicate if the amplicon is about to end, used in indel calling.
+        amplicon_edge: Bolean to indicate if current position is at end of amplicon, used in indel calling.
         pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
         minimum_base_quality: minimum base quality at a given position in a read to be considered, integer.
     """
@@ -90,7 +87,7 @@ def process_pileup_column(
             reference_fasta,
             pos,
             minimum_base_quality,
-            amplicon_ending,
+            amplicon_edge,
         )
         if iteration > 0:
             logging.critical("Single thread worker recieved multiple locations.")
@@ -126,7 +123,6 @@ def main(
     """
 
     logging.debug("started main")
-    pileup_parameters = []
     promisses = []
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
@@ -138,10 +134,12 @@ def main(
             contig_region_stop = int(bed_file_line[2])
 
             for pos in range(contig_region_start, contig_region_stop):
-                amplicon_ending = (
-                    True
-                    if contig_region_stop - pos > end_of_amplicon_warn_limit
-                    else False
+                amplicon_edge = (
+                    # amplicon start edge
+                    pos - contig_region_start <= end_of_amplicon_warn_limit
+                    or
+                    # amplicon stop edge
+                    contig_region_stop - pos <= end_of_amplicon_warn_limit
                 )
                 logging.debug("appending to ProcessPoolExecutor")
                 promisses.append(
@@ -151,7 +149,7 @@ def main(
                         pos,
                         bam_path,
                         fasta,
-                        amplicon_ending,
+                        amplicon_edge,
                         pileup_depth,
                         minimum_base_quality,
                     )
