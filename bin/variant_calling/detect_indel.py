@@ -112,14 +112,9 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
         new_insert_fwd_count = Counter(inserts_fwd).most_common(1)[0][1]
         new_insert_rev_count = Counter(inserts_rev).most_common(1)[0][1]
         new_insert_count = new_insert_fwd_count + new_insert_rev_count
-        new_insert_orientation_ratio = min(
-            new_insert_fwd_count / new_insert_rev_count,
-            new_insert_rev_count / new_insert_fwd_count,
-        )
 
     except IndexError:
         new_insert_count = 0
-        new_insert_orientation_ratio = 0
         new_insert_fwd, new_insert_rev = "", ""
 
     try:
@@ -128,14 +123,9 @@ def check_indel(pu_column: pysam.PileupColumn, variant_count_th: int = 10) -> In
         new_deletion_fwd_count = Counter(deletions_fwd).most_common(1)[0][1]
         new_deletion_rev_count = Counter(deletions_rev).most_common(1)[0][1]
         new_deletion_count = new_deletion_fwd_count + new_deletion_rev_count
-        new_deletion_orientation_ratio = min(
-            new_deletion_fwd_count / new_deletion_rev_count,
-            new_deletion_rev_count / new_deletion_fwd_count,
-        )
 
     except IndexError:
         new_deletion_count = 0
-        new_deletion_orientation_ratio = 0
         new_deletion_fwd, new_deletion_rev = "", ""
 
     # Decide if we have found either an Insert or a Deletion
@@ -377,9 +367,9 @@ def main(
                 # Write found variant as a new entry to VCF output
                 for fld in fields(result[2]):
                     fld_value = getattr(result[2], fld.name)
-                    if type(fld_value) in [float, np.float64, np.float32]:
+                    if isinstance(fld_value, (float, np.float64, np.float32)):
                         fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
-                    elif type(fld_value) == int:
+                    elif isinstance(fld_value, int):
                         fld_entry = str(f"{getattr(result[2], fld.name)}")
                     else:
                         fld_entry = str(fld_value)
