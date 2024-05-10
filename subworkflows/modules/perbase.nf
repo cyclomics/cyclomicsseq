@@ -2,7 +2,7 @@
 nextflow.enable.dsl = 2
 
 process PerbaseBaseDepth {
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
@@ -16,6 +16,6 @@ process PerbaseBaseDepth {
     script:
     """
     samtools faidx $reference
-    perbase base-depth -F 256 -D 4000000 -t $task.cpus -z -b $bed --ref-fasta $reference $input_bam_file > $output_name
+    perbase base-depth -F 256 -D $params.perbase.max_depth -t $task.cpus -z -b $bed --ref-fasta $reference $input_bam_file > $output_name
     """
 }

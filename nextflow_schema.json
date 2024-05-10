@@ -141,6 +141,11 @@
           "description": "Minimal number of repeats to keep in the analysis. Currently only supported by Cycas.",
           "default": 3
         },
+        "perbase.max_depth": {
+          "type": "integer",
+          "description": "Set the max depth while building perbase tables. If the depth at a position is within 1% of this value, the NEAR_MAX_DEPTH output field will be set to true.",
+          "default": 4000000
+        },
         "region_file": {
           "type": "string",
           "description": "Region of interest, either `auto` or a path to a file in bed format corresponding to the reference used.",
