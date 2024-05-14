@@ -135,8 +135,8 @@ include {
 include {
     ProcessTargetRegions
     CallVariantsFreebayes
-    Mutect2
-    ValidatePosibleVariantLocations
+    CallVariantsMutect2
+    CallVariantsValidate
 } from "./subworkflows/variant_calling"
 
 // include {
@@ -288,13 +288,13 @@ workflow {
     variant_vcf = ""
 
     if (params.variant_calling == "validate") {
-        ValidatePosibleVariantLocations(
+        CallVariantsValidate(
             reads_aligned_filtered,
             regions,
             PrepareGenome.out.fasta_combi
         )
-        locations = ValidatePosibleVariantLocations.out.locations
-        variant_vcf = ValidatePosibleVariantLocations.out.variants
+        locations = CallVariantsValidate.out.locations
+        variant_vcf = CallVariantsValidate.out.variants
     }
     else if (params.variant_calling == "freebayes") {
         CallVariantsFreebayes(
