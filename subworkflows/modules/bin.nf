@@ -98,12 +98,12 @@ process FilterValidateVariants{
         val(mode)
 
     output:
-        tuple path("${snp_vcf.simpleName}_filtered.snp.vcf"), path("${indel_vcf.simpleName}_filtered.indel.vcf")
+        tuple path("${vcf.simpleName}_filtered.vcf")
     
     script:
-        // Conditional params???
+    if ( mode == 'snp' )
         """
-        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}_filtered.snp.vcf \
+        vcf_filter.py -i $snp_vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.snp_filters.min_ao \
@@ -115,7 +115,9 @@ process FilterValidateVariants{
         --min_abq $params.snp_filters.min_abq
         """
 
-        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}_filtered.indel.vcf \
+    else if ( mode == 'indel' )
+        """
+        vcf_filter.py -i $indel_vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.indel_filters.min_ao \
@@ -147,10 +149,6 @@ process SortVCF{
         bgzip -f ${vcf.simpleName}_sorted.vcf
         tabix -f ${vcf.simpleName}_sorted.vcf.gz
         """
-}
-
-    rm -r tmpdir
-    """
 }
 
 
