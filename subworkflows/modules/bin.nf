@@ -167,7 +167,12 @@ process MergeVCF{
     if ( mode == 'noisy' )
         """
         bcftools concat -a ${snp_vcf.simpleName}.vcf.gz ${indel_vcf.simpleName}.vcf.gz \
-        -O v -o ${X}_${mode}.tmp.vcf
+        -O v -o ${X}_${mode}.tmp.vcf \
+        2> >(tee -a error.txt >&2) && \
+        if grep -q "E::" error.txt; then \
+        echo "VCF concatenation failed in certain rows.\n"; \
+        exit 1; \
+        fi
 
         bcftools sort ${X}_${mode}.tmp.vcf -o ${X}_${mode}.vcf --temp-dir .
         rm ${X}_${mode}.tmp.vcf
@@ -176,7 +181,12 @@ process MergeVCF{
     else if ( mode == 'filtered' )
         """
         bcftools concat -a ${snp_vcf.simpleName}.vcf.gz ${indel_vcf.simpleName}.vcf.gz \
-        -O v -o ${X}_${mode}.tmp.vcf
+        -O v -o ${X}_${mode}.tmp.vcf \
+        2> >(tee -a error.txt >&2) && \
+        if grep -q "E::" error.txt; then \
+        echo "VCF concatenation failed in certain rows.\n"; \
+        exit 1; \
+        fi
 
         bcftools sort ${X}_${mode}.tmp.vcf -o ${X}_${mode}.vcf --temp-dir .
         rm ${X}_${mode}.tmp.vcf
