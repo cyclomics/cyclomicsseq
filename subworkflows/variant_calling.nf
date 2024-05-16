@@ -16,9 +16,14 @@ include {
 
 include {
     FindVariants
-    FilterValidateVariants
-    MergeNoisyVCF
-    MergeFilteredVCF
+    SortVCF as SortNoisySnp
+    SortVCF as SortNoisyIndel
+    SortVCF as SortFilteredSnp
+    SortVCF as SortFilteredIndel
+    MergeVCF as MergeNoisyVCF
+    MergeVCF as MergeFilteredVCF
+    FilterValidateVariants as FilterSnp
+    FilterValidateVariants as FilterIndel
     AnnotateVCF
 } from "./modules/bin"
 
@@ -74,7 +79,7 @@ workflow CallVariantsFreebayes{
         variants = FilterFreebayesVariants.out
 }
 
-workflow Mutect2{
+workflow CallVariantsMutect2{
     take:
         reads
         reference_genome
@@ -89,7 +94,7 @@ workflow Mutect2{
 }
 
 
-workflow ValidatePosibleVariantLocations{
+workflow CallVariantsValidate{
     // Allow to determine VAF for given genomic positions in both bed and vcf format
     take:
         reads_aligned
@@ -97,14 +102,26 @@ workflow ValidatePosibleVariantLocations{
         reference
 
     main:
+        // Determine noisy SNPs, indels
         FindVariants(reference, reads_aligned, positions)
+        noisy_snp = FindVariants.out.map(it -> it[0, 1])
+        noisy_indel = FindVariants.out.map(it -> it[0, 2])
+        SortNoisySnp(noisy_snp)
+        SortNoisyIndel(noisy_indel)
+        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: 0), 'noisy')
+
+        // Filter SNPs, indels
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
-        FilterValidateVariants(FindVariants.out.combine(PerbaseBaseDepthConsensus.out))
-        MergeNoisyVCF(FindVariants.out)
-        MergeFilteredVCF(FilterValidateVariants.out)
+        FilterSnp(noisy_snp.combine(PerbaseBaseDepthConsensus.out, by: 0), 'snp')
+        FilterIndel(noisy_indel.combine(PerbaseBaseDepthConsensus.out, by: 0), 'indel')
+        SortFilteredSnp(FilterSnp.out)
+        SortFilteredIndel(FilterIndel.out)
+        MergeFilteredVCF(SortFilteredSnp.out.combine(SortFilteredIndel.out, by: 0), 'filtered')
+
+        // Annotate VCF
         AnnotateVCF(MergeFilteredVCF.out)
 
     emit:
-        locations = MergeNoisyVCF.out
-        variants = AnnotateVCF.out
+        locations = MergeNoisyVCF.out.map(it -> it[1])
+        variants = AnnotateVCF.out.map(it -> it[1])
 }

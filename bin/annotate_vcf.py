@@ -11,6 +11,7 @@ import requests
 
 class NoColocatedVariantsException(Exception):
     "Raised when an Ensembl-VEP query does not return any colocated variants."
+
     pass
 
 
@@ -151,8 +152,10 @@ class VCF_file:
             )
             json_data = json.loads(response.text)[0]
 
-        except KeyError:
+        except (KeyError, ConnectionError) as error:
             # No response data found in this query location
+            # or connection was aborted
+            print(error)
             return
 
         return json_data
