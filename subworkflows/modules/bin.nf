@@ -98,12 +98,12 @@ process FilterValidateVariants{
         val(mode)
 
     output:
-        tuple path("${vcf.simpleName}_filtered.vcf")
+        tuple val(X), path("${vcf.simpleName}_filtered.vcf")
     
     script:
     if ( mode == 'snp' )
         """
-        vcf_filter.py -i $snp_vcf -o ${vcf.simpleName}_filtered.vcf \
+        vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.snp_filters.min_ao \
@@ -117,7 +117,7 @@ process FilterValidateVariants{
 
     else if ( mode == 'indel' )
         """
-        vcf_filter.py -i $indel_vcf -o ${vcf.simpleName}_filtered.vcf \
+        vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.indel_filters.min_ao \
