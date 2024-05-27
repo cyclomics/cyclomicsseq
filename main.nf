@@ -126,13 +126,15 @@ include {
 
 include {
     Minimap2Align
-    BWAAlign
+    BWAAlign as BWAAlignConsensus
+    BWAAlign as BWAAlignContaminats
     AnnotateBam
     FilterBam
     PrepareGenome
 } from "./subworkflows/align"
 
 include {
+    ProcessTargetregions as ProcessContaminantRegions
     ProcessTargetRegions
     CallVariantsFreebayes
     CallVariantsMutect2
@@ -259,8 +261,8 @@ workflow {
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "bwamem" ) {
-        BWAAlign(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
-        reads_aligned = BWAAlign.out.bam
+        BWAAlignConsensus(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
+        reads_aligned = BWAAlignConsensus.out.bam
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
@@ -277,9 +279,34 @@ workflow {
         reads_aligned_tagged = reads_aligned
     }
     reads_aligned_filtered = FilterBam(reads_aligned_tagged, params.min_repeat_count)
+
 /*
 ========================================================================================
-03.A   Variant calling
+03.    Contamination check
+========================================================================================
+*/  
+    if (params.contaminants.endsWith(".fasta") || params.contaminants.endsWith(".fa") || params.contaminants.endsWith(".fna")) {
+        // is prepared for FASTQ?
+        BWAAlignContaminats(params.contaminants, PrepareGenome.out.fasta_ref , bwa_index, "")
+        contaminants_aligned = BWAAlignContaminats.out.bam
+        ProcessContaminantRegions(region_file, contaminants_aligned)
+
+        // This needs at least 10 reads in each direction...
+        // Freebayes? New algorithm?
+        CallVariantsValidate(contaminants_aligned,  ProcessContaminatRegions.out, PrepareGenome.out.fasta_combi)
+        contaminants_vcf = CallVariantsValidate.out.variants
+
+    } else if (params.contaminants.endsWith(".vcf")) {
+        contaminants_vcf = params.contaminants
+
+    }
+
+    // cross-check VCF files
+    // Or add new tab to report
+
+/*
+========================================================================================
+04.    Variant calling
 ========================================================================================
 */  
     ProcessTargetRegions(region_file, reads_aligned_filtered)
@@ -309,9 +336,10 @@ workflow {
         error "Invalid variant_calling selector: ${params.variant_calling}"
     }
 
+
 /*
 ========================================================================================
-04.    Reporting
+05.    Reporting
 ========================================================================================
 */  
     if (params.report in ["detailed", "standard"]){
