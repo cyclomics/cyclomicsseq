@@ -74,16 +74,16 @@ process BwaMemSorted{
         file(reference_indexes)
 
     output:
-        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}.bam")
+        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}.bam"), path("${fastq.simpleName}.bam.bai")
         
     script:
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
         // piplefail for better control over failures
+        // REMOVED. TODO: check reference file itself
         """
-        REF=\$(ls | grep -E "*.(fasta\$|fa\$|fna\$)")
-        set -euxo pipefail
-        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
         samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
+        samtools index ${fastq.simpleName}.bam
         """
 }
 

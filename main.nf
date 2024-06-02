@@ -38,6 +38,7 @@ params.report                   = true
 params.split_on_adapter         = false
 params.sequence_summary_tagging = false
 params.backbone_file            = ""
+params.contaminants_file        = "$projectDir/contaminants/synthetic_mutants.fasta"
 params.priority_limit = (params.report == "detailed") ? 9999 : 89
 
 // Pipeline performance metrics
@@ -126,16 +127,17 @@ include {
 
 include {
     Minimap2Align
-    BWAAlign as BWAAlignConsensus
-    BWAAlign as BWAAlignContaminats
+    BWAAlign
+    BWAAlignContaminants
     AnnotateBam
     FilterBam
     PrepareGenome
 } from "./subworkflows/align"
 
 include {
-    ProcessTargetregions as ProcessContaminantRegions
+    ProcessTargetRegions as ProcessContaminantRegions
     ProcessTargetRegions
+    CallContaminantMutants
     CallVariantsFreebayes
     CallVariantsMutect2
     CallVariantsValidate
@@ -261,8 +263,8 @@ workflow {
         reads_aligned = Minimap2Align.out.bam
     }
     else if( params.alignment == "bwamem" ) {
-        BWAAlignConsensus(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
-        reads_aligned = BWAAlignConsensus.out.bam
+        BWAAlign(base_unit_reads, PrepareGenome.out.fasta_ref , bwa_index, read_info_json)
+        reads_aligned = BWAAlign.out.bam
     }
     else if( params.alignment == "skip" ) {
         println "Skipping alignment"
@@ -285,19 +287,17 @@ workflow {
 03.    Contamination check
 ========================================================================================
 */  
-    if (params.contaminants.endsWith(".fasta") || params.contaminants.endsWith(".fa") || params.contaminants.endsWith(".fna")) {
-        // is prepared for FASTQ?
-        BWAAlignContaminats(params.contaminants, PrepareGenome.out.fasta_ref , bwa_index, "")
-        contaminants_aligned = BWAAlignContaminats.out.bam
+    // TODO: Add .fastq, .fq
+    if (params.contaminants_file.endsWith(".fasta") || params.contaminants_file.endsWith(".fa") || params.contaminants_file.endsWith(".fna")) {
+        BWAAlignContaminants(params.contaminants_file, PrepareGenome.out.fasta_ref, bwa_index)
+        contaminants_aligned = BWAAlignContaminants.out.bam
         ProcessContaminantRegions(region_file, contaminants_aligned)
 
-        // This needs at least 10 reads in each direction...
-        // Freebayes? New algorithm?
-        CallVariantsValidate(contaminants_aligned,  ProcessContaminatRegions.out, PrepareGenome.out.fasta_combi)
-        contaminants_vcf = CallVariantsValidate.out.variants
+        CallContaminantMutants(contaminants_aligned,  ProcessContaminantRegions.out, PrepareGenome.out.fasta_combi)
+        contaminants_vcf = CallContaminantMutants.out.variants
 
-    } else if (params.contaminants.endsWith(".vcf")) {
-        contaminants_vcf = params.contaminants
+    } else if (params.contaminants_file.endsWith(".vcf")) {
+        contaminants_vcf = params.contaminants_file
 
     }
 

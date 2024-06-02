@@ -38,7 +38,7 @@ process AnnotateBamYTags{
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple val(X), path(bam), path(json)
+        tuple val(X), path(bam), path(bai), path(json)
 
     output:
         tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")

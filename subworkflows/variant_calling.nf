@@ -1,5 +1,6 @@
 include {
     Freebayes
+    FreebayesContaminants
     FilterFreebayesVariants
     SeparateMultiallelicVariants
 } from "./modules/freebayes"
@@ -59,6 +60,22 @@ workflow ProcessTargetRegions{
     emit:
         positions
 
+}
+
+workflow CallContaminantMutants{
+    take:
+        reads_aligned
+        positions
+        reference
+
+    main:
+        FreebayesContaminants(reads_aligned.combine(reference), positions)
+        SeparateMultiallelicVariants(FreebayesContaminants.out)
+        // AnnotateVCF(FilterFreebayesVariants.out)
+
+    emit:
+        locations = FreebayesContaminants.out
+        variants = SeparateMultiallelicVariants.out
 }
 
 workflow CallVariantsFreebayes{

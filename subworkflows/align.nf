@@ -135,6 +135,33 @@ workflow BWAAlign{
         bam
 }
 
+workflow BWAAlignContaminants{
+    take:
+        reads
+        reference_genome
+        reference_genome_indexes
+
+    main:
+        bwa_index_file_count = 5
+        // We do a smaller than since there might be a .fai file as well!
+        if (reference_genome_indexes.size < bwa_index_file_count){
+            println "==================================="
+            println "Warning! BWA index files are missing for the reference genome, This will slowdown execution in a major way."
+            println "==================================="
+            println ""
+            println ""
+            reference_genome_indexes = BwaIndex(reference_genome)
+        }
+        
+        // id = reads.first().map( it -> it[0])
+        // id = id.map(it -> it.split('_')[0])
+        // reads_fastq = reads.map(it -> it[1])
+        BwaMemSorted(reads, reference_genome, reference_genome_indexes.collect() )
+
+    emit:
+        bam = BwaMemSorted.out
+}
+
 workflow Minimap2Align{
     // Call minimap2 on all reads files (tuple(x,bam)) convert to bam and merge using samtools.
     // Adds metadata tags (eg YM) from metadata
