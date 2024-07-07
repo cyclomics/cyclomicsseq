@@ -196,6 +196,22 @@ process MergeVCF{
         error "Invalid merging mode (VCF type): ${mode}. Valid modes are 'noisy' or 'filtered'."
 }
 
+process IntersectVCF{
+    publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+
+    input:
+        tuple val(X), path(variants), path(synthetics)
+
+    output:
+        tuple val(X), path("${variants.simpleName}_contaminants.vcf")
+    
+    script:
+        """
+        bedtools intersect -header -a $variants -b $synthetics  > ${variants.simpleName}_contaminants.vcf
+        """
+}
+
 
 process AnnotateVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
@@ -301,6 +317,27 @@ process PasteVariantTable{
         2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf_file.simpleName}_table.json
         """
 }
+
+process PasteContaminantTable{
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
+
+    input:
+        path(vcf_file)
+
+    output:
+        path("contaminant_table.json")
+    
+    script:
+        """
+        write_contaminants_table.py $vcf_file contaminant_table.json 'Contaminants' $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt contaminant_table.json
+        """
+}
+
+// write_variants_table.py $vcf_file contaminant_table.json 'Contaminants' $params.priority_limit 70 \
+// 2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt contaminant_table.json
 
 process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'

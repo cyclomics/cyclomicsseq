@@ -13,7 +13,7 @@ process Freebayes {
         tuple val(X), path(roi)
 
     output:
-        path("${input_bam_file.SimpleName}.multiallelic.vcf")
+        tuple val(X), path("${input_bam_file.SimpleName}.multiallelic.vcf")
 
     script:
         ref = reference
@@ -41,7 +41,7 @@ process FreebayesContaminants {
         tuple val(X), path(roi)
 
     output:
-        path("${input_bam_file.SimpleName}.multiallelic.vcf")
+        tuple val(X), path("${input_bam_file.SimpleName}.multiallelic.vcf")
 
     script:
         ref = reference
@@ -61,10 +61,10 @@ process SeparateMultiallelicVariants{
     label 'many_low_cpu_high_mem'
 
     input:
-        path(vcf)
+        tuple val(X), path(vcf)
 
     output:
-        path("${vcf.SimpleName}.vcf")
+        tuple val(X), path("${vcf.SimpleName}.vcf")
 
     script:
         """
@@ -80,7 +80,7 @@ process FilterFreebayesVariants{
         tuple path(vcf), val(X), path(perbase_table)
 
     output:
-        path("${vcf.simpleName}_filtered.vcf")
+        tuple val(X), path("${vcf.simpleName}_filtered.vcf")
     
     script:
         """

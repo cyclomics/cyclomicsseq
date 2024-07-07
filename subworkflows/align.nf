@@ -9,6 +9,7 @@ include {
 include {
     BwaIndex
     BwaMemSorted
+    BwaMemContaminants
 } from "./modules/bwa.nf"
 
 include {
@@ -137,7 +138,7 @@ workflow BWAAlign{
 
 workflow BWAAlignContaminants{
     take:
-        reads
+        synthetic_reads
         reference_genome
         reference_genome_indexes
 
@@ -152,11 +153,10 @@ workflow BWAAlignContaminants{
             println ""
             reference_genome_indexes = BwaIndex(reference_genome)
         }
-        
-        // id = reads.first().map( it -> it[0])
+        // id = synthetic_reads.first().map(it -> it[0])
         // id = id.map(it -> it.split('_')[0])
-        // reads_fastq = reads.map(it -> it[1])
-        BwaMemSorted(reads, reference_genome, reference_genome_indexes.collect() )
+        // synthetic_reads_fastq = synthetic_reads.map(it -> it[1])
+        BwaMemSorted(synthetic_reads, reference_genome, reference_genome_indexes.collect() )
 
     emit:
         bam = BwaMemSorted.out

@@ -23,6 +23,7 @@ include {
     SortVCF as SortFilteredIndel
     MergeVCF as MergeNoisyVCF
     MergeVCF as MergeFilteredVCF
+    IntersectVCF
     FilterValidateVariants as FilterSnp
     FilterValidateVariants as FilterIndel
     AnnotateVCF
@@ -74,8 +75,20 @@ workflow CallContaminantMutants{
         // AnnotateVCF(FilterFreebayesVariants.out)
 
     emit:
-        locations = FreebayesContaminants.out
-        variants = SeparateMultiallelicVariants.out
+        locations = FreebayesContaminants.out.map(it -> it[0, 1])
+        variants = SeparateMultiallelicVariants.out.map(it -> it[0, 1])
+}
+
+workflow CrosscheckContaminantVariants{
+    take:
+        variants
+        synthetics
+
+    main:
+        IntersectVCF(variants.combine(synthetics.map(it -> it[1])))
+
+    emit:
+        IntersectVCF.out.map(it -> it[0, 1])
 }
 
 workflow CallVariantsFreebayes{
@@ -139,6 +152,6 @@ workflow CallVariantsValidate{
         AnnotateVCF(MergeFilteredVCF.out)
 
     emit:
-        locations = MergeNoisyVCF.out.map(it -> it[1])
-        variants = AnnotateVCF.out.map(it -> it[1])
+        locations = MergeNoisyVCF.out.map(it -> it[0, 1])
+        variants = AnnotateVCF.out.map(it -> it[0, 1])
 }

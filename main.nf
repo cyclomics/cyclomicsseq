@@ -38,7 +38,7 @@ params.report                   = true
 params.split_on_adapter         = false
 params.sequence_summary_tagging = false
 params.backbone_file            = ""
-params.contaminants_file        = "$projectDir/contaminants/synthetic_mutants.fasta"
+params.synthetics_file          = "$projectDir/contaminants/synthetic_mutants.fasta"
 params.priority_limit = (params.report == "detailed") ? 9999 : 89
 
 // Pipeline performance metrics
@@ -141,6 +141,7 @@ include {
     CallVariantsFreebayes
     CallVariantsMutect2
     CallVariantsValidate
+    CrosscheckContaminantVariants
 } from "./subworkflows/variant_calling"
 
 // include {
@@ -180,11 +181,11 @@ workflow {
         log.warn "local is available but unsupported, we advise to use a managed environment. please make sure all required software in available in the PATH"
     }
     if (params.profile_selected != 'docker') {
-            if (params.consensus_calling == 'tidehunter'){
-                println('Tidehunter only works with docker in this version, due to a bug in the Tidehunter release.')
-                exit(1)
-            }
+        if (params.consensus_calling == 'tidehunter'){
+            println('Tidehunter only works with docker in this version, due to a bug in the Tidehunter release.')
+            exit(1)
         }
+    }
 
     // Process inputs:
     // add the trailing slash if its missing 
@@ -204,6 +205,7 @@ workflow {
     // form a pair for both .fa as well as .fasta ref genomes
     reference_genome_indexed = Channel.fromFilePairs("${params.reference}*", size: -1) { file -> file.SimpleName }
     bwa_index = file( "${params.reference}.{,amb,ann,bwt,pac,sa}")
+    synthetic_reads = Channel.fromPath(params.synthetics_file, checkIfExists: true)
 
     read_info_json = ""
     PrepareGenome(reference_genome, params.reference, backbone_fasta)
@@ -282,31 +284,10 @@ workflow {
     }
     reads_aligned_filtered = FilterBam(reads_aligned_tagged, params.min_repeat_count)
 
-/*
-========================================================================================
-03.    Contamination check
-========================================================================================
-*/  
-    // TODO: Add .fastq, .fq
-    if (params.contaminants_file.endsWith(".fasta") || params.contaminants_file.endsWith(".fa") || params.contaminants_file.endsWith(".fna")) {
-        BWAAlignContaminants(params.contaminants_file, PrepareGenome.out.fasta_ref, bwa_index)
-        contaminants_aligned = BWAAlignContaminants.out.bam
-        ProcessContaminantRegions(region_file, contaminants_aligned)
-
-        CallContaminantMutants(contaminants_aligned,  ProcessContaminantRegions.out, PrepareGenome.out.fasta_combi)
-        contaminants_vcf = CallContaminantMutants.out.variants
-
-    } else if (params.contaminants_file.endsWith(".vcf")) {
-        contaminants_vcf = params.contaminants_file
-
-    }
-
-    // cross-check VCF files
-    // Or add new tab to report
 
 /*
 ========================================================================================
-04.    Variant calling
+03.    Variant calling
 ========================================================================================
 */  
     ProcessTargetRegions(region_file, reads_aligned_filtered)
@@ -339,6 +320,36 @@ workflow {
 
 /*
 ========================================================================================
+04.    Contamination check
+========================================================================================
+*/  
+    synthetic_vcf = ""
+
+    String[] contaminantSeqExt = [".fasta", ".fna", ".fa", ".fastq", ".fq"]
+
+    if (params.synthetics_file.endsWithAny(contaminantSeqExt)) {
+        BWAAlignContaminants(synthetic_reads, PrepareGenome.out.fasta_ref, bwa_index)
+        synthetics_aligned = BWAAlignContaminants.out.bam
+        ProcessContaminantRegions(region_file, synthetics_aligned)
+
+        CallContaminantMutants(synthetics_aligned,  ProcessContaminantRegions.out, PrepareGenome.out.fasta_combi)
+        synthetic_vcf = CallContaminantMutants.out.variants       
+
+    } else if (params.synthetics_file.endsWith(".vcf")) {
+        synthetic_vcf = synthetic_reads
+
+    } else {
+        error "Invalid --synthetics_file format: ${params.synthetics_file}"
+    }
+
+    if (synthetic_vcf) {
+        contaminants_vcf = CrosscheckContaminantVariants(variant_vcf, synthetic_vcf)
+    }
+    else {
+        contaminants_vcf = ""
+    }
+/*
+========================================================================================
 05.    Reporting
 ========================================================================================
 */  
@@ -355,6 +366,7 @@ workflow {
             regions,
             locations,
             variant_vcf,
+            contaminants_vcf,
         )
     }
     else if (params.report == "skip") {
