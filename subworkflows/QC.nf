@@ -9,6 +9,7 @@ include {
     PlotFastqsQUalAndLength as PlotConFastqHist
     PlotVcf
     PasteVariantTable
+    PasteContaminantTable
     PlotQScores
     PlotMetadataStats
     PlotReport
@@ -56,6 +57,7 @@ workflow Report {
         roi
         noisy_vcf
         variants_vcf
+        contaminants_vcf
 
     main:
         // dont add the ID to the process
@@ -82,7 +84,7 @@ workflow Report {
         
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
-        CountNonBackboneVariants(variants_vcf)
+        CountNonBackboneVariants(variants_vcf.map(it -> it[1]))
 
         meta_data = read_info.map(it -> it[1]).collect()
         PlotMetadataStats(meta_data) // 92
@@ -93,12 +95,13 @@ workflow Report {
         PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
         PlotQScores(PerbaseBaseDepthSplit.out, PerbaseBaseDepthConsensus.out) // 91
         
-        PlotVcf(noisy_vcf)
+        PlotVcf(noisy_vcf.map(it -> it[1]))
 
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered('splibams_filtered_merged',split_bam_filtered.collect())
         SamtoolsFlagstats(merged_split_bam_filtered)
 
-        PasteVariantTable(variants_vcf)
+        PasteVariantTable(variants_vcf.map(it -> it[1]))
+        PasteContaminantTable(contaminants_vcf.map(it -> it[1]))
         PlotReport(
             PlotRawFastqHist.out.combine(
             PlotFilteredHist.out).combine(
@@ -108,6 +111,7 @@ workflow Report {
             PlotVcf.out).combine(
             PlotMetadataStats.out).combine(
             PasteVariantTable.out).combine(
+            PasteContaminantTable.out).combine(
             SamtoolsFlagstats.out).combine(
             CountNonBackboneVariants.out).combine(
             SamtoolsIdxStats.out

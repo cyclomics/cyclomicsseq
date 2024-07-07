@@ -1,9 +1,9 @@
 #!/usr/bin/env python
+import io
 import json
 from pathlib import Path
-import pandas as pd
-import io
 
+import pandas as pd
 from plotting_defaults import human_format
 
 TAB_PRIORITY = 2

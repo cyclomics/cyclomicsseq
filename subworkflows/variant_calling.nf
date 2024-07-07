@@ -1,5 +1,6 @@
 include {
     Freebayes
+    FreebayesContaminants
     FilterFreebayesVariants
     SeparateMultiallelicVariants
 } from "./modules/freebayes"
@@ -22,6 +23,7 @@ include {
     SortVCF as SortFilteredIndel
     MergeVCF as MergeNoisyVCF
     MergeVCF as MergeFilteredVCF
+    IntersectVCF
     FilterValidateVariants as FilterSnp
     FilterValidateVariants as FilterIndel
     AnnotateVCF
@@ -59,6 +61,34 @@ workflow ProcessTargetRegions{
     emit:
         positions
 
+}
+
+workflow CallContaminantMutants{
+    take:
+        reads_aligned
+        positions
+        reference
+
+    main:
+        FreebayesContaminants(reads_aligned.combine(reference), positions)
+        SeparateMultiallelicVariants(FreebayesContaminants.out)
+        // AnnotateVCF(FilterFreebayesVariants.out)
+
+    emit:
+        locations = FreebayesContaminants.out.map(it -> it[0, 1])
+        variants = SeparateMultiallelicVariants.out.map(it -> it[0, 1])
+}
+
+workflow CrosscheckContaminantVariants{
+    take:
+        variants
+        synthetics
+
+    main:
+        IntersectVCF(variants.combine(synthetics.map(it -> it[1])))
+
+    emit:
+        IntersectVCF.out.map(it -> it[0, 1])
 }
 
 workflow CallVariantsFreebayes{
@@ -122,6 +152,6 @@ workflow CallVariantsValidate{
         AnnotateVCF(MergeFilteredVCF.out)
 
     emit:
-        locations = MergeNoisyVCF.out.map(it -> it[1])
-        variants = AnnotateVCF.out.map(it -> it[1])
+        locations = MergeNoisyVCF.out.map(it -> it[0, 1])
+        variants = AnnotateVCF.out.map(it -> it[0, 1])
 }
