@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
-    label 'many_low_cpu_tiny_mem'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(bam), path(bai)
@@ -23,7 +23,7 @@ process Cycas{
 process CycasSplit{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     container 'damicyclomics/cycas:0.2.2-rc5'
-    label 'many_low_cpu_low_mem'
+    label 'many_cpu_medium'
 
     input:
         tuple val(X), path(bam), path(bai)
