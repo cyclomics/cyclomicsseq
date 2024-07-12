@@ -38,7 +38,7 @@ process AnnotateBamYTags{
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple val(X), path(bam), path(json)
+        tuple val(X), path(bam), path(bai), path(json)
 
     output:
         tuple val(X), path("${X}.annotated.bam"), path("${X}.annotated.bam.bai")
@@ -76,7 +76,7 @@ process FindVariants{
         tuple val(X), path(validation_bed)
 
     output:
-        tuple path("${bam.simpleName}.snp.vcf"), path("${bam.simpleName}.indel.vcf")
+        tuple val(X), path("${bam.simpleName}_snp.vcf"), path("${bam.simpleName}_indel.vcf")
     
     script:
         // We sleep and access the reference genome, since in some rare cases the file needs accessing to 
@@ -85,7 +85,7 @@ process FindVariants{
         sleep 1
         ls
         head $reference_genome
-        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}.snp.vcf ${bam.simpleName}.indel.vcf --threads ${task.cpus} 
+        determine_vaf.py $reference_genome $validation_bed $bam ${bam.simpleName}_snp.vcf ${bam.simpleName}_indel.vcf --threads ${task.cpus} 
         """
 }
 
@@ -94,14 +94,16 @@ process FilterValidateVariants{
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple path(snp_vcf), path(indel_vcf), val(X), path(perbase_table)
+        tuple val(X), path(vcf), path(perbase_table)
+        val(mode)
 
     output:
-        tuple path("${snp_vcf.simpleName}.filtered.snp.vcf"), path("${indel_vcf.simpleName}.filtered.indel.vcf")
+        tuple val(X), path("${vcf.simpleName}_filtered.vcf")
     
     script:
+    if ( mode == 'snp' )
         """
-        vcf_filter.py -i $snp_vcf -o ${snp_vcf.simpleName}.filtered.snp.vcf \
+        vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.snp_filters.min_ao \
@@ -111,8 +113,11 @@ process FilterValidateVariants{
         --max_sap 0 \
         --min_rel_ratio $params.snp_filters.min_rel_ratio \
         --min_abq $params.snp_filters.min_abq
+        """
 
-        vcf_filter.py -i $indel_vcf -o ${indel_vcf.simpleName}.filtered.indel.vcf \
+    else if ( mode == 'indel' )
+        """
+        vcf_filter.py -i $vcf -o ${vcf.simpleName}_filtered.vcf \
         --perbase_table $perbase_table \
         --dynamic_vaf_params $params.dynamic_vaf_params_file \
         --min_ao $params.indel_filters.min_ao \
@@ -123,84 +128,105 @@ process FilterValidateVariants{
         --min_rel_ratio $params.indel_filters.min_rel_ratio \
         --min_abq $params.indel_filters.min_abq   
         """
+
+    else
+        error "Invalid merging mode (VCF type): ${mode}. Valid modes are 'snp' or 'indel'."
 }
 
-process MergeNoisyVCF{
+process SortVCF{
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+
+    input:
+        tuple val(X), path(vcf)
+
+    output:
+        tuple val(X), path("${vcf.simpleName}_sorted.vcf.gz"), path("${vcf.simpleName}_sorted.vcf.gz.tbi")
+    
+    script:
+        """
+        bcftools sort $vcf -o ${vcf.simpleName}_sorted.vcf --temp-dir .
+        bgzip -f ${vcf.simpleName}_sorted.vcf
+        tabix -f ${vcf.simpleName}_sorted.vcf.gz
+        """
+}
+
+
+process MergeVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple path(noisy_snp_vcf), path(noisy_indel_vcf)
+        tuple val(X), path(snp_vcf), path(snp_tbi), path(indel_vcf), path(indel_tbi)
+        val(mode)
 
     output:
-        path("${noisy_snp_vcf.simpleName}.vcf")
+        tuple val(X), path("${X}_${mode}.vcf")
     
     script:
+    if ( mode == 'noisy' )
         """
-	    mkdir tmpdir
+        bcftools concat -a ${snp_vcf.simpleName}.vcf.gz ${indel_vcf.simpleName}.vcf.gz \
+        -O v -o ${X}_${mode}.tmp.vcf \
+        2> >(tee -a error.txt >&2) && \
+        if grep -q "E::" error.txt; then \
+        echo "VCF concatenation failed in certain rows.\n"; \
+        exit 1; \
+        fi
 
-        bcftools sort $noisy_snp_vcf -o ${noisy_snp_vcf.simpleName}.sorted.snp.vcf --temp-dir tmpdir
-        bgzip ${noisy_snp_vcf.simpleName}.sorted.snp.vcf
-        tabix ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz
-
-        bcftools sort $noisy_indel_vcf -o ${noisy_indel_vcf.simpleName}.sorted.indel.vcf --temp-dir tmpdir
-        bgzip ${noisy_indel_vcf.simpleName}.sorted.indel.vcf
-        tabix ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz
-
-        bcftools concat -a ${noisy_snp_vcf.simpleName}.sorted.snp.vcf.gz ${noisy_indel_vcf.simpleName}.sorted.indel.vcf.gz \
-        -O v -o ${noisy_snp_vcf.simpleName}.tmp.vcf
-        bcftools sort ${noisy_snp_vcf.simpleName}.tmp.vcf -o ${noisy_snp_vcf.simpleName}.vcf --temp-dir tmpdir
-        rm ${noisy_snp_vcf.simpleName}.tmp.vcf
-
-	    rm -r tmpdir
+        bcftools sort ${X}_${mode}.tmp.vcf -o ${X}_${mode}.vcf --temp-dir .
+        rm ${X}_${mode}.tmp.vcf
         """
+
+    else if ( mode == 'filtered' )
+        """
+        bcftools concat -a ${snp_vcf.simpleName}.vcf.gz ${indel_vcf.simpleName}.vcf.gz \
+        -O v -o ${X}_${mode}.tmp.vcf \
+        2> >(tee -a error.txt >&2) && \
+        if grep -q "E::" error.txt; then \
+        echo "VCF concatenation failed in certain rows.\n"; \
+        exit 1; \
+        fi
+
+        bcftools sort ${X}_${mode}.tmp.vcf -o ${X}_${mode}.vcf --temp-dir .
+        rm ${X}_${mode}.tmp.vcf
+        """
+
+    else
+        error "Invalid merging mode (VCF type): ${mode}. Valid modes are 'noisy' or 'filtered'."
 }
 
-process MergeFilteredVCF{
+process IntersectVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
-        tuple path(filtered_snp_vcf), path(filtered_indel_vcf)
+        tuple val(X), path(variants), path(synthetics)
 
     output:
-        path("${filtered_snp_vcf.simpleName}_filtered.vcf")
+        tuple val(X), path("${variants.simpleName}_contaminants.vcf")
     
     script:
         """
-	    mkdir tmpdir
-
-        bcftools sort $filtered_snp_vcf -o ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf --temp-dir tmpdir
-        bgzip ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf
-        tabix ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz
-
-        bcftools sort $filtered_indel_vcf -o ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf --temp-dir tmpdir
-        bgzip ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf
-        tabix ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz
-
-        bcftools concat -a ${filtered_snp_vcf.simpleName}_filtered.sorted.snp.vcf.gz ${filtered_indel_vcf.simpleName}_filtered.sorted.indel.vcf.gz \
-        -O v -o ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
-        bcftools sort ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf -o ${filtered_snp_vcf.simpleName}_filtered.vcf --temp-dir tmpdir
-        rm ${filtered_snp_vcf.simpleName}_filtered.tmp.vcf
-
-	    rm -r tmpdir
+        bedtools intersect -header -a $variants -b $synthetics  > ${variants.simpleName}_contaminants.vcf
         """
 }
+
 
 process AnnotateVCF{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
-        path(variant_vcf)
+        tuple val(X), path(vcf)
 
 
     output:
-        path("${variant_vcf.simpleName}_annotated.vcf")
+        tuple val(X), path("${vcf.simpleName}_annotated.vcf")
     
     script:
         """
-        annotate_vcf.py $variant_vcf ${variant_vcf.simpleName}_annotated.vcf
+        annotate_vcf.py $vcf ${vcf.simpleName}_annotated.vcf
         """
 }
 
@@ -291,6 +317,27 @@ process PasteVariantTable{
         2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${vcf_file.simpleName}_table.json
         """
 }
+
+process PasteContaminantTable{
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+    errorStrategy 'ignore'
+
+    input:
+        path(vcf_file)
+
+    output:
+        path("contaminant_table.json")
+    
+    script:
+        """
+        write_contaminants_table.py $vcf_file contaminant_table.json 'Contaminants' $params.priority_limit \
+        2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt contaminant_table.json
+        """
+}
+
+// write_variants_table.py $vcf_file contaminant_table.json 'Contaminants' $params.priority_limit 70 \
+// 2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt contaminant_table.json
 
 process PlotQScores{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'

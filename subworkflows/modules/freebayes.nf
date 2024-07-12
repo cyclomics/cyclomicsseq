@@ -13,7 +13,7 @@ process Freebayes {
         tuple val(X), path(roi)
 
     output:
-        path("${input_bam_file.SimpleName}.multiallelic.vcf")
+        tuple val(X), path("${input_bam_file.SimpleName}.multiallelic.vcf")
 
     script:
         ref = reference
@@ -29,15 +29,42 @@ process Freebayes {
         """
 }
 
+process FreebayesContaminants {
+    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    label 'many_low_cpu_huge_mem'
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
+
+    input:
+        tuple val(X), path(input_bam_file), path(input_bai_file), path(reference)
+        tuple val(X), path(roi)
+
+    output:
+        tuple val(X), path("${input_bam_file.SimpleName}.multiallelic.vcf")
+
+    script:
+        ref = reference
+        """
+        freebayes \
+        -f $ref \
+        --min-alternate-fraction 0 \
+        --min-alternate-count 1 \
+        --min-base-quality 0 \
+        --vcf ${input_bam_file.SimpleName}.multiallelic.vcf \
+        $input_bam_file
+        """
+}
+
 process SeparateMultiallelicVariants{
     publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
-        path(vcf)
+        tuple val(X), path(vcf)
 
     output:
-        path("${vcf.SimpleName}.vcf")
+        tuple val(X), path("${vcf.SimpleName}.vcf")
 
     script:
         """
@@ -53,7 +80,7 @@ process FilterFreebayesVariants{
         tuple path(vcf), val(X), path(perbase_table)
 
     output:
-        path("${vcf.simpleName}_filtered.vcf")
+        tuple val(X), path("${vcf.simpleName}_filtered.vcf")
     
     script:
         """

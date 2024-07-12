@@ -9,6 +9,7 @@ include {
 include {
     BwaIndex
     BwaMemSorted
+    BwaMemContaminants
 } from "./modules/bwa.nf"
 
 include {
@@ -133,6 +134,32 @@ workflow BWAAlign{
 
     emit:
         bam
+}
+
+workflow BWAAlignContaminants{
+    take:
+        synthetic_reads
+        reference_genome
+        reference_genome_indexes
+
+    main:
+        bwa_index_file_count = 5
+        // We do a smaller than since there might be a .fai file as well!
+        if (reference_genome_indexes.size < bwa_index_file_count){
+            println "==================================="
+            println "Warning! BWA index files are missing for the reference genome, This will slowdown execution in a major way."
+            println "==================================="
+            println ""
+            println ""
+            reference_genome_indexes = BwaIndex(reference_genome)
+        }
+        // id = synthetic_reads.first().map(it -> it[0])
+        // id = id.map(it -> it.split('_')[0])
+        // synthetic_reads_fastq = synthetic_reads.map(it -> it[1])
+        BwaMemSorted(synthetic_reads, reference_genome, reference_genome_indexes.collect() )
+
+    emit:
+        bam = BwaMemSorted.out
 }
 
 workflow Minimap2Align{
