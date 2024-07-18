@@ -1,5 +1,12 @@
 # changelog
 
+## 0.12.0
+
+- Contaminant detection module
+- Make perbase max_depth a CLI option
+- Add promethion profile
+- Atomize variant filtering, sorting and merging
+
 ## 0.11.0
 
 - Added GPLv3 license

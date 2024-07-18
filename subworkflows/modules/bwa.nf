@@ -74,16 +74,36 @@ process BwaMemSorted{
         file(reference_indexes)
 
     output:
-        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}.bam")
+        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}.bam"), path("${fastq.simpleName}.bam.bai")
         
     script:
         // using grep to find out if ref is fa or fasta, plug in env var to bwa
         // piplefail for better control over failures
+        // REMOVED. TODO: check reference file itself
         """
-        REF=\$(ls | grep -E "*.(fasta\$|fa\$|fna\$)")
-        set -euxo pipefail
-        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M \$REF $fastq | \
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
         samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
+        samtools index ${fastq.simpleName}.bam
+        """
+}
+
+process BwaMemContaminants{
+    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    label 'many_med_cpu_huge_mem'
+
+    input:
+        each path(fastq)
+        file(reference)
+        file(reference_indexes)
+
+    output:
+        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}_contaminants.bam"), path("${fastq.simpleName}_contaminants.bam.bai")
+        
+    script:
+        """
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
+        samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}_contaminants.bam"
+        samtools index ${fastq.simpleName}_contaminants.bam
         """
 }
 
