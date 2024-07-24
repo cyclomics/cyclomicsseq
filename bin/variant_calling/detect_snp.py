@@ -178,29 +178,33 @@ def extract_snp_evidence(
             else:
                 obs_ratio = 0
 
+        if (assembly == "CDKN2A_1-2__chr9_21967818-21969101") and (
+            pileupcolumn.reference_pos == 381
+        ):
+            print("Check!")
         # Check support fwd
-        if len(counts_fwd_mc) > 1:
-            counts_fwd_alt = [t for t in counts_fwd_mc if t[0] != ref_nt]
-            alt_base_fwd = counts_fwd_alt[0][0]
-            fwd_count = counts_fwd_alt[0][1]
-            alt_base_ratio_fwd = fwd_count / counted_nucs_fwd
+        alt_base_fwd = None
+        fwd_count = 0
+        alt_base_ratio_fwd = 0
 
-        else:
-            alt_base_fwd = None
-            fwd_count = 0
-            alt_base_ratio_fwd = 0
+        if len(counts_fwd_mc) >= 1:
+            counts_fwd_alt = [t for t in counts_fwd_mc if t[0] != ref_nt]
+            if len(counts_fwd_alt) > 0:
+                alt_base_fwd = counts_fwd_alt[0][0]
+                fwd_count = counts_fwd_alt[0][1]
+                alt_base_ratio_fwd = fwd_count / counted_nucs_fwd
 
         # Check support reverse
-        if len(counts_rev_mc) > 1:
-            counts_rev_alt = [t for t in counts_rev_mc if t[0] != ref_nt]
-            alt_base_rev = counts_rev_alt[0][0]
-            rev_count = counts_rev_alt[0][1]
-            alt_base_ratio_rev = rev_count / counted_nucs_rev
+        alt_base_rev = None
+        rev_count = 0
+        alt_base_ratio_rev = 0
 
-        else:
-            alt_base_rev = None
-            rev_count = 0
-            alt_base_ratio_rev = 0
+        if len(counts_rev_mc) >= 1:
+            counts_rev_alt = [t for t in counts_rev_mc if t[0] != ref_nt]
+            if len(counts_rev_alt) > 0:
+                alt_base_rev = counts_rev_alt[0][0]
+                rev_count = counts_rev_alt[0][1]
+                alt_base_ratio_rev = rev_count / counted_nucs_rev
 
         base = None
         if alt_base_fwd == alt_base_rev and alt_base_fwd:
@@ -255,7 +259,7 @@ def main(
     import time
 
     from tqdm import tqdm
-    from vcf_tools import create_bed_positions, initialize_output_vcf, write_vcf_entry
+    from vcf_tools import create_bed_positions, initialize_output_vcf
 
     # logging.debug("started main")
     # Open input files and create empty output VCF
