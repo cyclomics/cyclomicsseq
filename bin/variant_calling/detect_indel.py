@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from threading import Lock
-from typing import Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import pysam
@@ -202,7 +202,7 @@ def extract_indel_evidence(
     pileupcolumn: pysam.PileupColumn,
     assembly: str,
     ref_nt: str,
-    reference_fa: str,
+    reference_mapper: Dict[int,str],
     pos: int,
     high_base_quality_cutoff: int = 80,
     edge_of_amplicon: bool = False,
@@ -235,12 +235,8 @@ def extract_indel_evidence(
         if indel.found:
             if indel.type == "del":
                 # Adjust reference allele to include deleted seq
-                with Lock() as lock:
-                    reference = pysam.FastaFile(reference_fa)
-                    ref_seq = reference.fetch(
-                        reference=assembly, start=pos, end=pos + indel.length + 1
-                    )
-                    del reference
+                ref_seq = [reference_mapper[x].upper() for x in range(pos,pos+indel.length+1)]
+                ref_seq = "".join(ref_seq)
                 alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
             else:
                 alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
