@@ -149,7 +149,7 @@ def extract_snp_evidence(
             data_present = 0
             non_ref_ratio_filtered = 1
 
-        if len(counts_mc) == 1:
+        if len(counts_mc) == 1 and counts_mc[0][0] == ref_nt:
             # perfect positions
             alleles = (ref_nt, ".")
             alt_base_mean_qual = 0
@@ -178,10 +178,6 @@ def extract_snp_evidence(
             else:
                 obs_ratio = 0
 
-        if (assembly == "CDKN2A_1-2__chr9_21967818-21969101") and (
-            pileupcolumn.reference_pos == 381
-        ):
-            print("Check!")
         # Check support fwd
         alt_base_fwd = None
         fwd_count = 0
