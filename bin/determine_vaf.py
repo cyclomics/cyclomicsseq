@@ -151,7 +151,7 @@ def main(
                         contig,
                         pos,
                         bam_path,
-                        contig_reference_mapper[pos],
+                        contig_reference_mapper,
                         amplicon_edge,
                         pileup_depth,
                         minimum_base_quality,
@@ -196,7 +196,7 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
