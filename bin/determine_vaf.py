@@ -196,7 +196,7 @@ def main(
 if __name__ == "__main__":
     import argparse
 
-    dev = True
+    dev = False
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
