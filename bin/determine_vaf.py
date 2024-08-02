@@ -4,6 +4,7 @@ import time
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
 from threading import Lock
+from typing import Dict
 
 import pysam
 from variant_calling.detect_indel import extract_indel_evidence
@@ -16,7 +17,7 @@ def process_pileup_column(
     contig: str,
     pos: int,
     bam: str,
-    reference_fasta: str,
+    reference_mapper: Dict[int,str],
     amplicon_edge: bool = False,
     pileup_depth: int = 1_000_000,
     minimum_base_quality: int = 10,
@@ -34,39 +35,16 @@ def process_pileup_column(
         minimum_base_quality: minimum base quality at a given position in a read to be considered, integer.
     """
     logging.debug(f"process column {contig} | {pos}")
-    bam_af = pysam.AlignmentFile(bam, "r")
-    # Only have one process access the reference genome at a time, multi access is not supported on all filesystems
-    with Lock() as lock:
-        # Double try to read the reference genome, with a sleep time for the retry
-        try:
-            reference = pysam.FastaFile(reference_fasta)
-        except OSError:
-            try:
-                time.sleep(0.2)
-                reference = pysam.FastaFile(reference_fasta)
-            except:
-                raise OSError(f"Reference genome {reference_fasta} could not be read.")
-
-        print(reference.references)
-        try:
-            ref_nuc = str(
-                reference.fetch(reference=contig, start=pos, end=pos + 1)
-            ).upper()
-        except KeyError:
-            try:
-                ref_nuc = str(
-                    reference.fetch(reference=contig, start=pos, end=pos + 1)
-                ).upper()
-            except KeyError:
-                ref_nuc = "."
-                logging.warning(f"Unable to fetch reference genome at {contig} - {pos}")
-
-        del reference
-
-    iteration = 0
+    
+    # obtain the base for the snp
+    ref_nuc = reference_mapper[pos]
+    
     # create enteties for when no forloop event happens
+    iteration = 0
     snv_evidence = None
     indel_evidence = None
+
+    bam_af = pysam.AlignmentFile(bam, "r")
 
     for pu_column in bam_af.pileup(
         contig,
@@ -80,11 +58,12 @@ def process_pileup_column(
         snv_evidence = extract_snp_evidence(
             pu_column, contig, ref_nuc, minimum_base_quality
         )
+        # indel needs the full mapper
         indel_evidence = extract_indel_evidence(
             pu_column,
             contig,
             ref_nuc,
-            reference_fasta,
+            reference_mapper,
             pos,
             minimum_base_quality,
             amplicon_edge,
@@ -97,6 +76,29 @@ def process_pileup_column(
 
         logging.debug(f"done process column {contig} | {pos}")
         return (contig, pos, snv_evidence, indel_evidence)
+
+
+def create_ref_mapper(reference_fasta, contig,start,stop)-> Dict[int,str]:
+    """
+    Code to create a dict with pos -> base for a given contig.
+    """
+    try:
+        reference = pysam.FastaFile(reference_fasta)
+    except OSError:
+        try:
+            time.sleep(0.2)
+            reference = pysam.FastaFile(reference_fasta)
+        except:
+            raise OSError(f"Reference genome {reference_fasta} could not be read.")
+
+    ref_mapper = {}
+    for pos in range(start,stop+1):
+        ref_nuc = str(
+                reference.fetch(reference=contig, start=pos, end=pos + 1)
+            ).upper()
+        ref_mapper[pos] = ref_nuc
+    
+    return ref_mapper
 
 
 def main(
@@ -125,14 +127,15 @@ def main(
     logging.debug("started main")
     promisses = []
 
+    #  Loop over all lines in the bed file and start a process.
     with ProcessPoolExecutor(max_workers=threads) as executor:
         logging.debug("creating location promisses in ProcessPoolExecutor")
         for bed_file_line in create_bed_lines(bed_path):
-            print(bed_file_line)
+            logging.debug(f"processing {bed_file_line}")
             contig = bed_file_line[0]
             contig_region_start = int(bed_file_line[1])
             contig_region_stop = int(bed_file_line[2])
-
+            contig_reference_mapper = create_ref_mapper(fasta, contig, contig_region_start, contig_region_stop)
             for pos in range(contig_region_start, contig_region_stop):
                 amplicon_edge = (
                     # amplicon start edge
@@ -148,25 +151,25 @@ def main(
                         contig,
                         pos,
                         bam_path,
-                        fasta,
+                        contig_reference_mapper,
                         amplicon_edge,
                         pileup_depth,
                         minimum_base_quality,
                     )
                 )
-        print("done with submitting")
+        logging.info("done with submitting")
         logging.debug("Asking for results from ProcessPoolExecutor")
         done, not_done = wait(promisses, return_when=ALL_COMPLETED)
-        print("done with collecting")
+        logging.info("done with collecting")
         results = [x.result() for x in promisses]
-        print("done with obtaining results")
+        logging.info("done with obtaining results")
 
     bam_af = pysam.AlignmentFile(bam_path, "r")
 
     snp_vcf = initialize_output_vcf(snp_output_path, bam_af.references)
     indel_vcf = initialize_output_vcf(indel_output_path, bam_af.references)
 
-    print("Started writing vcf files")
+    logging.info("Started writing vcf files")
     for result in results:
         if not result:
             continue
@@ -181,18 +184,19 @@ def main(
         if indel_results:
             write_vcf_entry(indel_vcf, contig, position, indel_results)
 
-    print("finishing writing and closing files.")
+    logging.info("finishing writing and closing files.")
     # Wait for all the threads to finish writing
     delay_for_pysam_variantfile = 0.5
     time.sleep(delay_for_pysam_variantfile)
     snp_vcf.close()
     indel_vcf.close()
+    logging.info(f"done, results are in :\n SNP: {snp_output_path}\n INDEL: {indel_output_path}")
 
 
 if __name__ == "__main__":
     import argparse
 
-    dev = False
+    dev = True
     if not dev:
         parser = argparse.ArgumentParser(description="")
 
@@ -209,13 +213,13 @@ if __name__ == "__main__":
 
     if dev:
         fasta = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/GRCh38_renamed_BBCS.fasta"
+            "/home/dami/Software/cyclomicsseq/dev_files/chm13v2_BBCS.fasta"
         )
         bed = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675_roi.bed"
+            "/home/dami/Software/cyclomicsseq/dev_files/fastq_roi.bed"
         )
         bam = Path(
-            "/data/projects/ROD_tmp/2f/2da9d6bfb181300787503ab54f79de/FAW08675.YM_gt_3.bam"
+            "/home/dami/Software/cyclomicsseq/dev_files/fastq.YM_gt_3.bam"
         )
         snp_vcf_out = Path("./test_snp.vcf")
         indel_vcf_out = Path("./test_indel.vcf")
