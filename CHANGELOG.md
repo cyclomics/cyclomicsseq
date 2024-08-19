@@ -1,5 +1,10 @@
 # changelog
 
+## 0.12.1
+
+- Fix an issue where the reference nucleotide couldn't be read due to pysam.FastaFile locking the file, reference nucleotide appeared as '.' instead
+- Fix an issue where an alternative allele supported by all reads was not counted, because the total number of observed alleles was not > 1, either overall or in a single read direction
+
 ## 0.12.0
 
 - Contaminant detection module

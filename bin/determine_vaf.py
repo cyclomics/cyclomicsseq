@@ -40,7 +40,6 @@ def process_pileup_column(
 
     # obtain the base for the snp
     ref_nuc = reference_mapper[pos]
-
     # create enteties for when no forloop event happens
     iteration = 0
     snv_evidence = None
@@ -97,7 +96,7 @@ def create_ref_mapper(reference_fasta, contig, start, stop) -> Dict[int, str]:
     for pos in range(start, stop + 1):
         ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
         ref_mapper[pos] = ref_nuc
-
+        
     return ref_mapper
 
 
@@ -216,9 +215,15 @@ if __name__ == "__main__":
         main(args.fasta, args.bed, args.bam, args.snp_vcf_out, args.indel_vcf_out)
 
     if dev:
-        fasta = Path("/scratch/projects/ROD/ROD_0808_bug/GRCh38_noalt_as_BBCS.fasta")
-        bed = Path("/scratch/projects/ROD/ROD_0808_bug/PAY92969_roi.bed")
-        bam = Path("/scratch/projects/ROD/ROD_0808_bug/PAY92969.YM_gt_3.bam")
+        fasta = Path(
+            "/home/dami/Software/cyclomicsseq/dev_files/chm13v2_BBCS.fasta"
+        )
+        bed = Path(
+            "/home/dami/Software/cyclomicsseq/dev_files/fastq_roi.bed"
+        )
+        bam = Path(
+            "/home/dami/Software/cyclomicsseq/dev_files/fastq.YM_gt_3.bam"
+        )
         snp_vcf_out = Path("./test_snp.vcf")
         indel_vcf_out = Path("./test_indel.vcf")
 
