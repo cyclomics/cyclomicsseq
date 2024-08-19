@@ -3,21 +3,23 @@ import logging
 import time
 from concurrent.futures import ALL_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
-from threading import Lock
 from typing import Dict
 
 import pysam
 from variant_calling.detect_indel import extract_indel_evidence
 from variant_calling.detect_snp import extract_snp_evidence
-from variant_calling.vcf_tools import (create_bed_lines, initialize_output_vcf,
-                                       write_vcf_entry)
+from variant_calling.vcf_tools import (
+    create_bed_lines,
+    initialize_output_vcf,
+    write_vcf_entry,
+)
 
 
 def process_pileup_column(
     contig: str,
     pos: int,
     bam: str,
-    reference_mapper: Dict[int,str],
+    reference_mapper: Dict[int, str],
     amplicon_edge: bool = False,
     pileup_depth: int = 1_000_000,
     minimum_base_quality: int = 10,
@@ -35,10 +37,9 @@ def process_pileup_column(
         minimum_base_quality: minimum base quality at a given position in a read to be considered, integer.
     """
     logging.debug(f"process column {contig} | {pos}")
-    
+
     # obtain the base for the snp
     ref_nuc = reference_mapper[pos]
-    
     # create enteties for when no forloop event happens
     iteration = 0
     snv_evidence = None
@@ -78,7 +79,7 @@ def process_pileup_column(
         return (contig, pos, snv_evidence, indel_evidence)
 
 
-def create_ref_mapper(reference_fasta, contig,start,stop)-> Dict[int,str]:
+def create_ref_mapper(reference_fasta, contig, start, stop) -> Dict[int, str]:
     """
     Code to create a dict with pos -> base for a given contig.
     """
@@ -92,12 +93,10 @@ def create_ref_mapper(reference_fasta, contig,start,stop)-> Dict[int,str]:
             raise OSError(f"Reference genome {reference_fasta} could not be read.")
 
     ref_mapper = {}
-    for pos in range(start,stop+1):
-        ref_nuc = str(
-                reference.fetch(reference=contig, start=pos, end=pos + 1)
-            ).upper()
+    for pos in range(start, stop + 1):
+        ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
         ref_mapper[pos] = ref_nuc
-    
+        
     return ref_mapper
 
 
@@ -135,7 +134,9 @@ def main(
             contig = bed_file_line[0]
             contig_region_start = int(bed_file_line[1])
             contig_region_stop = int(bed_file_line[2])
-            contig_reference_mapper = create_ref_mapper(fasta, contig, contig_region_start, contig_region_stop)
+            contig_reference_mapper = create_ref_mapper(
+                fasta, contig, contig_region_start, contig_region_stop
+            )
             for pos in range(contig_region_start, contig_region_stop):
                 amplicon_edge = (
                     # amplicon start edge
@@ -190,7 +191,9 @@ def main(
     time.sleep(delay_for_pysam_variantfile)
     snp_vcf.close()
     indel_vcf.close()
-    logging.info(f"done, results are in :\n SNP: {snp_output_path}\n INDEL: {indel_output_path}")
+    logging.info(
+        f"done, results are in :\n SNP: {snp_output_path}\n INDEL: {indel_output_path}"
+    )
 
 
 if __name__ == "__main__":

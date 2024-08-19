@@ -3,7 +3,6 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from threading import Lock
 from typing import Dict, Tuple
 
 import numpy as np
@@ -202,7 +201,7 @@ def extract_indel_evidence(
     pileupcolumn: pysam.PileupColumn,
     assembly: str,
     ref_nt: str,
-    reference_mapper: Dict[int,str],
+    reference_mapper: Dict[int, str],
     pos: int,
     high_base_quality_cutoff: int = 80,
     edge_of_amplicon: bool = False,
@@ -228,14 +227,24 @@ def extract_indel_evidence(
 
     vcf_entry = VCF_entry()
     alleles = (".", ".")
-    info = "."
+    info = {
+        "TYPE": "snp",
+        "DP": vcf_entry.DP,
+        "QA": vcf_entry.ABQ * vcf_entry.TOTC,
+        "AO": vcf_entry.TOTC,
+        "SAF": vcf_entry.FWDC,
+        "SAR": vcf_entry.REVC,
+    }
 
     if not edge_of_amplicon:
         indel = check_indel(pileupcolumn)
         if indel.found:
             if indel.type == "del":
                 # Adjust reference allele to include deleted seq
-                ref_seq = [reference_mapper[x].upper() for x in range(pos,pos+indel.length+1)]
+                ref_seq = [
+                    reference_mapper[x].upper()
+                    for x in range(pos, pos + indel.length + 1)
+                ]
                 ref_seq = "".join(ref_seq)
                 alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
             else:

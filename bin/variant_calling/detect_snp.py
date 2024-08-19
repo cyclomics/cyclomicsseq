@@ -34,7 +34,14 @@ def extract_snp_evidence(
 
     vcf_entry = VCF_entry()
     alleles = (ref_nt, ".")
-    info = "."
+    info = {
+        "TYPE": "snp",
+        "DP": vcf_entry.DP,
+        "QA": vcf_entry.ABQ * vcf_entry.TOTC,
+        "AO": vcf_entry.TOTC,
+        "SAF": vcf_entry.FWDC,
+        "SAR": vcf_entry.REVC,
+    }
 
     total = 0
     counted_nucs = 0
@@ -138,7 +145,16 @@ def extract_snp_evidence(
 
     # empty position:
     if counted_nucs == 0 or total == 0:
-        return (assembly, alleles, vcf_entry)
+        info = {
+            "TYPE": "snp",
+            "DP": total,
+            "QA": alt_base_mean_qual * tot_count,
+            "AO": tot_count,
+            "SAF": fwd_count,
+            "SAR": rev_count,
+        }
+
+        return (assembly, alleles, vcf_entry, info)
 
     else:
         counts_ref = [t for t in counts_mc if t[0] == ref_nt]
