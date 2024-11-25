@@ -42,7 +42,6 @@ def process_pileup_column(
 
     # obtain the base for the snp
     ref_nuc = reference_mapper[pos]
-
     # create enteties for when no forloop event happens
     iteration = 0
     snv_evidence = None
