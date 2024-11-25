@@ -10,6 +10,7 @@ from variant_calling.detect_indel import extract_indel_evidence
 from variant_calling.detect_snp import extract_snp_evidence
 from variant_calling.vcf_tools import (
     create_bed_lines,
+    create_ref_mapper,
     initialize_output_vcf,
     write_vcf_entry,
 )
@@ -20,6 +21,7 @@ def process_pileup_column(
     pos: int,
     bam: str,
     reference_mapper: Dict[int, str],
+    amplicon_end: int,
     amplicon_edge: bool = False,
     pileup_depth: int = 1_000_000,
     minimum_base_quality: int = 10,
@@ -40,6 +42,7 @@ def process_pileup_column(
 
     # obtain the base for the snp
     ref_nuc = reference_mapper[pos]
+
     # create enteties for when no forloop event happens
     iteration = 0
     snv_evidence = None
@@ -66,6 +69,7 @@ def process_pileup_column(
             ref_nuc,
             reference_mapper,
             pos,
+            amplicon_end,
             minimum_base_quality,
             amplicon_edge,
         )
@@ -77,27 +81,6 @@ def process_pileup_column(
 
         logging.debug(f"done process column {contig} | {pos}")
         return (contig, pos, snv_evidence, indel_evidence)
-
-
-def create_ref_mapper(reference_fasta, contig, start, stop) -> Dict[int, str]:
-    """
-    Code to create a dict with pos -> base for a given contig.
-    """
-    try:
-        reference = pysam.FastaFile(reference_fasta)
-    except OSError:
-        try:
-            time.sleep(0.2)
-            reference = pysam.FastaFile(reference_fasta)
-        except:
-            raise OSError(f"Reference genome {reference_fasta} could not be read.")
-
-    ref_mapper = {}
-    for pos in range(start, stop + 1):
-        ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
-        ref_mapper[pos] = ref_nuc
-        
-    return ref_mapper
 
 
 def main(
@@ -153,11 +136,13 @@ def main(
                         pos,
                         bam_path,
                         contig_reference_mapper,
+                        contig_region_stop,
                         amplicon_edge,
                         pileup_depth,
                         minimum_base_quality,
                     )
                 )
+
         logging.info("done with submitting")
         logging.debug("Asking for results from ProcessPoolExecutor")
         done, not_done = wait(promisses, return_when=ALL_COMPLETED)
@@ -215,15 +200,9 @@ if __name__ == "__main__":
         main(args.fasta, args.bed, args.bam, args.snp_vcf_out, args.indel_vcf_out)
 
     if dev:
-        fasta = Path(
-            "/home/dami/Software/cyclomicsseq/dev_files/chm13v2_BBCS.fasta"
-        )
-        bed = Path(
-            "/home/dami/Software/cyclomicsseq/dev_files/fastq_roi.bed"
-        )
-        bam = Path(
-            "/home/dami/Software/cyclomicsseq/dev_files/fastq.YM_gt_3.bam"
-        )
+        fasta = Path("/home/dami/Software/cyclomicsseq/dev_files/chm13v2_BBCS.fasta")
+        bed = Path("/home/dami/Software/cyclomicsseq/dev_files/fastq_roi.bed")
+        bam = Path("/home/dami/Software/cyclomicsseq/dev_files/fastq.YM_gt_3.bam")
         snp_vcf_out = Path("./test_snp.vcf")
         indel_vcf_out = Path("./test_indel.vcf")
 

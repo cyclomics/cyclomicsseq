@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import logging
+import time
 from dataclasses import dataclass, fields
+from typing import Dict
 
 import numpy as np
 import pysam
@@ -38,6 +40,27 @@ def is_intable(value):
         return True
     except ValueError:
         return False
+
+
+def create_ref_mapper(reference_fasta, contig, start, stop) -> Dict[int, str]:
+    """
+    Code to create a dict with pos -> base for a given contig.
+    """
+    try:
+        reference = pysam.FastaFile(reference_fasta)
+    except OSError:
+        try:
+            time.sleep(0.2)
+            reference = pysam.FastaFile(reference_fasta)
+        except:
+            raise OSError(f"Reference genome {reference_fasta} could not be read.")
+
+    ref_mapper = {}
+    for pos in range(start, stop + 1):
+        ref_nuc = str(reference.fetch(reference=contig, start=pos, end=pos + 1)).upper()
+        ref_mapper[pos] = ref_nuc
+
+    return ref_mapper
 
 
 def create_bed_lines(bed_file):
