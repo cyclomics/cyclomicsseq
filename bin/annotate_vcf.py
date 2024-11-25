@@ -152,7 +152,7 @@ class VCF_file:
             )
             json_data = json.loads(response.text)[0]
 
-        except (KeyError, ConnectionError) as error:
+        except (KeyError, ConnectionError, json.decoder.JSONDecodeError) as error:
             # No response data found in this query location
             # or connection was aborted
             print(error)
