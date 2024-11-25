@@ -293,27 +293,31 @@ def main(
             stepper="all",
         )
 
-        ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1)
+        ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1).upper()
 
         for pileupcolumn in positional_pileup:
             result = extract_snp_evidence(
-                pileupcolumn=pileupcolumn, assembly=contig, ref_nt=str(ref_seq).upper()
+                pileupcolumn=pileupcolumn, assembly=contig, ref_nt=ref_seq
             )
 
             if result:
+                pos_alleles = result[1]
+                variant_format = result[2]
+                variant_info = result[3]
+
                 # Reference allele is not '.', then a variant was found
                 # The 'start' value is 0-based, 'stop' is 1-based
                 r = vcf.new_record(
-                    contig=contig, start=pos, alleles=result[1], filter="PASS"
+                    contig=contig, start=pos, alleles=pos_alleles, filter="PASS"
                 )
 
                 # Write found variant as a new entry to VCF output
-                for fld in fields(result[2]):
-                    fld_value = getattr(result[2], fld.name)
+                for fld in fields(variant_format):
+                    fld_value = getattr(variant_format, fld.name)
                     if type(fld_value) in [float, np.float64, np.float32]:
-                        fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
+                        fld_entry = str(f"{getattr(variant_format, fld.name):.6f}")
                     elif type(fld_value) == int:
-                        fld_entry = str(f"{getattr(result[2], fld.name)}")
+                        fld_entry = str(f"{getattr(variant_format, fld.name)}")
                     else:
                         fld_entry = str(fld_value)
 
@@ -321,7 +325,7 @@ def main(
 
                 # Write info tag values to VCF output
                 # These values will be used to filter the VCF
-                for tag_id, value in result[3].items():
+                for tag_id, value in variant_info.items():
                     r.info[tag_id] = value
 
                 vcf.write(r)

@@ -1,5 +1,11 @@
 # changelog
 
+## 0.12.2
+
+- Enable overwriting of nextflow timeline and report
+- Hotfix for missing info tab in VCF entries for SNPs in ends of amplicons with some read depth but zero alternative nucleotide counts
+- Hotfix for EnsemblVEP API responses that caused a JSON decoding error
+
 ## 0.12.1
 
 - Fix an issue where the reference nucleotide couldn't be read due to pysam.FastaFile locking the file, reference nucleotide appeared as '.' instead

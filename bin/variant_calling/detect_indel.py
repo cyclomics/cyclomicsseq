@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import re
+import time
 from collections import Counter
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 import pysam
-from variant_calling.vcf_tools import VCF_entry
+from variant_calling.vcf_tools import VCF_entry, create_bed_lines, create_ref_mapper
 
 
 @dataclass
@@ -203,6 +204,7 @@ def extract_indel_evidence(
     ref_nt: str,
     reference_mapper: Dict[int, str],
     pos: int,
+    amplicon_end: int,
     high_base_quality_cutoff: int = 80,
     edge_of_amplicon: bool = False,
 ) -> Tuple[str, Tuple[str, str], VCF_entry]:
@@ -240,13 +242,17 @@ def extract_indel_evidence(
         indel = check_indel(pileupcolumn)
         if indel.found:
             if indel.type == "del":
-                # Adjust reference allele to include deleted seq
-                ref_seq = [
-                    reference_mapper[x].upper()
-                    for x in range(pos, pos + indel.length + 1)
-                ]
-                ref_seq = "".join(ref_seq)
-                alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
+                indel_stop = pos + indel.length + 1
+                if indel_stop <= amplicon_end:
+                    # Adjust reference allele to include deleted seq
+                    deletion_seq = [
+                        reference_mapper[x].upper() for x in range(pos, indel_stop)
+                    ]
+                    deletion_seq = "".join(deletion_seq).upper()
+                    ref_seq = deletion_seq[0]
+                    alleles = (deletion_seq, ref_seq)
+                else:
+                    return (assembly, alleles, vcf_entry, info)
             else:
                 alleles = (ref_nt, ref_nt + indel.variant_nucleotide)
 
@@ -311,7 +317,12 @@ def extract_indel_evidence(
 
 
 def main(
-    bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth: int = 1_000_000
+    bam: Path,
+    bed: Path,
+    fasta: Path,
+    output_path: Path,
+    pileup_depth: int = 1_000_000,
+    min_edge_distance: int = 4,
 ):
     """
     Run Indel detection over given positions.
@@ -321,13 +332,12 @@ def main(
         bed: Genomic locations, BED.
         fasta: Reference genome or sequence, FASTA.
         output_path: Output path for Indels, VCF.
-        pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
+        pileup_depth: Maximum pileup depth.
+        min_edge_distance: Minimum distance to the edge of the amplicon.
+            If position distance is lower, do not call variants on it.
     """
 
-    import time
-
-    from tqdm import tqdm
-    from vcf_tools import create_bed_positions, initialize_output_vcf
+    from vcf_tools import initialize_output_vcf
 
     # logging.debug("started main")
     # Open input files and create empty output VCF
@@ -335,63 +345,81 @@ def main(
     reference = pysam.FastaFile(fasta)
     vcf = initialize_output_vcf(output_path, bam_af.references)
 
-    # Iterate over positions in search space indicated in BED file
-    for contig, pos, amplicon_edge in tqdm(create_bed_positions(bed)):
-        # Check statistics for this position,
-        # potentially finding a new variant
-
-        positional_pileup = bam_af.pileup(
-            contig,
-            pos,
-            pos + 1,
-            truncate=True,
-            max_depth=pileup_depth,
-            min_base_quality=10,
-            stepper="all",
+    for bed_file_line in create_bed_lines(bed):
+        contig = bed_file_line[0]
+        contig_region_start = int(bed_file_line[1])
+        contig_region_stop = int(bed_file_line[2])
+        contig_reference_mapper = create_ref_mapper(
+            fasta, contig, contig_region_start, contig_region_stop
         )
 
-        ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1)
-
-        for pileupcolumn in positional_pileup:
-            result = extract_indel_evidence(
-                pileupcolumn=pileupcolumn,
-                assembly=contig,
-                ref_nt=str(ref_seq).upper(),
-                reference_fa=fasta,
-                pos=pos,
-                edge_of_amplicon=amplicon_edge,
+        for pos in range(contig_region_start, contig_region_stop):
+            close_to_edge = (
+                # close to start
+                pos - min_edge_distance <= int(contig_region_start)
+                or
+                # close to end
+                pos + min_edge_distance >= int(contig_region_stop)
             )
 
-            if result[1][0] != ".":
-                # Reference allele is not '.', then a variant was found
-                # The 'start' value is 0-based, 'stop' is 1-based
-                r = vcf.new_record(
-                    contig=contig, start=pos, alleles=result[1], filter="PASS"
+            positional_pileup = bam_af.pileup(
+                contig,
+                pos,
+                pos + 1,
+                truncate=True,
+                max_depth=pileup_depth,
+                min_base_quality=10,
+                stepper="all",
+            )
+
+            ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1).upper()
+
+            for pileupcolumn in positional_pileup:
+                result = extract_indel_evidence(
+                    pileupcolumn=pileupcolumn,
+                    assembly=contig,
+                    ref_nt=ref_seq,
+                    reference_mapper=contig_reference_mapper,
+                    pos=pos,
+                    edge_of_amplicon=close_to_edge,
+                    amplicon_end=contig_region_stop,
                 )
 
-                # Write found variant as a new entry to VCF output
-                for fld in fields(result[2]):
-                    fld_value = getattr(result[2], fld.name)
-                    if isinstance(fld_value, (float, np.float64, np.float32)):
-                        fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
-                    elif isinstance(fld_value, int):
-                        fld_entry = str(f"{getattr(result[2], fld.name)}")
-                    else:
-                        fld_entry = str(fld_value)
+                pos_alleles = result[1]
+                ref_allele = pos_alleles[0]
+                variant_format = result[2]
+                variant_info = result[3]
 
-                    r.samples["SAMPLE1"][fld.name] = fld_entry
+                if ref_allele != ".":
+                    # Reference allele is not '.', then a variant was found
+                    # The 'start' value is 0-based, 'stop' is 1-based
+                    r = vcf.new_record(
+                        contig=contig, start=pos, alleles=pos_alleles, filter="PASS"
+                    )
 
-                # Write info tag values to VCF output
-                # These values will be used to filter the VCF
-                for tag_id, value in result[3].items():
-                    r.info[tag_id] = value
+                    # Write found variant as a new entry to VCF output
+                    for fld in fields(variant_format):
+                        fld_value = getattr(variant_format, fld.name)
+                        if isinstance(fld_value, (float, np.float64, np.float32)):
+                            fld_entry = str(f"{getattr(variant_format, fld.name):.6f}")
+                        elif isinstance(fld_value, int):
+                            fld_entry = str(f"{getattr(variant_format, fld.name)}")
+                        else:
+                            fld_entry = str(fld_value)
 
-                vcf.write(r)
+                        r.samples["SAMPLE1"][fld.name] = fld_entry
 
-            else:
-                # Reference allele is '.', then no variant was found
-                # Don't write anthing to VCF output file
-                continue
+                    # Write info tag values to VCF output
+                    # These values will be used to filter the VCF
+                    for tag_id, value in variant_info.items():
+                        r.info[tag_id] = value
+
+                    vcf.write(r)
+
+                else:
+                    # Reference allele is '.', then no variant was found
+                    # Don't write anthing to VCF output file
+                    continue
 
     time.sleep(0.5)
     vcf.close()
