@@ -242,14 +242,15 @@ def extract_indel_evidence(
         indel = check_indel(pileupcolumn)
         if indel.found:
             if indel.type == "del":
-                if pos + indel.length + 1 <= amplicon_end:
+                indel_stop = pos + indel.length + 1
+                if indel_stop <= amplicon_end:
                     # Adjust reference allele to include deleted seq
-                    ref_seq = [
-                        reference_mapper[x].upper()
-                        for x in range(pos, pos + indel.length + 1)
+                    deletion_seq = [
+                        reference_mapper[x].upper() for x in range(pos, indel_stop)
                     ]
-                    ref_seq = "".join(ref_seq)
-                    alleles = (str(ref_seq).upper(), str(ref_seq[0]).upper())
+                    deletion_seq = "".join(deletion_seq).upper()
+                    ref_seq = deletion_seq[0]
+                    alleles = (deletion_seq, ref_seq)
                 else:
                     return (assembly, alleles, vcf_entry, info)
             else:
@@ -316,7 +317,12 @@ def extract_indel_evidence(
 
 
 def main(
-    bam: Path, bed: Path, fasta: Path, output_path: Path, pileup_depth: int = 1_000_000
+    bam: Path,
+    bed: Path,
+    fasta: Path,
+    output_path: Path,
+    pileup_depth: int = 1_000_000,
+    min_edge_distance: int = 4,
 ):
     """
     Run Indel detection over given positions.
@@ -326,7 +332,9 @@ def main(
         bed: Genomic locations, BED.
         fasta: Reference genome or sequence, FASTA.
         output_path: Output path for Indels, VCF.
-        pileup_depth: Maximum pileup depth, integer (DEFAULT=1_000_000).
+        pileup_depth: Maximum pileup depth.
+        min_edge_distance: Minimum distance to the edge of the amplicon.
+            If position distance is lower, do not call variants on it.
     """
 
     from vcf_tools import initialize_output_vcf
@@ -348,10 +356,10 @@ def main(
         for pos in range(contig_region_start, contig_region_stop):
             close_to_edge = (
                 # close to start
-                pos - 4 <= int(contig_region_start)
+                pos - min_edge_distance <= int(contig_region_start)
                 or
                 # close to end
-                pos + 4 >= int(contig_region_stop)
+                pos + min_edge_distance >= int(contig_region_stop)
             )
 
             positional_pileup = bam_af.pileup(
@@ -364,33 +372,38 @@ def main(
                 stepper="all",
             )
 
-            ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1)
+            ref_seq = reference.fetch(reference=contig, start=pos, end=pos + 1).upper()
 
             for pileupcolumn in positional_pileup:
                 result = extract_indel_evidence(
                     pileupcolumn=pileupcolumn,
                     assembly=contig,
-                    ref_nt=str(ref_seq).upper(),
+                    ref_nt=ref_seq,
                     reference_mapper=contig_reference_mapper,
                     pos=pos,
                     edge_of_amplicon=close_to_edge,
                     amplicon_end=contig_region_stop,
                 )
 
-                if result[1][0] != ".":
+                pos_alleles = result[1]
+                ref_allele = pos_alleles[0]
+                variant_format = result[2]
+                variant_info = result[3]
+
+                if ref_allele != ".":
                     # Reference allele is not '.', then a variant was found
                     # The 'start' value is 0-based, 'stop' is 1-based
                     r = vcf.new_record(
-                        contig=contig, start=pos, alleles=result[1], filter="PASS"
+                        contig=contig, start=pos, alleles=pos_alleles, filter="PASS"
                     )
 
                     # Write found variant as a new entry to VCF output
-                    for fld in fields(result[2]):
-                        fld_value = getattr(result[2], fld.name)
+                    for fld in fields(variant_format):
+                        fld_value = getattr(variant_format, fld.name)
                         if isinstance(fld_value, (float, np.float64, np.float32)):
-                            fld_entry = str(f"{getattr(result[2], fld.name):.6f}")
+                            fld_entry = str(f"{getattr(variant_format, fld.name):.6f}")
                         elif isinstance(fld_value, int):
-                            fld_entry = str(f"{getattr(result[2], fld.name)}")
+                            fld_entry = str(f"{getattr(variant_format, fld.name)}")
                         else:
                             fld_entry = str(fld_value)
 
@@ -398,7 +411,7 @@ def main(
 
                     # Write info tag values to VCF output
                     # These values will be used to filter the VCF
-                    for tag_id, value in result[3].items():
+                    for tag_id, value in variant_info.items():
                         r.info[tag_id] = value
 
                     vcf.write(r)

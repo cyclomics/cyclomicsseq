@@ -107,16 +107,20 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
         vcf_entry: A tuple containing  the contig name, a tuple with reference and
             alternative alleles, and a VCF_entry object with variant annotations to add.
     """
+    pos_alleles = vcf_entry[1]
+    variant_format = vcf_entry[2]
+    variant_info = vcf_entry[3]
+
     r = vcf.new_record(
-        contig=contig, start=pos, stop=pos + 1, alleles=vcf_entry[1], filter="PASS"
+        contig=contig, start=pos, stop=pos + 1, alleles=pos_alleles, filter="PASS"
     )
 
-    for fld in fields(vcf_entry[2]):
-        fld_value = getattr(vcf_entry[2], fld.name)
+    for fld in fields(variant_format):
+        fld_value = getattr(variant_format, fld.name)
         if type(fld_value) in [float, np.float64, np.float32]:
-            fld_entry = str(f"{getattr(vcf_entry[2], fld.name):.6f}")
+            fld_entry = str(f"{getattr(variant_format, fld.name):.6f}")
         elif type(fld_value) == int:
-            fld_entry = str(f"{getattr(vcf_entry[2], fld.name)}")
+            fld_entry = str(f"{getattr(variant_format, fld.name)}")
         else:
             fld_entry = str(fld_value)
 
@@ -124,7 +128,7 @@ def write_vcf_entry(vcf, contig, pos, vcf_entry):
 
     # Write info tag values to VCF output
     # These values will be used to filter the VCF
-    for tag_id, value in vcf_entry[3].items():
+    for tag_id, value in variant_info.items():
         r.info[tag_id] = value
 
     vcf.write(r)
