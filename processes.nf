@@ -70,6 +70,21 @@ process FastaIndex{
         """
 }
 
+process SplitReadFilesOnNumberOfReads {
+    label 'many_cpu_medium'
+
+    input:
+        tuple val(sample_id), val(file_id), path(fq)
+
+    output:
+        tuple val(sample_id), val(file_id), path("split/${file_id}.part_*.fastq", arity: '1..*')
+
+    script:
+        """
+        seqkit split -j ${task.cpus} -s $params.max_fastq_size -O split $fq
+        """
+}
+
 process FilterShortReads{
     label 'many_cpu_medium'
     
@@ -77,11 +92,11 @@ process FilterShortReads{
         tuple val(sample_id), val(file_id), path(fq)
 
     output:
-        tuple val(sample_id), val(file_id), path("${fq.simpleName}_filtered.fastq")
+        tuple val(sample_id), val("${file_id}_filtered"), path("${file_id}_filtered.fastq")
 
     script:
         """
-        seqkit seq -m ${params.filtering.minimum_raw_length} $fq > ${fq.simpleName}_filtered.fastq
+        seqkit seq -m ${params.filtering.minimum_raw_length} $fq > ${file_id}_filtered.fastq
         """
 }
 

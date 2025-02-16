@@ -9,6 +9,7 @@ include {
     Minimap2Index as IndexCombined
     FilterShortReads
     SplitReadsOnAdapterSequence
+    SplitReadFilesOnNumberOfReads
 
     // Alignment, annotation
     Minimap2AlignAdaptiveParameterized
@@ -105,10 +106,31 @@ workflow FilterWithAdapterDetection {
     else {
         fastq = read_fq_ch
     }
+
     FilterShortReads(fastq)
 
+    if (params.split_fastq_by_size == true) {
+        filtered_reads = SplitReadFilesOnNumberOfReads(FilterShortReads.out)
+        // The path to split file is now a list of files,
+        // We need to explode the result such that each element is complete
+        // With a sample id, file id and path to split file
+
+        filtered_reads = filtered_reads.flatMap { sample_id, file_id, file_paths ->
+            file_paths.collect { file_path ->
+                def new_file_id = file_path.getBaseName()
+                // ideally new files would not end in .part_001.fastq, but instead _part_001.fastq
+                // Need new seqkit version to fix this
+                return [sample_id, new_file_id, file_path]
+            }
+        }
+
+        filtered_reads.view()
+    } else {
+        filtered_reads = FilterShortReads.out
+    }
+
     emit:
-    FilterShortReads.out
+    filtered_reads
 }
 
 workflow CycasConsensus{
