@@ -124,7 +124,6 @@ workflow FilterWithAdapterDetection {
             }
         }
 
-        filtered_reads.view()
     } else {
         filtered_reads = FilterShortReads.out
     }
@@ -261,12 +260,12 @@ workflow CallVariantsValidate{
 
     main:
         // Determine noisy SNPs, indels
-        FindVariants(reference, reads_aligned, positions)
+        FindVariants(reference, reads_aligned.combine(positions, by: [0, 1]))
         noisy_snp = FindVariants.out.map(it -> it[0, 1, 2])
         noisy_indel = FindVariants.out.map(it -> it[0, 1, 3])
         SortNoisySnp(noisy_snp)
         SortNoisyIndel(noisy_indel)
-        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy')
+        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy') // TODO: verify that sample_id == file_id
 
         // Filter SNPs, indels
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')

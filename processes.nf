@@ -399,8 +399,7 @@ process FindVariants {
 
     input:
         path reference_genome
-        tuple val(sample_id), val(file_id), path(bam), path(bai)
-        tuple val(bed_sample_id), val(file_id), path(validation_bed)
+        tuple val(sample_id), val(file_id), path(bam), path(bai), path(validation_bed)
 
     output:
         tuple val(sample_id), val(file_id), path("${file_id}_snp.vcf"), path("${file_id}_indel.vcf")
@@ -491,7 +490,7 @@ process SortVCF {
         tuple val(sample_id), val(file_id), path(vcf)
 
     output:
-        tuple val(sample_id), val(vcf.simpleName), path("${vcf.simpleName}_sorted.vcf.gz"), path("${vcf.simpleName}_sorted.vcf.gz.tbi")
+        tuple val(sample_id), val(file_id), path("${vcf.simpleName}_sorted.vcf.gz"), path("${vcf.simpleName}_sorted.vcf.gz.tbi")
 
     script:
         """
@@ -717,7 +716,7 @@ process PlotVcf {
     maxRetries 3
 
     input:
-    tuple val(sample_id), path(vcf)
+    tuple val(sample_id), val(file_id), path(vcf)
 
     output:
     tuple val(sample_id), path("${vcf.simpleName}.json")
@@ -846,7 +845,7 @@ process SamtoolsFlagstats{
         tuple val(sample_id), val(file_id), path(bam_in), path(bai_in)
     
     output:
-        path("${bam_in.SimpleName}.flagstats_metadata.json")
+        tuple val(sample_id), path("${bam_in.SimpleName}.flagstats_metadata.json")
 
     script:
         // TODO: get all parameters available
@@ -863,7 +862,7 @@ process SamtoolsIdxStats{
         tuple val(sample_id), val(file_id), path(bam_in), path(bai_in)
     
     output:
-        path("${bam_in.SimpleName}.idxstats_metadata.json")
+        tuple val(sample_id), path("${bam_in.SimpleName}.idxstats_metadata.json")
 
     script:
         """
@@ -882,7 +881,7 @@ process CountNonBackboneVariants{
         tuple val(sample_id), val(file_id), path(vcf)
 
     output:
-        path("${vcf.SimpleName}.variants.metadata.json")
+        tuple val(sample_id), path("${vcf.SimpleName}.variants.metadata.json")
 
     script:
         """
