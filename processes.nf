@@ -77,11 +77,11 @@ process SplitReadFilesOnNumberOfReads {
         tuple val(sample_id), val(file_id), path(fq)
 
     output:
-        tuple val(sample_id), val(file_id), path("split/${file_id}.part_*.fastq", arity: '1..*')
+        tuple val(sample_id), val(file_id), path("split/${file_id}_*.fastq", arity: '1..*')
 
     script:
         """
-        seqkit split -j ${task.cpus} -s $params.max_fastq_size -O split $fq
+        seqkit split -j ${task.cpus} -s $params.max_fastq_size --by-size-prefix ${file_id}_ -O split $fq
         """
 }
 
