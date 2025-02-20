@@ -9,6 +9,7 @@ include {
     Minimap2Index as IndexCombined
     FilterShortReads
     SplitReadsOnAdapterSequence
+    SplitReadFilesOnNumberOfReads
 
     // Alignment, annotation
     Minimap2AlignAdaptiveParameterized
@@ -105,10 +106,30 @@ workflow FilterWithAdapterDetection {
     else {
         fastq = read_fq_ch
     }
+
     FilterShortReads(fastq)
 
+    if (params.split_fastq_by_size == true) {
+        filtered_reads = SplitReadFilesOnNumberOfReads(FilterShortReads.out)
+        // The path to split file is now a list of files,
+        // We need to explode the result such that each element is complete
+        // With a sample id, file id and path to split file
+
+        filtered_reads = filtered_reads.flatMap { sample_id, file_id, file_paths ->
+            file_paths.collect { file_path ->
+                def new_file_id = file_path.getBaseName()
+                // ideally new files would not end in .part_001.fastq, but instead _part_001.fastq
+                // Need new seqkit version to fix this
+                return [sample_id, new_file_id, file_path]
+            }
+        }
+
+    } else {
+        filtered_reads = FilterShortReads.out
+    }
+
     emit:
-    FilterShortReads.out
+    filtered_reads
 }
 
 workflow CycasConsensus{
@@ -239,12 +260,12 @@ workflow CallVariantsValidate{
 
     main:
         // Determine noisy SNPs, indels
-        FindVariants(reference, reads_aligned, positions)
+        FindVariants(reference, reads_aligned.combine(positions, by: [0, 1]))
         noisy_snp = FindVariants.out.map(it -> it[0, 1, 2])
         noisy_indel = FindVariants.out.map(it -> it[0, 1, 3])
         SortNoisySnp(noisy_snp)
         SortNoisyIndel(noisy_indel)
-        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy')
+        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy') // TODO: verify that sample_id == file_id
 
         // Filter SNPs, indels
         PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
