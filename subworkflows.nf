@@ -220,18 +220,6 @@ workflow FilterBam {
         filtered_bam
 }
 
-// workflow ProcessTargetRegions{
-//     take:
-//         reads_aligned
-    
-//     main:
-//         positions = FindRegionOfInterest(reads_aligned)
-
-//     emit:
-//         positions
-
-// }
-
 workflow ProcessTargetRegions{
     take:
         variant_file_name
