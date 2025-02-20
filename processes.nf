@@ -462,7 +462,7 @@ process FilterValidateVariants {
 
 
 process PerbaseBaseDepth {
-    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/depth_tables", pattern: "", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
