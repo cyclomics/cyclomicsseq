@@ -368,18 +368,22 @@ workflow Report {
 
         // Plot Report
         PlotReport(
-            PlotRawFastqHist.out.combine(
-            PlotFilteredHist.out, by: 0).combine(
-            PlotConFastqHist.out, by: 0).combine(
-            PlotReadStructure.out, by: 0).combine(
-            PlotQScores.out, by: 0).combine(
-            PlotVcf.out, by: 0).combine(
-            PlotMetadataStats.out, by: 0).combine(
-            PasteVariantTable.out, by: 0).combine(
-            // PasteContaminantTable.out, by: 0).combine(
-            SamtoolsFlagstats.out, by: 0).combine(
-            CountNonBackboneVariants.out, by: 0).combine(
-            SamtoolsIdxStats.out, by: 0
-            )
+            PlotRawFastqHist.out
+            .combine(PlotFilteredHist.out, by: 0)
+            .combine(PlotConFastqHist.out, by: 0)
+            .combine(PlotReadStructure.out, by: 0)
+            .combine(PlotQScores.out, by: 0)
+            .combine(PlotVcf.out, by: 0)
+            .combine(PlotMetadataStats.out, by: 0)
+            .combine(PasteVariantTable.out, by: 0)
+            // .combine(PasteContaminantTable.out, by: 0)
+            .combine(SamtoolsFlagstats.out, by: 0)
+            .combine(CountNonBackboneVariants.out, by: 0)
+            .combine(SamtoolsIdxStats.out, by: 0)
+            .map { values ->
+                def key = values[0]
+                def files = values[1..-1]
+                return [key, files]
+            }
         )
 }

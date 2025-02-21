@@ -424,7 +424,7 @@ process FilterValidateVariants {
         val mode
 
     output:
-        tuple val(sample_id), val("${file_id}_${mode}"), path("${file_id}_${mode}_filtered.vcf")
+        tuple val(sample_id), val(file_id), path("${file_id}_${mode}_filtered.vcf")
 
     script:
         if (mode == 'snp') {
@@ -511,7 +511,7 @@ process MergeVCF {
         val mode
 
     output:
-        tuple val(sample_id), val("${file_id}_${mode}"), path("${file_id}_${mode}.vcf")
+        tuple val(sample_id), val(file_id), path("${file_id}_${mode}.vcf")
 
     script:
         if (mode == 'noisy' || mode == 'filtered') {
