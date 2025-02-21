@@ -22,7 +22,6 @@ from plotting_defaults import (
     human_format,
 )
 
-REPORT = "report.html"
 
 
 def get_template(template: str) -> Template:
@@ -128,6 +127,7 @@ def main(args):
     data = defaultdict(list)
     data["generation_time"] = datetime.now().strftime("%d-%b-%Y (%H:%M:%S)")
     data["additional_info"] = {}
+    data["additional_info"]["sample_name"] = args.sample_name
     data["additional_info"]["git_version"] = args.version
     data["additional_info"]["nextflow_params"] = nextflow_params_parser(
         args.nextflow_params
@@ -204,7 +204,8 @@ def main(args):
 
     print(data["additional_info"])
     # print(tabs)
-    with open(REPORT, "w") as fh:
+    report_name = args.sample_name + "_report.html" if args.sample_name else "report.html"
+    with open(report_name, "w") as fh:
         fh.write(html_template.render(**data))
 
 
@@ -215,6 +216,7 @@ if __name__ == "__main__":
         description="Create hist plot from a regex for fastq and fastq.gz files."
     )
 
+    parser.add_argument("sample_name", type=str)
     parser.add_argument("nextflow_params", type=str)
     parser.add_argument("version", type=str)
     parser.add_argument("priority_limit", type=int, default=89)

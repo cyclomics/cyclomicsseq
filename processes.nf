@@ -416,7 +416,7 @@ process FindVariants {
 }
 
 process FilterValidateVariants {
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    //publishDir "${params.output_dir}/variants/filtered_by_mode", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -424,7 +424,7 @@ process FilterValidateVariants {
         val mode
 
     output:
-        tuple val(sample_id), val("${file_id}_${mode}"), path("${file_id}_${mode}_filtered.vcf")
+        tuple val(sample_id), val(file_id), path("${file_id}_${mode}_filtered.vcf")
 
     script:
         if (mode == 'snp') {
@@ -462,12 +462,12 @@ process FilterValidateVariants {
 
 
 process PerbaseBaseDepth {
-    publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
+    // publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
-        tuple val(sample_id), val(file_id), path(input_bam_file), path(input_bai_file), path(reference)
-        tuple val(bed_sample_id), val(bed_file_id), path(bed)
+        tuple val(sample_id), val(file_id), path(input_bam_file), path(input_bai_file), path(bed)
+        path(reference)
         val(output_name)
 
     output:
@@ -483,7 +483,7 @@ process PerbaseBaseDepth {
 
 
 process SortVCF {
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
+    // publishDir "${params.output_dir}/variants/sorted", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -502,7 +502,8 @@ process SortVCF {
 
 
 process MergeVCF {
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/variants/noisy", pattern: "*noisy.vcf", mode: 'copy'
+    publishDir "${params.output_dir}/variants/filtered", pattern: "*filtered.vcf", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -510,44 +511,29 @@ process MergeVCF {
         val mode
 
     output:
-        tuple val(sample_id), val("${snp_vcf.simpleName}_${mode}"), path("${snp_vcf.simpleName}_${mode}.vcf")
+        tuple val(sample_id), val(file_id), path("${file_id}_${mode}.vcf")
 
     script:
-        if (mode == 'noisy') {
+        if (mode == 'noisy' || mode == 'filtered') {
             """
             bcftools concat -a ${snp_vcf} ${indel_vcf} \
-            -O v -o ${snp_vcf.simpleName}_${mode}.tmp.vcf \
+            -O v -o ${file_id}_${mode}.tmp.vcf \
             2> >(tee -a error.txt >&2) && \
             if grep -q "E::" error.txt; then \
             echo "VCF concatenation failed in certain rows.\n"; \
             exit 1; \
             fi
 
-            bcftools sort ${snp_vcf.simpleName}_${mode}.tmp.vcf -o ${snp_vcf.simpleName}_${mode}.vcf --temp-dir .
-            rm ${snp_vcf.simpleName}_${mode}.tmp.vcf
+            bcftools sort ${file_id}_${mode}.tmp.vcf -o ${file_id}_${mode}.vcf --temp-dir .
+            rm ${file_id}_${mode}.tmp.vcf
             """
-        }
-        else if (mode == 'filtered') {
-            """
-            bcftools concat -a ${snp_vcf} ${indel_vcf} \
-            -O v -o ${snp_vcf.simpleName}_${mode}.tmp.vcf \
-            2> >(tee -a error.txt >&2) && \
-            if grep -q "E::" error.txt; then \
-            echo "VCF concatenation failed in certain rows.\n"; \
-            exit 1; \
-            fi
-
-            bcftools sort ${snp_vcf.simpleName}_${mode}.tmp.vcf -o ${snp_vcf.simpleName}_${mode}.vcf --temp-dir .
-            rm ${snp_vcf.simpleName}_${mode}.tmp.vcf
-            """
-        }
-        else {
+        } else {
             error("Invalid merging mode (VCF type): ${mode}. Valid modes are 'noisy' or 'filtered'.")
         }
 }
 
 process IntersectVCF {
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/variants/contaminants", pattern: "*contaminants.vcf", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -563,7 +549,7 @@ process IntersectVCF {
 }
 
 process AnnotateVCF {
-    publishDir "${params.output_dir}/variants", mode: 'copy'
+    publishDir "${params.output_dir}/variants/annotated", pattern: "*annotated.vcf", mode: 'copy'
     label 'many_low_cpu_high_mem'
 
     input:
@@ -621,21 +607,26 @@ process SeparateMultiallelicVariants{
 }
 
 process FindRegionOfInterest{
-    //  publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
     
     input:
-        tuple val(sample_id), val(file_id), path(bam_in), path(bai_in)
+        tuple val(sample_id), val(file_id), path(bam_in), path(bai_in), path(regions)
 
     output:
         tuple val(sample_id), val(file_id), path("${sample_id}_roi.bed")
 
     script:
-        """
-        samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${sample_id}_roi.bed
-        """
+        if (regions == 'auto') {
+            """
+            samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${sample_id}_roi.bed
+            """
+        } else {
+            """
+            cp $regions ${sample_id}_roi.bed
+            """
+        }
 }
-
 
 // REPORTING
 process CountFastqInfo{
@@ -817,7 +808,7 @@ process PlotReport {
 
     script:
     """
-    generate_report.py ${sample_id}_report.html '${params}' ${workflow.manifest.version} ${params.priority_limit}
+    generate_report.py ${sample_id} '${params}' ${workflow.manifest.version} ${params.priority_limit}
     """
 }
 
