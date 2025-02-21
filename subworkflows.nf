@@ -222,18 +222,12 @@ workflow FilterBam {
 
 workflow ProcessTargetRegions{
     take:
-        variant_file_name
+        region_file
         reads_aligned
     
     main:
-        variant_file = Channel.fromPath(params.region_file, checkIfExists: false)
-
-        if (variant_file_name.endsWith('.bed')) {
-            positions = variant_file
-        } else {
-            // 'auto' or otherwise
-            positions = FindRegionOfInterest(reads_aligned)
-        }
+        regions = Channel.fromPath(region_file, checkIfExists: false)
+        positions = FindRegionOfInterest(reads_aligned.combine(regions))
 
     emit:
         positions
@@ -253,10 +247,10 @@ workflow CallVariantsValidate{
         noisy_indel = FindVariants.out.map(it -> it[0, 1, 3])
         SortNoisySnp(noisy_snp)
         SortNoisyIndel(noisy_indel)
-        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy') // TODO: verify that sample_id == file_id
+        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy')
 
         // Filter SNPs, indels
-        PerbaseBaseDepthConsensus(reads_aligned.combine(reference), positions, 'consensus.tsv')
+        PerbaseBaseDepthConsensus(reads_aligned.combine(positions, by:[0, 1]), reference, 'consensus.tsv')
         FilterSnp(noisy_snp.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]), 'snp')
         FilterIndel(noisy_indel.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]), 'indel')
         SortFilteredSnp(FilterSnp.out)
@@ -333,7 +327,8 @@ workflow Report {
         PlotConFastqHist(fastq_consensus_grouped, fastq_consensus_extension, "consensus", '"Consensus fastq info"')
 
         // Split BAM
-        merged_split_bam = SamtoolsMergeBams(split_bam)
+        split_bam_grouped = split_bam.groupTuple(by: 0)
+        merged_split_bam = SamtoolsMergeBams(split_bam_grouped)
         PlotReadStructure(merged_split_bam) // 90
         
         // Consensus BAM
@@ -343,13 +338,11 @@ workflow Report {
 
         // Metadata
         meta_data = read_info.map(it -> it[0, 2]).groupTuple(by: 0)
-        PlotMetadataStats(meta_data) // 92 // TODO: output per sample
-
-        // roi = FindRegionOfInterest(consensus_bam)
+        PlotMetadataStats(meta_data) // 92
       
         // QScores
-        PerbaseBaseDepthSplit(merged_split_bam.combine(reference_fasta), roi, 'split.tsv')
-        PerbaseBaseDepthConsensus(consensus_bam.combine(reference_fasta), roi, 'consensus.tsv')
+        PerbaseBaseDepthSplit(merged_split_bam.combine(roi, by: [0, 1]), reference_fasta, 'split.tsv')
+        PerbaseBaseDepthConsensus(consensus_bam.combine(roi, by: [0, 1]), reference_fasta, 'consensus.tsv')
         qscores = PerbaseBaseDepthSplit.out.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]).map(it -> it[0, 2, 3])
         PlotQScores(qscores) // 91
         
@@ -357,7 +350,8 @@ workflow Report {
         PlotVcf(noisy_vcf)
 
         // Filtered Split BAM
-        merged_split_bam_filtered = SamtoolsMergeBamsFiltered(split_bam_filtered)
+        split_bam_filtered_grouped = split_bam_filtered.groupTuple(by: 0)
+        merged_split_bam_filtered = SamtoolsMergeBamsFiltered(split_bam_filtered_grouped)
         SamtoolsFlagstats(merged_split_bam_filtered)
 
         // Variants

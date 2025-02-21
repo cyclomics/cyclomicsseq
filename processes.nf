@@ -462,12 +462,12 @@ process FilterValidateVariants {
 
 
 process PerbaseBaseDepth {
-    publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
+    // publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
-        tuple val(sample_id), val(file_id), path(input_bam_file), path(input_bai_file), path(reference)
-        tuple val(bed_sample_id), val(bed_file_id), path(bed)
+        tuple val(sample_id), val(file_id), path(input_bam_file), path(input_bai_file), path(bed)
+        path(reference)
         val(output_name)
 
     output:
@@ -607,21 +607,26 @@ process SeparateMultiallelicVariants{
 }
 
 process FindRegionOfInterest{
-    //  publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    // publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
     
     input:
-        tuple val(sample_id), val(file_id), path(bam_in), path(bai_in)
+        tuple val(sample_id), val(file_id), path(bam_in), path(bai_in), path(regions)
 
     output:
         tuple val(sample_id), val(file_id), path("${sample_id}_roi.bed")
 
     script:
-        """
-        samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${sample_id}_roi.bed
-        """
+        if (regions == 'auto') {
+            """
+            samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${sample_id}_roi.bed
+            """
+        } else {
+            """
+            cp $regions ${sample_id}_roi.bed
+            """
+        }
 }
-
 
 // REPORTING
 process CountFastqInfo{
