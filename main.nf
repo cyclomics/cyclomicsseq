@@ -242,6 +242,8 @@ workflow {
     seq_summary = Channel.fromPath(params.sequencing_summary_path, checkIfExists: true)
 
     synthetic_reads = Channel.fromPath(params.synthetics_file, checkIfExists: true)
+    
+    // This uses the params.split_on_adapter and params.split_fastq_by_size flags for logic control.
     read_fastq_filtered = FilterWithAdapterDetection(read_fastq)
     read_info_json = ""
 /*

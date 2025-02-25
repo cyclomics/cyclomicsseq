@@ -106,7 +106,7 @@ workflow FilterWithAdapterDetection {
     else {
         fastq = read_fq_ch
     }
-
+    // TODO: Check if its not smarter to first split, then filter for performance.
     FilterShortReads(fastq)
 
     if (params.split_fastq_by_size == true) {
