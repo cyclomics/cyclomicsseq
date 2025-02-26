@@ -38,28 +38,12 @@
           "help_text": "An example whould be /data/sequencing/experiment_name/sample_name/20230213_0900_MN12345_FAA12345_1e411152/fastq_pass \n This folder contains a folder called fastq_pass and a sequencing summary.",
           "default": ""
         },
-        "backbone": {
+        "region_file": {
           "type": "string",
-          "description": "Backbone used in the CyclomicsSeq protocol.",
-          "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option  under advanced user options to a fasta file with the sequence of the custom backbone as the only input where the name starts with `BB`.",
-          "default": "BBCS",
-          "enum": [
-            "BB22",
-            "BB25",
-            "BBCS",
-            "BBCR",
-            "BB41",
-            "BB42",
-            "BB43",
-            "Custom*"
-          ]
-        },
-        "report": {
-          "type": "string",
-          "description": "type of report to generate at the end of the pipeline.",
-          "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
-          "default": "standard",
-          "enum": ["standard", "detailed", "skip"]
+          "format": "file-path",
+          "description": "Region of interest, either `auto` or a path to a file in bed format corresponding to the reference used.",
+          "help_text": "When provided, only locations in the bedfile will be examined in the variant identification process. The auto strategy selects all sites with a coverage above 100.",
+          "default": "auto"
         }
       },
       "required": ["reference", "input_read_dir"]
@@ -70,6 +54,43 @@
       "description": "Options that alter the behaviour of the pipeline, for advanced users.",
       "default": "",
       "properties": {
+        "sample_id": {
+          "type": "string",
+          "description": "Overwrite the sample id used in the pipeline, disables smart grouping and barcode detection.",
+          "help_text": "This option is useful when you want to use all the data in the input folder and read_pattern in a single analysis.",
+          "default": ""
+        },
+        "include_fastq_fail": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include fastq_fail folder in the analysis.",
+          "help_text": "This option will include the data in fastq_fail or fail folders in the analysis."
+        },
+        "split_on_adapter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Identifies adapter sequences and splits reads when encoutered.",
+          "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads."
+        },
+        "split_fastq_by_size": {
+          "type": "boolean",
+          "default": true,
+          "description": "Split larger fastq files into smaller ones for performance reasons.",
+          "help_text": "Disabling this option when the number of reads per fastq is already resonably small will speed it up a small fraction."
+        },
+        "max_fastq_size": {
+          "type": "integer",
+          "default": 40000,
+          "description": "Maximum number of reads per fastq files in the analysis, only used when `split_fastq_by_size` is selected.",
+          "help_text": "."
+        },
+        "report": {
+          "type": "string",
+          "description": "type of report to generate at the end of the pipeline.",
+          "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
+          "default": "standard",
+          "enum": ["standard", "detailed", "skip"]
+        },
         "qc": {
           "type": "string",
           "default": "full",
@@ -98,11 +119,21 @@
           "help_text": "We've created a custom identification pipeline tailored to the characteristics of the protocol, There is however the option to use freebayes.",
           "enum": ["freebayes", "validate"]
         },
-        "split_on_adapter": {
-          "type": "boolean",
-          "default": true,
-          "description": "Identifies adapter sequences and splits reads when encoutered.",
-          "help_text": "This option will run duplex_tools split_on_adapter on all of the input reads."
+        "backbone": {
+          "type": "string",
+          "description": "Backbone used in the CyclomicsSeq protocol.",
+          "help_text": "ID of the backbone used in the lab, If set to custom please set the backbone_file option  under advanced user options to a fasta file with the sequence of the custom backbone as the only input where the name starts with `BB`.",
+          "default": "BBCS",
+          "enum": [
+            "BB22",
+            "BB25",
+            "BBCS",
+            "BBCR",
+            "BB41",
+            "BB42",
+            "BB43",
+            "Custom*"
+          ]
         }
       }
     },
@@ -145,12 +176,6 @@
           "type": "integer",
           "description": "Set the max depth while building perbase tables. If the depth at a position is within 1% of this value, the NEAR_MAX_DEPTH output field will be set to true.",
           "default": 4000000
-        },
-        "region_file": {
-          "type": "string",
-          "description": "Region of interest, either `auto` or a path to a file in bed format corresponding to the reference used.",
-          "help_text": "When provided, only locations in the bedfile will be examined in the variant identification process. The auto strategy selects all sites with a coverage above 100.",
-          "default": "auto"
         },
         "read_pattern": {
           "type": "string",

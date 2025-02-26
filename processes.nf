@@ -77,7 +77,7 @@ process SplitReadFilesOnNumberOfReads {
         tuple val(sample_id), val(file_id), path(fq)
 
     output:
-        tuple val(sample_id), val(file_id), path("split/${file_id}_*.fastq", arity: '1..*')
+        tuple val(sample_id), val(file_id), path("split/${file_id}_*.fastq")
 
     script:
         """
