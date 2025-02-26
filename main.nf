@@ -34,6 +34,7 @@ params.output_dir                 = "$HOME/Data/CyclomicsSeq"
 params.report                     = "detailed"
 params.split_fastq_by_size        = true
 params.split_on_adapter           = false
+params.filter_by_alignment_rate   = false
 params.sequence_summary_tagging   = false
 params.include_fastq_fail         = false
 

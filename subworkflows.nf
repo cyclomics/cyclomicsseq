@@ -209,11 +209,11 @@ workflow FilterBam {
 
     main:
         BamTagFilter(annotated_bam, 'YM', minimun_repeat_count)
-        if (params.region_file == 'auto') {
-            filtered_bam = BamTagFilter.out
-        } else {
+        if (params.region_file != 'auto' && params.filter_by_alignment_rate == true) {
             BamAlignmentRateFilter(BamTagFilter.out)
             filtered_bam = BamAlignmentRateFilter.out
+        } else {
+            filtered_bam = BamTagFilter.out
         }
     emit:
         filtered_bam
