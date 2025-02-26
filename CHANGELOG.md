@@ -1,5 +1,15 @@
 # changelog
 
+## 1.0.0
+
+- Major overhaul to CyclomicsSeq, with a simpler workflow architecture.
+- Added an argument enabling users to provide a BED file with genomic regions to be analysed (`--region_file [regions.bed]`)
+- Added support for input directories containing several barcode subdirectories with FASTQ files, where each subdirectory name is interpreted as a sample name. CyclomicsSeq will analyse each sample separately and output separate files and reports per sample.
+- Added splitting of large FASTQ files per number of reads (`--split_fastq_by_size [true]` and `--max_fastq_size [40000]`).
+- Added a filter for alignment rate to provided or detected regions of interest (`--min_align_rate [0.8]`).
+- Updated docker container with seqkit version 2.9.0 and moved container to `cyclomics/cyclomicsseq:0.8.2`.
+- Known contaminant detection has been temporarily disabled due to unknown Freebayes error.
+
 ## 0.12.2
 
 - Enable overwriting of nextflow timeline and report

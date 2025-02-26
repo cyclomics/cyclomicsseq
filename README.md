@@ -1,55 +1,71 @@
-# CycloSeq
+# CyclomicsSeq
 
 Pipelines to process Cyclomics data.
 
-This pipeline uses prior information from the backbone to increase the effectiveness of consensus calling from the circular DNA protocol by Cyclomics.  
+This pipeline uses concatemeric CySeq reads, with or without backbone, as input to generate consensus reads, which will then be used to call variants over a reference.
+
+
+  - [Dependencies and requirements](#dependencies)
+  - [Usage](#usage)
+    - [Through Epi2Me Labs](#through-epi2me-labs)
+    - [Through command line](#through-command-line)
+    - [User options](#user-options)
+    - [Using different backbones](#using-different-backbones)
+    - [Advanced user options](#advanced-user-options)
+    - [Running on A SLURM cluster](#running-on-a-slurm-cluster)
+  - [Changelog](#changelog)
+  - [Install-dependencies](#install-dependencies)
+  - [Developer notes](#developer-notes)
 
 ## Dependencies
 
 Click for installation instructions:
 
-- [Nextflow](#install-dependencies)
-- [Docker](#install-dependencies) or [Conda](#install-dependencies) or [Apptainer/singularity](#install-dependencies)
+- [Nextflow](#install-dependencies) (v20.10.0 or higher)
+- [Docker](#install-dependencies) or [Conda](#install-dependencies) or [Apptainer/Singularity](#install-dependencies)
 - Acces to the Github repo and a valid [PAT token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 
 ### Data requirements
 
-- data output by ONT Guppy (SUP preferred for optimal results)
-- Reference genome, Ideally pre indexed by BWA to reduce runtime. 
+- FASTQ data output by ONT Guppy
+- FASTA reference genome, ideally pre indexed by BWA to reduce runtime.
 
-## System requirements
+
+### System requirements
 
 The pipeline expects at least 16 threads to be available and 16GB of RAM. We recommend 64 GB of RAM to decrease the runtime significantly.
 
 
-## Reference genome
+### Reference genome
 
 The pipeline has been developed with amplicons that map against the provided reference in mind.
 
-We suggest to use Grch38.p14, since this works well with the VEP that is integrated in the pipeline its available via the code snippet below.
+We suggest to use the official GRCh38.p14 major release for alignment, since this works well with our variant annotation module. This release is available via the code snippet below.
 
 ``` bash
-wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz
-gunzip GCA_000001405.29_GRCh38.p14_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14/GRCh38_major_release_seqs_for_alignment_pipelines/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 ```
 
-To reduce runtime pre index the reference genome with BWA, or obtain a preindexed copy.
+To reduce runtime pre index the reference genome with BWA, or obtain a preindexed copy from the same FTP site.
 
 
 ## Usage
 
-### Inside of Epi2Me Labs
+### Through Epi2Me Labs
 
 This pipeline is compatible with the EPI2ME Labs platform by ONT. Please see [ONT's installation guide](https://labs.epi2me.io/installation).
 
 Installation inside EPI2ME Labs:
-1. go to workflows by clicking on "installed workflows", or click the workflows icon in the top bar.
-1. click "Import workflow".
-1. Paste "https://github.com/cyclomics/cyclomicsseq" into the text bar and click Import workflow.
+1. Go to workflows by clicking on "installed workflows", or click the workflows icon in the top bar.
+2. click "Import workflow".
+3. Paste "https://github.com/cyclomics/cyclomicsseq" into the text bar and click Import workflow.
 
+Updating workflow on EPI2ME Labs:
+1.
 
-### As a nextflow pipeline
+### Through command line
 
 In this section we assume that you have docker and nextflow installed on your system, if so running the pipeline is straightforward. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
 
@@ -58,7 +74,7 @@ nextflow run cyclomics/cycmomicsseq -r <pipeline version> -profile docker --inpu
 ```
 
 
-### Singularity
+#### Singularity
 
 If docker is not an option, singularity (or Apptainer, as it is called since Q2 2022) is a good alternative that does not require root access and therefor used in shared compute environments.
 
@@ -70,7 +86,7 @@ nextflow run cyclomics/cycloseq -profile singularity ...'
 
 Please note that this assumes you've ran the pipeline before, if not add the -user flag as described in Usage[#Usage].
 
-### Conda
+#### Conda
 
 The pipeline is fully compatible with Conda. 
 This means the full command becomes:
@@ -83,28 +99,27 @@ By default it uses the environment file that is shipped with the pipeline.
 this file is located in the repo, the pipeline needs to know where this file is to run with the correct versions of the required software.
 
 
-### Flag descriptions
+### User options
 
-| flag                          | info  |
+| Flag                          | Info  |
 |-------------------------------|-------|
-|--input_read_dir               | Directory where the output fastqs of Guppy are located, e.g.: "/data/guppy/exp001/fastq_pass".|
-|--read_pattern                 | Regex pattern to look for fastq's in the read directory, defaults to: "**.{fq,fastq,fq.gz,fastq.gz}".|
-|--sequencing_summary_path      | The summary file generated by guppy, Optional, default: "sequencing_summary*.txt".|
-|--backbone                     | Select a preset backbone.|
+|--input_read_dir               | Directory where the output fastqs of Guppy are located, e.g.: "/data/guppy/exp001/fastq_pass". |
+|--read_pattern                 | Regex pattern to look for fastq's in the read directory, defaults to: "**.{fq,fastq,fq.gz,fastq.gz}". |
+|--sequencing_summary_path      | The summary file generated by guppy, Optional, default: "sequencing_summary*.txt". |
+|--backbone                     | Select a preset backbone. |
 |--backbone_file                | File to use as backbone when --backbone is non of the available presets. eg a fasta file with a sequence with the name ">BB_custom" the name must start with BB for extraction reasons. |
 |--reference                    | Path to the reference genome to use, will ingest all index files in the same directory.|
+|--region_file                  | Path to the BED file with regions over which to run the analysis of consensus reads. |
+|--sample_id                    | An ID for the sample analysed. If the run is barcoded and the input directory contains many barcode subdirectories, then the barcode names will automatically be taken as sample IDs. |
 |--output_dir                   | Directory path where the results, including intermediate files, are stored. |
-|--snp_filters.min_dir_ratio, --indel_filters.min_dir_ratio | Minimum ratio of variant-supporting reads in each direction (default: 0.001 (SNP); 0.002 (Indel)).|
-|--snp_filters.min_dir_count, --indel_filters.min_dir_count | Minimum number of variant-supporting reads in each direction (default: 5).|
-|--snp_filters.min_dpq, --indel_filters.min_dpq             | Minimum positional depth after Q filtering (default: 5_000).|
-|--snp_filters.min_dpq_n, --indel_filters.min_dpq_n         | Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 25).|
-|--snp_filters.min_dpq_ratio, --indel_filters.min_dpq_ratio | Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3).|
-|--snp_filters.min_vaf, --indel_filters.min_vaf             | Minimum variant allele frequency (default: 0.003 (SNP); 0.004 (Indel)).|
-|--snp_filters.min_rel_ratio, --indel_filters.min_rel_ratio | Minimum relative ratio between forward and reverse variant-supporting reads (default: 0.3 (SNP); 0.4 (Indel)).|
-|--snp_filters.min_abq, --indel_filters.min_abq             | Minimum average base quality (default: 70).|
+|--report                  | [detailed, standard, skip] |
+|--report                  | [detailed, standard, skip] |
+|-profile               | [standard, conda, singularity, promethion] |
 
 
-## Using alternative Backbones
+
+
+### Using different backbones
 
 Due to lab conditions a different backbone might be used. the --backbone parameter can be set to any fasta file.
 The following defaults are available by default in the pipeline, you can enable them by copying the value in the the value column and pasting it behind the cli command. 
@@ -114,22 +129,58 @@ The following defaults are available by default in the pipeline, you can enable 
 |BB22 | --backbone BB22 | |
 |BB25 | --backbone BB25 | |
 |BB41 | --backbone BB41 | |
-|BB42 | --backbone BB42 |X|
-|BBCS | --backbone BBCS | |
+|BB42 | --backbone BB42 | |
+|BBCS | --backbone BBCS |x|
 |BBCR | --backbone BBCR | |
 
+### Advanced user options
+
+| Flag                          | Info  |
+|-------------------------------|-------|
+|--split_fastq_by_size                | [detailed, standard, skip] |
+|--split_on_adapter                 | [detailed, standard, skip] |
+|--include_fastq_fail                 | [detailed, standard, skip] |
+|--min_repeat_count                 | [3] |
+|--max_cpus                  | [8] |
+|--max_mem_gb                  | [31] |
+|--max_fastq_size                | [detailed, standard, skip] |
+|--min_align_rate                  | [detailed, standard, skip] |
+|--roi_detection.min_depth                  | [detailed, standard, skip] |
+|--roi_detection.max_distance                 | [detailed, standard, skip] |
+|--filtering.minimum_raw_length                  | [detailed, standard, skip] |
+|--perbase.max_depth               | [4000000] |
+
+|--minimap2parameterized.min_chain_score                  | 1 |
+|--minimap2parameterized.min_chain_count                  | 10 |
+|--minimap2parameterized.min_peak_aln_score                  | 20 |
+|--bwamem.mem_max_genome_occurance                 | 100 |
+|--bwamem.softclip_penalty                 | 0.05 |
+|--metadata.subsample_size                  | 10_000 |
+
+|--snp_filters.min_dir_ratio, --indel_filters.min_dir_ratio | Minimum ratio of variant-supporting reads in each direction (default: 0.001 (SNP); 0.002 (Indel)). |
+|--snp_filters.min_dir_count, --indel_filters.min_dir_count | Minimum number of variant-supporting reads in each direction (default: 5). |
+|--snp_filters.min_dpq, --indel_filters.min_dpq             | Minimum positional depth after Q filtering (default: 5_000). |
+|--snp_filters.min_dpq_n, --indel_filters.min_dpq_n         | Number of flanking nucleotides to the each position that will determine the window size for local maxima calculation (default = 25). |
+|--snp_filters.min_dpq_ratio, --indel_filters.min_dpq_ratio | Ratio of local depth maxima that will determine the minimum depth at each position (default = 0.3). |
+|--snp_filters.min_vaf, --indel_filters.min_vaf             | Minimum variant allele frequency (default: 0.003 (SNP); 0.004 (Indel)). |
+|--snp_filters.min_rel_ratio, --indel_filters.min_rel_ratio | Minimum relative ratio between forward and reverse variant-supporting reads (default: 0.3 (SNP); 0.4 (Indel)). |
+|--snp_filters.min_abq, --indel_filters.min_abq             | Minimum average base quality (default: 70). |
 
 
-## Roadmap / Todo:
- 
- ### Performance:
- 1. Multi-threaded variant calling
+## Running on A SLURM cluster
 
-## changelog
+Login to the hpc using SSH. There, start a sjob with:
+
+```bash
+srun --job-name "InteractiveJob" --cpus-per-task 16 --mem=32G --gres=tmpspace:450G --time 24:00:00 --pty bash
+```
+
+Go to the right project directory and start the pipeline as normal [through the command line](#through-command-line).
+
+
+## Changelog
 
 Please see CHANGELOG.md
-
-
 
 
 ## Install-dependencies
@@ -142,7 +193,7 @@ Download the latest version by running the example below:
 wget -qO- https://get.nextflow.io | bash
 ```
 
-or see [The official Nextflow documentation](https://www.nextflow.io/docs/latest/getstarted.html#installation)
+Or see [The official Nextflow documentation](https://www.nextflow.io/docs/latest/getstarted.html#installation).
 
 ### Conda
 
@@ -162,41 +213,23 @@ wget https://github.com/apptainer/apptainer/releases/download/v1.1.0-rc.2/apptai
 sudo apt-get install -y ./apptainer_1.1.0-rc.2_amd64.deb
 ```
 
-for the latest up to date information see their [official documentation](https://apptainer.org/docs/admin/main/installation.html)
+For the latest up to date information see their [official documentation](https://apptainer.org/docs/admin/main/installation.html)
 
-
-
-
-## Running on A SLURM cluster such as UMCU HPC
-
-login to the hpc using SSH. there start a sjob with:
-
-```bash
-srun --job-name "InteractiveJob" --cpus-per-task 16 --mem=32G --gres=tmpspace:450G --time 24:00:00 --pty bash
-```
-
-go to the right project folder
-
-``` bash
-cd /hpc/compgen/projects/cyclomics/cycloseq/pipelines/cycloseq/
-```
-
-start the pipeline as normal
 
 ## Developer notes
 
 ### Cycas addition to the repo
 
 Cycas was added as a subtree using code from: https://gist.github.com/SKempin/b7857a6ff6bddb05717cc17a44091202.
-This was done instead of submodule to make pulling of the repo easier for endusers and to stay compatible with nextflow run <remote> functionallity.
+This was done instead of submodule to make pulling of the repo easier for endusers and to stay compatible with `nextflow run <remote>` functionallity.
 
 
-more specifically:
+More specifically:
 ``` bash
 git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
 ```
 
-To update run
+To update, run:
 ``` bash
 git subtree pull --prefix Cycas https://github.com/cyclomics/Cycas <tag> --squash
 ```

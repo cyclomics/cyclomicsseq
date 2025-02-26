@@ -3,7 +3,7 @@
 ========================================================================================
     Cyclomics CyclomicsSeq pipeline
 ========================================================================================
-    Github : https://github.com/cyclomics/cyclomicsseq-egfr
+    Github : https://github.com/cyclomics/cyclomicsseq
     Website: https://cyclomics.com
 ----------------------------------------------------------------------------------------
 */
