@@ -107,26 +107,25 @@ workflow FilterWithAdapterDetection {
         fastq = read_fq_ch
     }
 
-    FilterShortReads(fastq)
-
     if (params.split_fastq_by_size == true) {
-        filtered_reads = SplitReadFilesOnNumberOfReads(FilterShortReads.out)
-        // The path to split file is now a list of files,
-        // We need to explode the result such that each element is complete
-        // With a sample id, file id and path to split file
+        split_reads = SplitReadFilesOnNumberOfReads(fastq)
 
-        filtered_reads = filtered_reads.flatMap { sample_id, file_id, file_paths ->
-            file_paths.collect { file_path ->
-                def new_file_id = file_path.getBaseName()
-                // ideally new files would not end in .part_001.fastq, but instead _part_001.fastq
-                // Need new seqkit version to fix this
-                return [sample_id, new_file_id, file_path]
+        split_reads = split_reads.flatMap { sample_id, file_id, file_paths ->
+            if (file_paths instanceof List) {
+                file_paths.collect { file_path ->
+                    def new_file_id = file_path.getBaseName()
+                    return [sample_id, new_file_id, file_path]
+                }
+            } else {
+                def new_file_id = file_paths.getBaseName()
+                return [[sample_id, new_file_id, file_paths]]
             }
         }
-
     } else {
-        filtered_reads = FilterShortReads.out
+        split_reads = fastq
     }
+
+    filtered_reads = FilterShortReads(split_reads)
 
     emit:
     filtered_reads

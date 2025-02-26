@@ -77,11 +77,12 @@ process SplitReadFilesOnNumberOfReads {
         tuple val(sample_id), val(file_id), path(fq)
 
     output:
-        tuple val(sample_id), val(file_id), path("split/${file_id}_*.fastq", arity: '1..*')
+        tuple val(sample_id), val(file_id), path("split/${file_id}_*.fastq")
 
     script:
         """
-        seqkit split -j ${task.cpus} -s $params.max_fastq_size --by-size-prefix ${file_id}_ -O split $fq
+        seqkit split -j ${task.cpus} -e .gz -s $params.max_fastq_size --by-size-prefix ${file_id}_ -O split $fq
+        gunzip split/*.gz
         """
 }
 
@@ -617,7 +618,7 @@ process FindRegionOfInterest{
         tuple val(sample_id), val(file_id), path("${sample_id}_roi.bed")
 
     script:
-        if (regions == 'auto') {
+        if (regions.baseName == 'auto') {
             """
             samtools depth $bam_in | awk '\$3>${params.roi_detection.min_depth}' | awk '{print \$1"\t"\$2"\t"\$2 + 1}' | bedtools merge -d ${params.roi_detection.max_distance} -i /dev/stdin > ${sample_id}_roi.bed
             """
