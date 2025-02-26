@@ -225,7 +225,9 @@ process PrimaryMappedFilter{
         """
 }
 
-process Minimap2Align{    
+process Minimap2Align{   
+    label 'container_only'
+ 
     // Use standard Minimap2 parameters for alignment, also works with .mmi files.
     cpus params.economy_mode == true ? 2 : 7
     
