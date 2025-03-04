@@ -8,6 +8,7 @@
 - Added splitting of large FASTQ files per number of reads (`--split_fastq_by_size [true]` and `--max_fastq_size [40000]`).
 - Added a filter for alignment rate to provided or detected regions of interest (`--min_align_rate [0.8]`).
 - Updated docker container with seqkit version 2.9.0 and moved container to `cyclomics/cyclomicsseq:0.8.2`.
+- Fixed an error in read structure donut plotting where reads with a single alignment were not being counted; adjusted function to be valid with coordinate-sorted BAM files.
 - Known contaminant detection has been temporarily disabled due to unknown Freebayes error.
 
 ## 0.12.2
