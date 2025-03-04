@@ -102,7 +102,7 @@ this file is located in the repo, the pipeline needs to know where this file is 
 
 | Flag                          | Description  | Default  |
 |-------------------------------|--------------|----------|
-| --input_read_dir               | Directory where the output fastqs of Guppy are located, e.g.: "/data/guppy/exp001/fastq_pass". | |
+| --input_read_dir         | Directory where the output fastqs of Guppy are located, e.g.: "/data/guppy/exp001/fastq_pass". | |
 | --read_pattern                 | Regex pattern to look for fastq's in the read directory. | "**.{fq,fastq,fq.gz,fastq.gz}" |
 | --reference                    | Path to the reference genome to use, will ingest all index files in the same directory.| |
 | --region_file                  | Path to the BED file with regions over which to run the analysis of consensus reads. | auto |

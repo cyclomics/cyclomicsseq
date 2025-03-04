@@ -126,7 +126,7 @@
         }
       }
     },
-    "advanced_user_options": {
+    "advanced_general": {
       "title": "Advanced: General options",
       "type": "object",
       "description": "Additional Input options that the user rarely needs to interact with",
@@ -218,7 +218,7 @@
         }
       }
     },
-    "advanced_variants_validate": {
+    "advanced_variant_filtering": {
       "title": "Advanced: Variant filtering options",
       "type": "object",
       "description": "Options to fine tune SNP and indel variants that are reported by the workflow, using the 'validate' option.",
@@ -322,13 +322,10 @@
       "$ref": "#/definitions/pipeline_options"
     },
     {
-      "$ref": "#/definitions/advanced_user_options"
+      "$ref": "#/definitions/advanced_general"
     },
     {
-      "$ref": "#/definitions/advanced_variants_validate"
-    },
-    {
-      "$ref": "#/definitions/advanced_variants_freebayes"
+      "$ref": "#/definitions/advanced_variant_filtering"
     }
   ]
 }
