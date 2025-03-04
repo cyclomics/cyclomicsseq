@@ -7,7 +7,7 @@ This pipeline uses concatemeric CySeq reads, with or without backbone, as input 
 
   - [Dependencies and requirements](#dependencies)
   - [Usage](#usage)
-    - [Through EPI2ME Labs](#through-epi2me-labs)
+    - [Through EPI2ME](#through-epi2me)
     - [Through command line](#through-command-line)
     - [User options](#user-options)
     - [Advanced user options](#advanced-user-options)
@@ -52,16 +52,16 @@ To reduce runtime pre index the reference genome with BWA, or obtain a preindexe
 
 ## Usage
 
-### Through EPI2ME Labs
+### Through EPI2ME
 
-This pipeline is compatible with the EPI2ME Labs platform by ONT. Please see [ONT's installation guide](https://labs.epi2me.io/installation).
+This pipeline is compatible with the EPI2ME platform by ONT. Please see [ONT's installation guide](https://epi2me.nanoporetech.com/epi2me-docs/quickstart/).
 
-Installation inside EPI2ME Labs:
+Installation inside EPI2ME:
 1. Go to workflows by clicking on "installed workflows", or click the workflows icon in the top bar.
 2. click "Import workflow".
 3. Paste "https://github.com/cyclomics/cyclomicsseq" into the text bar and click Import workflow.
 
-Updating workflow on EPI2ME Labs:
+Updating workflow on EPI2ME:
 1.
 
 ### Through command line
@@ -118,7 +118,7 @@ this file is located in the repo, the pipeline needs to know where this file is 
 |-------------------------------|--------------|----------|
 | --max_fastq_size                | Maximum number of reads per fastq files in the analysis, only used when `--split_fastq_by_size true`. | 40000 |
 | --min_repeat_count                 | Minimum number of identified repeats for reads to be considered for analysis. | 3 |
-| --filtering.minimum_raw_length                  | Minimum length for reads to be considered for analysis. | 1000 |
+| --filtering.minimum_raw_length                  | Minimum length for reads to be considered for analysis. | 500 |
 | --sequencing_summary_path      | Sequencing summary file in txt format created by MinKNOW for this experiment. | "sequencing_summary*.txt". |
 | --backbone                     | Backbone used, if any [BBCS, BBCR, BB22, BB25, BB41, BB42]. | BBCS |
 | --backbone_file                | File to use as backbone when --backbone is non of the available presets. eg a fasta file with a sequence with the name ">BB_custom" the name must start with BB for extraction reasons. | "$projectDir/backbones/BBCS.fasta" |
@@ -129,7 +129,7 @@ this file is located in the repo, the pipeline needs to know where this file is 
 | --filter_by_alignment_rate        | Set whether alignments should be filtered by the rate to which they align to regions in a provided `--region_file`. | false |
 | --min_align_rate                  | Minimum alignment rate of a read to designated regions of interest. Only valid if `--filter_by_alignment_rate true`. | 0.8 |
 | --roi_detection.min_depth                  | Set the minimum depth required to detect a region of interest. Only valid if `--region_file auto`. | 5000 |
-| --roi_detection.max_distance                 | Maximum allowed distance between detected regions for them to be merged. | 25 |
+| --roi_detection.max_distance                 | Maximum allowed distance between detected regions for them to be merged. Only valid if `--region_file auto`. | 25 |
 | --perbase.max_depth               | Set the max depth while building perbase tables. If the depth at a position is within 1% of this value, the NEAR_MAX_DEPTH output field will be set to true. | 4000000 |
 | --minimap2.min_chain_score                  | Discard chains with a chaining score bewlow this value. Corresponds to minimap2 argument `-m`. | 1 |
 | --minimap2.min_chain_count                  | Discard chains with number of minimizers below this value. Corresponds to minimap2 argument `-n`. | 10 |
