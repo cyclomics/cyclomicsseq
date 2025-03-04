@@ -124,7 +124,7 @@ def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int
             if not readname:
                 readname = read.qname
                 read_info = [read]
-                #  continue
+
             determine_read_type(
                 read_info, concat_type_stats, concat_type_stats_by_bases
             )
