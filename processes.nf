@@ -272,7 +272,7 @@ process Minimap2AlignAdaptiveParameterized{
 
     script:
         """
-        minimap2 -ax map-ont -t ${task.cpus} -m ${params.minimap2parameterized.min_chain_score} -n ${params.minimap2parameterized.min_chain_count} -s ${params.minimap2parameterized.min_peak_aln_score} $reference_genome $fq > tmp.sam 
+        minimap2 -ax map-ont -t ${task.cpus} -m ${params.minimap2.min_chain_score} -n ${params.minimap2.min_chain_count} -s ${params.minimap2.min_peak_aln_score} $reference_genome $fq > tmp.sam 
         samtools sort -o ${file_id}.bam tmp.sam
         rm tmp.sam
         """
@@ -348,7 +348,7 @@ process BwaMemSorted{
         // piplefail for better control over failures
         // REMOVED. TODO: check reference file itself
         """
-        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.max_mem_occurrance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
         samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}.bam"
         samtools index ${fastq.simpleName}.bam
         """
@@ -368,7 +368,7 @@ process BwaMemContaminants{
         
     script:
         """
-        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.mem_max_genome_occurance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
+        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.max_mem_occurrance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
         samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}_contaminants.bam"
         samtools index ${fastq.simpleName}_contaminants.bam
         """
@@ -435,13 +435,13 @@ process FilterValidateVariants {
             vcf_filter.py -i ${vcf} -o ${file_id}_${mode}_filtered.vcf \
             --perbase_table ${perbase_table} \
             --dynamic_vaf_params ${params.dynamic_vaf_params_file} \
-            --min_ao ${params.snp_filters.min_ao} \
-            --min_dpq ${params.snp_filters.min_dpq} \
-            --min_dpq_n ${params.snp_filters.min_dpq_n} \
-            --min_dpq_ratio ${params.snp_filters.min_dpq_ratio} \
+            --min_ao ${params.snp.min_ao} \
+            --min_dpq ${params.snp.min_dpq} \
+            --min_dpq_n ${params.snp.min_dpq_n} \
+            --min_dpq_ratio ${params.snp.min_dpq_ratio} \
             --max_sap 0 \
-            --min_rel_ratio ${params.snp_filters.min_rel_ratio} \
-            --min_abq ${params.snp_filters.min_abq}
+            --min_rel_ratio ${params.snp.min_rel_ratio} \
+            --min_abq ${params.snp.min_abq}
             """
         }
         else if (mode == 'indel') {
@@ -449,13 +449,13 @@ process FilterValidateVariants {
             vcf_filter.py -i ${vcf} -o ${file_id}_${mode}_filtered.vcf \
             --perbase_table ${perbase_table} \
             --dynamic_vaf_params ${params.dynamic_vaf_params_file} \
-            --min_ao ${params.indel_filters.min_ao} \
-            --min_dpq ${params.indel_filters.min_dpq} \
-            --min_dpq_n ${params.indel_filters.min_dpq_n} \
-            --min_dpq_ratio ${params.indel_filters.min_dpq_ratio} \
+            --min_ao ${params.indel.min_ao} \
+            --min_dpq ${params.indel.min_dpq} \
+            --min_dpq_n ${params.indel.min_dpq_n} \
+            --min_dpq_ratio ${params.indel.min_dpq_ratio} \
             --max_sap 0 \
-            --min_rel_ratio ${params.indel_filters.min_rel_ratio} \
-            --min_abq ${params.indel_filters.min_abq}   
+            --min_rel_ratio ${params.indel.min_rel_ratio} \
+            --min_abq ${params.indel.min_abq}   
             """
         }
         else {
