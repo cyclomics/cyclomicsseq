@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 
+import json
+import os
 from collections import Counter
 from glob import glob
-from tqdm import tqdm
-import json
 from pathlib import Path
-import os
 
-from pyfastx import Fastq
-import pandas as pd
 import numpy as np
-
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource
-from bokeh.layouts import column
+import pandas as pd
 from bokeh.embed import components
-
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, NumeralTickFormatter
+from bokeh.plotting import figure
 from plotting_defaults import cyclomics_defaults
+from pyfastx import Fastq
+from tqdm import tqdm
 
 TAB_PRIORITY = 6
 
@@ -76,6 +74,8 @@ def plot_length_hist(lengths, my_title_len):
     p.y_range.start = 0
     p.x_range.start = 0
 
+    p.xaxis.formatter = NumeralTickFormatter(format="0")
+
     p.title.text_font_size = "18pt"
     p.xaxis.axis_label = "read length"
     p.xaxis.axis_label_text_font_size = "16pt"
@@ -131,8 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("priority_limit", type=int, default=89)
     args = parser.parse_args()
 
-    my_title_q = f"Q scores relative abundance"
-    my_title_len = f"Length distribution"
+    my_title_q = "Q scores relative abundance"
+    my_title_len = "Length distribution"
     main(
         args.fastq_regex_suffix,
         args.plot_file,
