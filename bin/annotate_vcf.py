@@ -244,7 +244,7 @@ class VCF_file:
                 "variant_class": variant_class,
                 "consequence": consequence,
                 "COSMIC": mutation_ids,
-                "COSMIC legacy": cosmic_legacy_ids,
+                "COSMIC_legacy": cosmic_legacy_ids,
                 "gene": gene,
                 "impact": impact,
                 "biotype": biotype,
