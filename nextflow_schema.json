@@ -24,6 +24,13 @@
       "description": "Options that define where the workflow will take data from for analysis.",
       "default": "",
       "properties": {
+        "sample_id": {
+          "title": "Sample ID (Optional)",
+          "type": "string",
+          "description": "Override the sample ID used in the pipeline.",
+          "help_text": "This option will override automated sample ID detection and use the provided value instead.",
+          "default": ""
+        },
         "reference": {
           "type": "string",
           "format": "file-path",
@@ -62,13 +69,6 @@
       "description": "Options that alter the behaviour of the pipeline, for advanced users.",
       "default": "",
       "properties": {
-        "sample_id": {
-          "title": "Sample ID",
-          "type": "string",
-          "description": "Overwrite the sample id used in the pipeline, disables smart grouping and barcode detection.",
-          "help_text": "This option is useful when you want to use all the data in the input folder and read_pattern in a single analysis.",
-          "default": ""
-        },
         "filtering.minimum_raw_length": {
           "title": "Minimum raw read length",
           "type": "integer",
