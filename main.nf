@@ -86,6 +86,7 @@ log.info """
         backbone_file            : $params.backbone_file
         region_file              : $params.region_file  
         output folder            : $params.output_dir
+        sample_id                : $params.sample_id
         Cmd line                 : $workflow.commandLine
     Method:  
         report                   : $params.report
@@ -140,14 +141,31 @@ include {
 // the sample id's will be barcode03, barcode04 and barcode05
 
 def InvalidParents = ['fastq', 'pass', 'fastq_pass', 'fastq_fail', 'fail', 'home']
+
+// Barcode subfolders
+def MinKnow_barcode_folder_pattern = ~/^barcode\d{2}$|unclassified/
 // MinKnow run folder
 def MinKnow_auto_run_folder_pattern = ~/^\d{8}_\d{4}_.+/  // Regular expression for 8 digits, underscore, 4 digits, underscore, and some text
-def getValidParent(dir, invalidList, pattern) {
+
+def getValidParent(dir, invalidList, barcodePattern, runFolderPattern) {
     def currentDir = dir
-    while ((invalidList.contains(currentDir.simpleName) || currentDir.simpleName ==~ pattern) && currentDir.Parent != null) {
+    def barcode = ""
+
+    if (currentDir.simpleName ==~ barcodePattern) {
+        barcode = currentDir.simpleName
+    }
+
+    while ((invalidList.contains(currentDir.simpleName) || currentDir.simpleName ==~ barcodePattern || currentDir.simpleName ==~ runFolderPattern) && currentDir.Parent != null) {
         currentDir = currentDir.Parent
     } 
-    return currentDir.simpleName
+
+    return [barcode, currentDir.simpleName]
+}
+
+def generateUid = { String alphabet, int n ->
+  new Random().with {
+    (1..n).collect { alphabet[ nextInt( alphabet.length() ) ] }.join()
+  }
 }
 
 // Used in exclusion of failed reads from the inputs.
@@ -213,21 +231,28 @@ workflow {
     }
     read_fastq.dump(tag: "read_fastq_no_fail")
 
+    // Generate a unique ID for the run
+    def run_UID = generateUid( (('A'..'Z')+('a'..'z')+('0'..'9')).join(), 7 )
+
     // Extract valid sample ID's for eah fastq file
     read_fastq = read_fastq.map { it ->
                 // if parentDir is invalid, take grandParentDir etc. etc.
-                def parentDir = it.Parent
-                def sample_ID = getValidParent(it.Parent, InvalidParents, MinKnow_auto_run_folder_pattern)
-                def file_ID = it.simpleName
-                tuple(sample_ID, file_ID, it)
-            }
-    read_fastq.dump(tag: "read_fastq_sample_tagged")
+                def (barcode, sample_ID) = getValidParent(it.Parent, InvalidParents, MinKnow_barcode_folder_pattern, MinKnow_auto_run_folder_pattern)
 
-    // Overwrite the sample ID's if provided via the cli
-    if (params.sample_id != "") {
-        log.warn("Overwriting sample ID for all fastq files due to cli provided sample ID")
-        read_fastq = read_fastq.map { it -> tuple(params.sample_id, it[1], it[2]) }
-    }
+                // Overwrite the sample ID if provided
+                if (params.sample_id != "") {
+                    sample_ID = params.sample_id.toString()
+                }
+                sample_ID = sample_ID.replaceAll("\\s+", "_")
+                sample_ID = sample_ID + "_" + run_UID
+                if (barcode != "") {
+                    sample_ID = sample_ID + "_" + barcode
+                }
+
+                tuple(sample_ID, it.simpleName, it)
+            }
+
+    read_fastq.dump(tag: "read_fastq_sample_tagged")
     read_fastq.dump(tag: "read_fastq")
 
     // Prepare reference genome, combined with backbone sequence

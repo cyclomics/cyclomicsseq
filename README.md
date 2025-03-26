@@ -106,7 +106,7 @@ this file is located in the repo, the pipeline needs to know where this file is 
 | --read_pattern                 | Regex pattern to look for fastq's in the read directory. | "**.{fq,fastq,fq.gz,fastq.gz}" |
 | --reference                    | Path to the reference genome to use, will ingest all index files in the same directory.| |
 | --region_file                  | Path to the BED file with regions over which to run the analysis of consensus reads. | auto |
-| --sample_id                    | An ID for the sample analysed. If the run is barcoded and the input directory contains many barcode subdirectories, then the barcode names will automatically be taken as sample IDs. | |
+| --sample_id                    | Override automated sample ID detection and use the provided value instead. | |
 | --output_dir                   | Directory path where the results, including intermediate files, are stored. | "$HOME/Data/CyclomicsSeq" |
 | --report                       | Type of report to generate at the end of the pipeline [standard, detailed, skip]. | standard |
 
