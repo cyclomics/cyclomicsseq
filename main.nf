@@ -147,7 +147,7 @@ def MinKnow_barcode_folder_pattern = ~/^barcode\d{2}$|unclassified/
 // MinKnow run folder
 def MinKnow_auto_run_folder_pattern = ~/^\d{8}_\d{4}_.+/  // Regular expression for 8 digits, underscore, 4 digits, underscore, and some text
 
-def getValidParent(dir, invalidList, barcodePattern, pattern) {
+def getValidParent(dir, invalidList, barcodePattern, runFolderPattern) {
     def currentDir = dir
     def barcode = ""
 
@@ -155,7 +155,7 @@ def getValidParent(dir, invalidList, barcodePattern, pattern) {
         barcode = currentDir.simpleName
     }
 
-    while ((invalidList.contains(currentDir.simpleName) || currentDir.simpleName ==~ barcodePattern || currentDir.simpleName ==~ pattern) && currentDir.Parent != null) {
+    while ((invalidList.contains(currentDir.simpleName) || currentDir.simpleName ==~ barcodePattern || currentDir.simpleName ==~ runFolderPattern) && currentDir.Parent != null) {
         currentDir = currentDir.Parent
     } 
 
