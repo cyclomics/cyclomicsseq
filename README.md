@@ -2,15 +2,20 @@
 
 Pipelines to process Cyclomics data.
 
-This pipeline uses concatemeric CySeq reads, with or without backbone, as input to generate consensus reads, which will then be used to call variants over a reference.
+This pipeline uses concatemeric CySeq reads as input to generate consensus reads, which will then be used to call variants over a reference.
 
 
   - [Dependencies and requirements](#dependencies)
-  - [Usage](#usage)
+  - [General usage](#general-usage)
     - [Through EPI2ME](#through-epi2me)
-    - [Through command line](#through-command-line)
+    - [Command line use for Linux](#command-line-use-for-linux)
+    - [Command line use for MacOS](#command-line-use-for-macos)
+    - [Using different releases](#using-different-releases)
     - [User options](#user-options)
-    - [Advanced user options](#advanced-user-options)
+    - [Use cases](#use-cases)
+      - [Short insert sizes](#short-insert-sizes)
+      - [Long insert sizes](#long-insert-sizes)
+  - [Advanced user options](#advanced-user-options)
     - [Running on A SLURM cluster](#running-on-a-slurm-cluster)
   - [Changelog](#changelog)
   - [Dependency installation](#dependency-installation)
@@ -50,7 +55,7 @@ gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 To reduce runtime pre index the reference genome with BWA, or obtain a preindexed copy from the same FTP site.
 
 
-## Usage
+## General usage
 
 ### Through EPI2ME
 
@@ -64,12 +69,20 @@ Installation inside EPI2ME:
 Updating workflow on EPI2ME:
 1.
 
-### Through command line
+### Command line use for Linux
 
 In this section we assume that you have docker and nextflow installed on your system, if so running the pipeline is straightforward. You can run the pipeline directly from this repo, or pull it yourself and point nextflow towards it.
 
 ```bash
-nextflow run cyclomics/cycmomicsseq -r <pipeline version> -profile docker --input_read_dir '/sequencing/20220209_1609_X3_FAS06478_0ed4361c/fastq_pass/' --output_dir '/data/myresults' --reference '/data/reference/chm13v2.fasta' --backbone BB12
+nextflow run cyclomics/cycmomicsseq -profile docker --input_read_dir tests/informed/fastq_pass/ --output_dir results/ --reference tests/informed/tp53.fasta
+```
+
+The command above will automatically pull the CyclomicsSeq from GitHub. If you prefer to manually clone the repository before running the pipeline, you can do so with the following command:
+
+```bash
+git clone git@github.com:cyclomics/cyclomicsseq.git
+cd cyclomicsseq
+nextflow run main.nf -profile docker --input_read_dir tests/informed/fastq_pass/ --output_dir results/ --reference tests/informed/tp53.fasta
 ```
 
 
@@ -87,7 +100,7 @@ Please note that this assumes you've ran the pipeline before, if not add the -us
 
 #### Conda
 
-The pipeline is fully compatible with Conda. 
+The pipeline is fully compatible with Conda. This will only work in Linux systems.
 This means the full command becomes:
 
 ```bash
@@ -97,6 +110,17 @@ nextflow run cyclomics/cycloseq -profile conda ...'
 By default it uses the environment file that is shipped with the pipeline. 
 this file is located in the repo, the pipeline needs to know where this file is to run with the correct versions of the required software.
 
+### Command line use for MacOS
+
+Running the pipeline in a MacOS system is the same as in a [Linux system](#command-line-use-for-linux), but you will have to use either `-profile docker` or `-profile singulariy`. `-profile conda` will not work, because the available `environment.yml` is not valid in MacOS systems.
+
+### Using different releases
+
+You can use a different release of the pipeline by using the Nextflow argument `-r`. For example, for release 1.0.0:
+
+```bash
+nextflow run cyclomics/cycmomicsseq -r 1.0.0 -profile docker --input_read_dir tests/informed/fastq_pass/ --output_dir results/ --reference tests/informed/tp53.fasta
+```
 
 ### User options
 
@@ -109,16 +133,39 @@ this file is located in the repo, the pipeline needs to know where this file is 
 | --sample_id                    | Override automated sample ID detection and use the provided value instead. | |
 | --output_dir                   | Directory path where the results, including intermediate files, are stored. | "$HOME/Data/CyclomicsSeq" |
 | --report                       | Type of report to generate at the end of the pipeline [standard, detailed, skip]. | standard |
+| --min_repeat_count                 | Minimum number of identified repeats for consensus reads to be considered for downstream analyses. | 3 |
+| --filtering.minimum_raw_length                  | Minimum length for reads to be considered for analysis. | 500 |
 
 
+### Use cases
 
-### Advanced user options
+This pipeline is designed with CyclomicsSeq amplicon sequencing in mind. Thus, it requires high amplicon coverage for post-consensus analyses, like variant calling.
+
+If you use this pipeline to form consensus on genome-wide sequencing data, keep in mind that it is unlikely any variants will be called, unless there are areas of the genome with high read depth.
+
+The settings of the CyclomicsSeq pipeline are adjustable to different insert sizes. Of note, the `--filtering.minimum_raw_length` will affect which reads are considered for consensus building. On the other hand, `--minimum_repeat_count` will affect which consensus reads are reported and considered for downstream analyses, based on how many repeats/segments were identified in each input read.
+
+#### Short insert sizes
+
+If you are sequencing short insert sizes, then you may consider being more lenient on the minimum raw read length, yet more stringent on the minimum repeat count -- concatemers with shorter amplicons are more likely to have a higher average number of segments.
+
+The default `--filtering.minimum_raw_length` is `500`, but you if, for example, your insert size is around 50 bp, then you might consider `--filtering.minimum_raw_length 300`.
+
+The default `--minimum_repeat_count` is `3`, but you might consider `--minimum_repeat_count 5` or `--minimum_repeat_count 10`. This will come at the cost of throughput.
+
+#### Long insert sizes
+
+If you are sequencing long insert sizes, then you may consider being more stringent on the minimum raw read length, yet more lenient on the minimum repeat count -- concatemers with longer amplicons are more likely to have a lower average number of segments.
+
+The default `--filtering.minimum_raw_length` is `500`, but you if, for example, your insert size is around 1000 bp, then you might consider `--filtering.minimum_raw_length 3000`.
+
+The default `--minimum_repeat_count` is `3`. This is the minimum value for our consensus building algorithm.  You might consider `--minimum_repeat_count 5` or higher for better quality, but this will likely come at a high cost in throughput.
+
+## Advanced user options
 
 | Flag                          | Description  | Default  |
 |-------------------------------|--------------|----------|
 | --max_fastq_size                | Maximum number of reads per fastq files in the analysis, only used when `--split_fastq_by_size true`. | 40000 |
-| --min_repeat_count                 | Minimum number of identified repeats for reads to be considered for analysis. | 3 |
-| --filtering.minimum_raw_length                  | Minimum length for reads to be considered for analysis. | 500 |
 | --sequencing_summary_path      | Sequencing summary file in txt format created by MinKNOW for this experiment. | "sequencing_summary*.txt". |
 | --backbone                     | Backbone used, if any [BBCS, BBCR, BB22, BB25, BB41, BB42]. | BBCS |
 | --backbone_file                | File to use as backbone when --backbone is non of the available presets. eg a fasta file with a sequence with the name ">BB_custom" the name must start with BB for extraction reasons. | "$projectDir/backbones/BBCS.fasta" |
