@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-from plotting_defaults import cyclomics_defaults
-
-import math
-from collections import Counter
-from typing import List, Tuple
-from pathlib import Path
 import json
-
-import pandas as pd
-import numpy as np
+import math
 import re
+from collections import Counter
+from pathlib import Path
+from typing import List, Tuple
 
-from bokeh.plotting import figure
-from bokeh.layouts import column
+import numpy as np
+import pandas as pd
 from bokeh.embed import components
-from bokeh.layouts import gridplot
+from bokeh.layouts import column, gridplot
+from bokeh.models import NumeralTickFormatter
+from bokeh.plotting import figure
+from plotting_defaults import cyclomics_defaults
 
 chromosomal_region = Tuple[str, int, int]
 SIDE_DIST_PLOT_SIZE = 100
@@ -352,6 +350,8 @@ def plot_compare_accuracy(
             legend_label="Consensus",
         )
 
+        p_freq.xaxis.formatter = NumeralTickFormatter(format="0")
+
         p_freq.title.text_font_size = cyclomics_defaults.plot_title_size
         p_freq.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
         p_freq.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
@@ -376,7 +376,7 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
         df_merge.to_csv(csv_merge)
 
     q_scatter = figure(
-        title=f"Q score scatter, variant unaware.",
+        title="Q score scatter, variant unaware.",
         width=cyclomics_defaults.width - SIDE_DIST_PLOT_SIZE,
     )
     q_scatter.xaxis.axis_label = "ONT Q score"

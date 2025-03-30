@@ -1,7 +1,7 @@
 name: cyclomics-nf-cyclomicseq
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
@@ -19,9 +19,9 @@ dependencies:
   - bwidget=1.9.14=ha770c72_1
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.18.1=h7f98852_0
-  - ca-certificates=2022.9.24=ha878542_0
+  - ca-certificates=2024.12.31=h06a4308_0
   - cairo=1.16.0=ha61ee94_1011
-  - certifi=2022.9.24=pyhd8ed1ab_0
+  - certifi=2024.8.30=py38h06a4308_0
   - cffi=1.15.0=py38h3931269_0
   - cfgv=3.3.1=pyhd8ed1ab_0
   - charset-normalizer=2.1.1=pyhd8ed1ab_0
@@ -115,10 +115,11 @@ dependencies:
   - oniguruma=6.9.8=h166bdaf_0
   - openjdk=8.0.312=h7f98852_0
   - openjpeg=2.4.0=hb52868f_1
-  - openssl=1.1.1s=h166bdaf_0
+  - openssl=1.1.1w=h7f8727e_0
   - packaging=21.3=pyhd8ed1ab_0
   - pandas=1.4.2=py38h47df419_2
   - pango=1.50.7=hbd2fdc8_0
+  - parallel=20241222=ha770c72_0
   - parasail-python=1.2.4=py38h3b68952_2
   - pathlib=1.0.1=py38h578d9bd_6
   - pcre=8.45=h9c3ff4c_0
@@ -225,7 +226,7 @@ dependencies:
   - sambamba=0.8.2=h98b6b92_2
   - samtools=1.15.1=h1170115_0
   - sed=4.8=he412f7d_0
-  - seqkit=2.2.0=h9ee0642_0
+  - seqkit=2.9.0=h9ee0642_0
   - seqtk=1.3=h7132678_4
   - setuptools=62.3.4=py38h578d9bd_0
   - six=1.16.0=pyh6c4a22f_0

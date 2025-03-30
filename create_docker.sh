@@ -1,4 +1,4 @@
-docker build . -t damicyclomics/cyclomicseq:0.8.1
-docker tag damicyclomics/cyclomicseq:0.8.1 damicyclomics/cyclomicseq:latest
-docker push damicyclomics/cyclomicseq:0.8.1
-docker push damicyclomics/cyclomicseq:latest
+docker build . -t cyclomics/cyclomicsseq:0.8.2
+docker tag cyclomics/cyclomicsseq:0.8.2 cyclomics/cyclomicsseq:latest
+docker push cyclomics/cyclomicsseq:0.8.2
+docker push cyclomics/cyclomicsseq:latest

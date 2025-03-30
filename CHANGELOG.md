@@ -1,5 +1,20 @@
 # changelog
 
+## 1.0.0
+
+- Major overhaul to CyclomicsSeq, with a simpler workflow architecture. The EPI2ME interface and user guidelines on the `README.md` were also updated.
+- Changed naming of important output files to contain the sample ID, a randomly generated unique run ID and the barcode (if present). Users can define the sample ID -- if undefined, a sample ID will be retrieved from a valid parent folder name.
+- Added an argument enabling users to provide a BED file with genomic regions to be analysed (`--region_file [regions.bed]`)
+- Added support for input directories containing several barcode subdirectories with FASTQ files, where each subdirectory name is interpreted as a sample name. CyclomicsSeq will analyse each sample separately and output separate files and reports per sample.
+- Added splitting of large FASTQ files per number of reads (`--split_fastq_by_size [true]` and `--max_fastq_size [40000]`).
+- Added a filter for alignment rate to provided or detected regions of interest (`--filter_by_alignment_rate [false]` and `--min_align_rate [0.8]`).
+- Updated docker container with seqkit version 2.9.0 and moved container to `cyclomics/cyclomicsseq:0.8.2`.
+- Fixed an error in read structure donut plotting where reads with a single alignment were not being counted; adjusted function to be valid with coordinate-sorted BAM files.
+- Fixed an issue where alignment was running out of memory due to inappropriate allocation.
+- Fixed an issue where the annotated VCF output file was invalid due to a whitespace in COSMIC legacy ID tags.
+- Minor plotting and report updates.
+- Known contaminant detection has been temporarily disabled due to unknown Freebayes error.
+
 ## 0.12.2
 
 - Enable overwriting of nextflow timeline and report

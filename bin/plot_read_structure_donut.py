@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
+import json
 from collections import Counter
 from itertools import chain
 from math import pi
 from pathlib import Path
-import json
 from typing import Dict, List, Tuple
 
 import pandas as pd
 import pysam
-
 from bokeh.embed import components
+from bokeh.layouts import column, row
+from bokeh.models import ColumnDataSource, Div, LabelSet
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
-from bokeh.layouts import row, column
-from bokeh.models import Div, ColumnDataSource
-from bokeh.models import LabelSet, ColumnDataSource
 
 TAB_PRIORITY_CONTIG_COUNT = 90
 TAB_PRIORITY_DONUT = 1
@@ -111,7 +109,7 @@ def update_chromosome_counts(
 
 def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
     """
-    Given a name sorted bam, create counters for read types and chromosome counts.
+    Given a coordinate sorted and indexed bam, create counters for read types and chromosome counts.
 
     """
 
@@ -126,7 +124,7 @@ def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int
             if not readname:
                 readname = read.qname
                 read_info = [read]
-                continue
+
             determine_read_type(
                 read_info, concat_type_stats, concat_type_stats_by_bases
             )
@@ -189,7 +187,8 @@ def create_assembly_count_plot(chromosome_counts, my_title, priority_limit: int)
         p.xaxis.major_label_orientation = "vertical"
 
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
-        json_obj["additional_info"] = add_info
+
+    json_obj["additional_info"] = add_info
 
     return json_obj
 
