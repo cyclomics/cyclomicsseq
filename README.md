@@ -25,7 +25,7 @@ This pipeline uses concatemeric CySeq reads as input to generate consensus reads
 
 Click for installation instructions:
 
-- [Nextflow](#dependency-installation) (v20.10.0 or higher)
+- [Nextflow](#dependency-installation) (v23.04.2 or higher)
 - [Docker](#dependency-installation) or [Conda](#dependency-installation) or [Apptainer/Singularity](#dependency-installation)
 - Acces to the Github repo and a valid [PAT token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
