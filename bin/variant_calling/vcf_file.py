@@ -194,7 +194,7 @@ class Vcf:
         depth_table: pd.DataFrame,
         dynamic_vaf_params: dict,
         min_ao: int = 10,
-        min_dpq: int = 5_000,
+        min_dpq: int = 0,
         min_dpq_n: int = 25,
         min_dpq_ratio: float = 0.3,
         max_sap: int = 60,
