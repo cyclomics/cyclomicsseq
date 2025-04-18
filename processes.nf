@@ -455,7 +455,7 @@ process FilterValidateVariants {
 
 
 process PerbaseBaseDepth {
-    // publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
+    publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
