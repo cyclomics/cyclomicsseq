@@ -174,6 +174,8 @@ class VCF_file:
         canonical = None
         sift = None
         polyphen = None
+        clin_sig = None
+        clin_ids = None
 
         if not vep_json:
             # Ensembl-VEP query did not return any response
@@ -207,6 +209,12 @@ class VCF_file:
                             cosmic_legacy_ids.append(cosm)
                         else:
                             continue
+                    if "clin_sig" in xref.keys():
+                        clin_sig = ",".join(xref["clin_sig"])
+
+                    if "var_synonyms" in xref.keys():
+                        if "ClinVar" in xref["var_synonyms"]:
+                            clin_ids = ",".join(xref["var_synonyms"]["ClinVar"])
 
                 # Join list of found IDs into comma-separated string
                 mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
@@ -243,6 +251,8 @@ class VCF_file:
             {
                 "variant_class": variant_class,
                 "consequence": consequence,
+                "signal": clin_sig,
+                "ClinVar": clin_ids,
                 "COSMIC": mutation_ids,
                 "COSMIC_legacy": cosmic_legacy_ids,
                 "gene": gene,
