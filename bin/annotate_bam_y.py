@@ -109,12 +109,21 @@ def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
     if seg_id:
         tags["YI"] = seg_id
 
+    requested_tags = {
+        "aligned_bases_before_consensus" : "YE" ,
+        "len" : "YL" ,
+        "alignment_position" : "YA" ,
+        "alignment_orientation" : "YR" ,
+        "alignment_count" : "YM" ,
+        "consensus_structure" : "YN" ,
+    }
     if seg_meta:
-        tags["YE"] = seg_meta["aligned_bases_before_consensus"]
-        tags["YL"] = seg_meta["len"]
-        tags["YA"] = seg_meta["alignment_position"]
-        tags["YR"] = seg_meta["alignment_orientation"]
-        tags["YM"] = seg_meta["alignment_count"]
+        for metadata, tag in requested_tags.items():
+            if metadata in seg_meta:
+                tags[tag] = seg_meta[metadata]
+            else:
+                print("Tag not found in segment metadata", metadata)
+
 
     return tags
 

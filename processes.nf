@@ -370,6 +370,7 @@ process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
     label 'many_cpu_medium'
+    container "cyclomics/cycas:0.6.0-rc1"
 
     input:
         tuple val(sample_id), val(file_id), path(bam), path(bai)
