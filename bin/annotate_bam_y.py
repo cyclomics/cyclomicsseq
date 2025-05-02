@@ -105,7 +105,6 @@ def make_tags(gen_meta, seg_meta, seg_id, metadata_json) -> Dict:
     tags["YT"] = gen_meta["raw_length"]
     tags["YB"] = extract_barcode(gen_meta)
     tags["YP"] = extract_partner_locations(gen_meta)
-    tags["YS"] = gen_meta["source"]
     tags['YS'] = metadata_json.stem
     # add more info if we find the segment data
     if seg_id:
