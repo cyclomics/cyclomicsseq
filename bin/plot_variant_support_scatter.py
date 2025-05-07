@@ -389,7 +389,7 @@ def main(
     vcf_path: Path,
     bam_path: Path,
     output_path: Path,
-    output_plot_file: Path = "output.html",
+    priority_limit: int = 0,
 ):
     """
     Main function to plot the variant support scatter plot.
@@ -401,6 +401,12 @@ def main(
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
+        # Initialize HTML tab
+
+    if TAB_PRIORITY > priority_limit:
+        with open(Path(output_path).with_suffix(".json"), "w") as f:
+            f.write(json.dumps(json_obj))
+        return
 
     # Step 1: Collect all files
     vcf_path = Path(vcf_path)
@@ -454,8 +460,8 @@ def main(
     json_obj["additional_info"] = add_info
 
     print("writing json")
-    print(Path(output_plot_file))
-    with open(Path(output_plot_file), "w") as f:
+    print(output_path)
+    with open(output_path, "w") as f:
         f.write(json.dumps(json_obj))
 
 
@@ -475,7 +481,8 @@ if __name__ == "__main__":
     parser.add_argument("vcf_path", type=str, help="Path to the VCF file.")
     parser.add_argument("bam_path", type=str, help="Path to the BAM file.")
     parser.add_argument("output_path", type=str, help="Path to save the output plot.")
+    parser.add_argument("priority_limit", type=int, default=0)
 
     args = parser.parse_args()
 
-    main(args.vcf_path, args.bam_path, args.output_path)
+    main(args.vcf_path, args.bam_path, args.output_path, args.priority_limit )
