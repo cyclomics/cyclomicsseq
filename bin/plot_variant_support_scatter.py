@@ -1,19 +1,16 @@
 import io
-
+import json
 from pathlib import Path
 from typing import Any
-import json
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pysam
-
 from bokeh.embed import components
-from bokeh.layouts import gridplot, column
+from bokeh.layouts import column, gridplot
+from bokeh.models import CategoricalColorMapper, ColumnDataSource
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, CategoricalColorMapper
 from bokeh.transform import jitter
-
 
 TAB_PRIORITY = 95
 
