@@ -1,27 +1,22 @@
 #!/usr/bin/env python
 
-from dataclasses import dataclass
-from typing import List
 import json
-from datetime import datetime
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
 from glob import glob
-import os
-import subprocess
-from pathlib import Path
+from typing import List
 
-from jinja2 import Environment, BaseLoader, Template
 from bokeh.embed import components
-from bokeh.models.widgets import Panel, Tabs
 from bokeh.models import Div
-
+from bokeh.models.widgets import Panel, Tabs
+from jinja2 import BaseLoader, Environment, Template
 from plotting_defaults import (
-    cyclomics_defaults,
     TEMPLATE_STR,
-    nextflow_params_parser,
+    cyclomics_defaults,
     human_format,
+    nextflow_params_parser,
 )
-
 
 
 def get_template(template: str) -> Template:
@@ -48,6 +43,7 @@ class SummaryCard:
     name: str
     icon: str
     value: str
+    percent: str
     color: str
 
     def __repr__(self):
@@ -58,6 +54,7 @@ class SummaryCard:
                     <div class="d-flex justify-content-between px-md-1">
                         <div>
                             <h3 class="{self.color}">{human_format(self.value)}</h3>
+                            <h5 class="{self.color}">{self.percent}</h5>
                             <p class="mb-0">{self.name}</p>
                         </div>
                         <div class="align-self-center">
@@ -135,6 +132,7 @@ def main(args):
 
     tabs = ReportTabCollection([])
 
+    total_throughput = 0
     for plot_json in glob("*.json"):
         with open(plot_json, "r") as f:
             test_json_content = json.load(f)
@@ -142,10 +140,13 @@ def main(args):
         for k, v in test_json_content.items():
             if k == "additional_info":
                 data["additional_info"].update(v)
+                for name, n in v.items():
+                    if name == "readsRaw fastq info":
+                        total_throughput = int(n)
             else:
                 try:
                     tabs += v
-                except (ValueError, KeyError) as e:
+                except (ValueError, KeyError):
                     pass
 
     print(data["additional_info"])
@@ -186,11 +187,24 @@ def main(args):
         ("Pipeline version", "fa-code-branch", "git_version", "text-dark"),
     ]:
         try:
-            data["cards"].append(
-                SummaryCard(i[0], i[1], data["additional_info"][i[2]], i[3])
-            )
+            yield_n = data["additional_info"][i[2]]
+            if (
+                i[0]
+                in [
+                    "Post split & QC reads",
+                    "Aligning reads",
+                    "Consensus inserts",
+                ]
+                and total_throughput > 0
+            ):
+                yield_percent = f"({int(data['additional_info'][i[2]]) / int(total_throughput) * 100:.1f}%)"
+
+            else:
+                yield_percent = ""
+
+            data["cards"].append(SummaryCard(i[0], i[1], yield_n, yield_percent, i[3]))
         except KeyError:
-            data["cards"].append(SummaryCard(i[0], i[1], "nan", i[3]))
+            data["cards"].append(SummaryCard(i[0], i[1], "nan", "", i[3]))
 
     if ("exit_status", 1) in data["additional_info"].items():
         data["cards"].append(
@@ -204,7 +218,9 @@ def main(args):
 
     print(data["additional_info"])
     # print(tabs)
-    report_name = args.sample_name + "_report.html" if args.sample_name else "report.html"
+    report_name = (
+        args.sample_name + "_report.html" if args.sample_name else "report.html"
+    )
     with open(report_name, "w") as fh:
         fh.write(html_template.render(**data))
 
