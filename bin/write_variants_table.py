@@ -61,32 +61,33 @@ def restructure_annotations(
 
     info = variants_df["INFO"].str.split(";")
 
-    # Due to the fact that a list is unhashable we need to do a forloop iso a set.
-    # unique = []
-    # for x in info:
-    #     if x not in unique:
-    #         unique.append(x)
-
     if (info.str[0] == "ANNOTATION").all() and (info.str[1] != ".").all():
         var_type = info.str[1].str.split("=").str[1]
         consequence = info.str[2].str.split("=").str[1]
-        symbol = info.str[5].str.split("=").str[1]
-        impact = info.str[6].str.split("=").str[1]
-        biotype = info.str[7].str.split("=").str[1]
-        sift = info.str[10].str.split("=").str[1]
-        polyphen = info.str[11].str.split("=").str[1]
-        cosmic_ids = info.str[3].str.split("=").str[1]
-        legacy_ids = info.str[4].str.split("=").str[1]
+        signal = info.str[3].str.split("=").str[1]
+        clinvar = info.str[4].str.split("=").str[1]
+        cosmic_ids = info.str[5].str.split("=").str[1]
+        legacy_ids = info.str[6].str.split("=").str[1]
+        symbol = info.str[7].str.split("=").str[1]
+        impact = info.str[8].str.split("=").str[1]
+        biotype = info.str[9].str.split("=").str[1]
+        aa_change = info.str[10].str.split("=").str[1]
+        sift = info.str[12].str.split("=").str[1]
+        polyphen = info.str[13].str.split("=").str[1]
+
     else:
         var_type = pd.Series(["N/A"] * len(location))
         consequence = pd.Series(["N/A"] * len(location))
+        signal = pd.Series(["N/A"] * len(location))
+        clinvar = pd.Series(["N/A"] * len(location))
+        cosmic_ids = pd.Series(["N/A"] * len(location))
+        legacy_ids = pd.Series(["N/A"] * len(location))
         symbol = pd.Series(["N/A"] * len(location))
         impact = pd.Series(["N/A"] * len(location))
         biotype = pd.Series(["N/A"] * len(location))
+        aa_change = pd.Series(["N/A"] * len(location))
         sift = pd.Series(["N/A"] * len(location))
         polyphen = pd.Series(["N/A"] * len(location))
-        cosmic_ids = pd.Series(["N/A"] * len(location))
-        legacy_ids = pd.Series(["N/A"] * len(location))
 
     annot_columns = [
         "Location",
@@ -97,10 +98,13 @@ def restructure_annotations(
         "Type",
         "Symbol",
         "Biotype",
+        "AA change",
         "Consequence",
         "Impact",
         "SIFT",
         "PolyPhen",
+        "Signal",
+        "ClinVar",
         "COSMIC",
         "COSMIC legacy",
     ]
@@ -114,16 +118,22 @@ def restructure_annotations(
         var_type,
         symbol,
         biotype,
+        aa_change,
         consequence,
         impact,
         sift,
         polyphen,
+        signal,
+        clinvar,
         cosmic_ids,
         legacy_ids,
     ]
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
+    annotation_df["ClinVar"] = annotation_df["ClinVar"].replace(
+        to_replace=",", value=", ", regex=True
+    )
     annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(
         to_replace=",", value=", ", regex=True
     )
