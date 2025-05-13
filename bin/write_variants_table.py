@@ -40,13 +40,29 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
     return variants_df
 
 
+def get_unique_values(lst):
+    # Flatten one level and filter out unhashable items (e.g. inner lists)
+    flat = (item for sub in lst for item in (sub if isinstance(sub, list) else [sub]))
+
+    # Filter out None and unhashable items, keep only hashables
+    unique_vals = {
+        item
+        for item in flat
+        if item is not None and isinstance(item, (str, int, float, bool))
+    }
+
+    return ", ".join(unique_vals) if unique_vals else None
+
+
 def restructure_annotations(
     variants_df: pd.DataFrame, variant_decimal_points=3
 ) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
     pos = variants_df["POS"]
-    location = pd.Series([f"{c}:{p}" for c, p in zip(chrom, pos)])
+    location = pd.Series(
+        [f"{c}:{p}" for c, p in zip(chrom, pos)], name="LOC", dtype=object
+    )
 
     ref = variants_df["REF"]
     alt = variants_df["ALT"]
@@ -64,7 +80,9 @@ def restructure_annotations(
     if (info.str[0] == "ANNOTATION").all() and (info.str[1] != ".").all():
         var_type = info.str[1].str.split("=").str[1]
         consequence = info.str[2].str.split("=").str[1]
-        signal = info.str[3].str.split("=").str[1]
+        signal = (
+            info.str[3].str.split("=").str[1].str.split(",").apply(get_unique_values)
+        )
         clinvar = info.str[4].str.split("=").str[1]
         cosmic_ids = info.str[5].str.split("=").str[1]
         legacy_ids = info.str[6].str.split("=").str[1]
