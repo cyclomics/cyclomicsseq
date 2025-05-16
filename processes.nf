@@ -796,7 +796,7 @@ process PlotVcfVariantsScatter {
     maxRetries 3
 
     input:
-    tuple val(sample_id), val(file_id), path(vcf), 
+    tuple val(sample_id), val(file_id), path(vcf) 
     tuple val(sample_id2), val(file_id2), path(bam), path(bai)
 
     output:
