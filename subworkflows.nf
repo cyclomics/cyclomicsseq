@@ -61,6 +61,7 @@ include {
     SamtoolsMergeBams as SamtoolsMergeBams
     SamtoolsMergeBams as SamtoolsMergeBamsFiltered
     SamtoolsFlagstats
+    PlotVcfVariantsScatter
     PasteVariantTable
     PasteContaminantTable
     PlotReport
