@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import io
 import json
 from pathlib import Path
@@ -352,11 +354,6 @@ def _get_read_support_deletion(vcf_entry: pd.Series, bam: pysam.AlignmentFile):
     read_support = []
     for pileupcolumn in bam.pileup(contig, start, stop, stepper="all", truncate=True):
         for read in pileupcolumn.pileups:
-            if (
-                read.alignment.query_name
-                == "7f07dee5-7ec9-4260-a32a-535d0ea55928_I_0_chr7:55174724:55174833"
-            ):
-                print()
             if read.is_del:
                 print(f"Deletion at position {pileupcolumn.reference_pos}")
                 get_del_YN_support = get_relevant_YN_support_deletion(
@@ -380,7 +377,6 @@ def _get_read_support_deletion(vcf_entry: pd.Series, bam: pysam.AlignmentFile):
                         reverse=not read.alignment.is_forward,
                     )
                 )
-            entry = []
 
     return read_support
 
@@ -445,7 +441,8 @@ def main(
             )
             # df = _add_`reference_information_insert(df,vcf_entry)
         else:
-            exit(1, f"Unknown variant type for {vcf_entry.REF} -> {vcf_entry.ALT}")
+            print(f"Unknown variant type for {vcf_entry.REF} -> {vcf_entry.ALT}")
+            # exit(1, f"Unknown variant type for {vcf_entry.REF} -> {vcf_entry.ALT}")
 
     if len(plots) == 0:
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
@@ -455,7 +452,6 @@ def main(
         return json_obj
 
     final_plot = column(*plots)
-    final_plot = plots[0]
     json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
     json_obj["additional_info"] = add_info
 
