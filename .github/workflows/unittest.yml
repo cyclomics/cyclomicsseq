@@ -9,22 +9,21 @@ on:
       - '*'
 
 jobs:  
-  RunPythonUnitTests:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout repo content
-        uses: actions/checkout@v2
+      # Step 1: Check out the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Conda dependencies
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: cycas
-          environment-file: environment.yml
-          python-version: 3.8
-          auto-activate-base: false
-      - name: Conda info
-        shell: bash -l {0}  # activate the conda environment
-        run: |
-          conda info
-          python -m unittest
-          conda list
+      # Step 2: Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Build the Docker image
+      - name: Build Docker image
+        run: docker build -t my-python-app .
+
+      # Step 4: Run the Docker container and execute tests
+      - name: Run tests in Docker container
+        run: docker run my-python-app python -m unittest
