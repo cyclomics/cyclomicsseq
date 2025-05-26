@@ -370,7 +370,6 @@ process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
     label 'many_cpu_medium'
-    container "cyclomics/cycas:0.6.0-rc1"
 
     input:
         tuple val(sample_id), val(file_id), path(bam), path(bai)
@@ -788,6 +787,7 @@ process PlotMetadataStats {
     2> >(tee -a ${sample_id}_error.txt >&2) || catch_plotting_errors.sh ${sample_id}_error.txt "${sample_id}_metadata_plots.json"
     """
 }
+
 process PlotVcfVariantsScatter {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
