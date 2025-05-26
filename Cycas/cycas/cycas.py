@@ -7,8 +7,6 @@ from src import app
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-old = False
-
 
 # Command Group, all others could initiate from this
 @click.group(name="tools")
@@ -173,4 +171,21 @@ def split_reads(
 
 
 if __name__ == "__main__":
+    # print("Cycas: Command line interface.")
+    # bam_file = 'reads3.bam'
+    # output = 'reads3_test_output.fastq'
+    # metadata_json = 'reads3_test_metadata.json'
+    # plot_readtypes = False
+    # plot_piechart = False
+    # show_class_counts = True
+    # limit_calls = 0
+
+    # app.create_classifications_consensus(
+    #     bam_file=bam_file,
+    #     output=output,
+    #     metadata_json=metadata_json,
+    #     plot_readtypes= plot_readtypes,
+    #     plot_piechart = plot_piechart,
+    #     limit_calls = limit_calls,
+    # )
     cli()
