@@ -95,7 +95,7 @@ def update_tags(
     return aln
 
 
-def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
+def make_tags(gen_meta, seg_meta, seg_id, metadata_json) -> Dict:
     """
     Given the metadata, create a dict with the tags as key and the corresponding value as value.
     """
@@ -105,21 +105,31 @@ def make_tags(gen_meta, seg_meta, seg_id) -> Dict:
     tags["YT"] = gen_meta["raw_length"]
     tags["YB"] = extract_barcode(gen_meta)
     tags["YP"] = extract_partner_locations(gen_meta)
+    tags['YS'] = metadata_json.stem
     # add more info if we find the segment data
     if seg_id:
         tags["YI"] = seg_id
 
+    requested_tags = {
+        "aligned_bases_before_consensus" : "YE" ,
+        "len" : "YL" ,
+        "alignment_position" : "YA" ,
+        "alignment_orientation" : "YR" ,
+        "alignment_count" : "YM" ,
+        "consensus_structure" : "YN" ,
+    }
     if seg_meta:
-        tags["YE"] = seg_meta["aligned_bases_before_consensus"]
-        tags["YL"] = seg_meta["len"]
-        tags["YA"] = seg_meta["alignment_position"]
-        tags["YR"] = seg_meta["alignment_orientation"]
-        tags["YM"] = seg_meta["alignment_count"]
+        for metadata, tag in requested_tags.items():
+            if metadata in seg_meta:
+                tags[tag] = seg_meta[metadata]
+            else:
+                print("Tag not found in segment metadata", metadata)
+
 
     return tags
 
 
-def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
+def main(metadata_json:Path, in_bam_path:Path, out_bam_path:Path, split_queryname=True):
     """
     Look up the Y tags in the metadata for all reads in a bam.
     """
@@ -139,7 +149,8 @@ def main(metadata_json, in_bam_path, out_bam_path, split_queryname=True):
             metadata_count += 1
             gen_meta = metadata[query_name]
             seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
-            tags = make_tags(gen_meta, seg_meta, seg_id)
+            tags = make_tags(gen_meta, seg_meta, seg_id, metadata_json)
+            
             aln = update_tags(aln, tags)
         out_bam_file.write(aln)
 

@@ -2,7 +2,6 @@ import statistics
 from abc import ABC, abstractmethod
 from collections import Counter
 from functools import lru_cache
-from unittest import result
 
 from loguru import logger
 

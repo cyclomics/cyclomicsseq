@@ -1,12 +1,9 @@
-from cgitb import reset
-from ctypes import Structure
 from functools import lru_cache
 from math import ceil, floor
 import re
 from collections import defaultdict
 from pprint import pprint
 from statistics import mean, median
-from turtle import position
 from typing import List, Tuple
 
 from loguru import logger
@@ -56,7 +53,8 @@ class Alignment:
         # Find all alternating letters and numbers
         cigars = list(
             zip(
-                re.findall("\D+", self.cigarstring), re.findall("\d+", self.cigarstring)
+                re.findall(r"\D+", self.cigarstring),
+                re.findall(r"\d+", self.cigarstring),
             )
         )
         # convert numerical part to an int

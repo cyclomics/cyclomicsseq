@@ -61,6 +61,7 @@ include {
     SamtoolsMergeBams as SamtoolsMergeBams
     SamtoolsMergeBams as SamtoolsMergeBamsFiltered
     SamtoolsFlagstats
+    PlotVcfVariantsScatter
     PasteVariantTable
     PasteContaminantTable
     PlotReport
@@ -355,7 +356,7 @@ workflow Report {
 
         // Variants
         PasteVariantTable(variants_vcf)
-
+        PlotVcfVariantsScatter(variants_vcf,consensus_bam) // prio 95
         // Contaminants
         // PasteContaminantTable(contaminants_vcf)
 
@@ -370,6 +371,7 @@ workflow Report {
             .combine(PlotMetadataStats.out, by: 0)
             .combine(PasteVariantTable.out, by: 0)
             // .combine(PasteContaminantTable.out, by: 0)
+            .combine(PlotVcfVariantsScatter.out, by: 0)
             .combine(SamtoolsFlagstats.out, by: 0)
             .combine(CountNonBackboneVariants.out, by: 0)
             .combine(SamtoolsIdxStats.out, by: 0)

@@ -788,6 +788,27 @@ process PlotMetadataStats {
     """
 }
 
+process PlotVcfVariantsScatter {
+    publishDir "${params.output_dir}/QC", mode: 'copy'
+    label 'many_low_cpu_high_mem'
+    memory { task.memory * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    maxRetries 3
+
+    input:
+    tuple val(sample_id), val(file_id), path(vcf) 
+    tuple val(sample_id2), val(file_id2), path(bam), path(bai)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_variant_scatter.json")
+
+    script:
+    """
+    plot_variant_support_scatter.py ${vcf} ${bam} ${sample_id}_variant_scatter.json ${params.priority_limit} \
+    2> >(tee -a error.txt >&2) || catch_plotting_errors.sh error.txt ${sample_id}_variant_scatter.json
+    """
+}
+
 process PlotReport {
     publishDir "${params.output_dir}", mode: 'copy'
     label 'many_low_cpu_high_mem'
