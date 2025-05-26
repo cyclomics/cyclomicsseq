@@ -1,5 +1,10 @@
 # changelog
 
+## 1.1.0
+
+- Added variant support scatterplots to the output report.
+- Updated Cycas to 0.5.2, allowing the YN tag to be added to the consensus BAM files, encoding consensus read structure.
+
 ## 1.0.0
 
 - Major overhaul to CyclomicsSeq, with a simpler workflow architecture. The EPI2ME interface and user guidelines on the `README.md` were also updated.
