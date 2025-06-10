@@ -1,5 +1,9 @@
 # changelog
 
+## 1.1.1
+
+- Updated Docker container to version 0.9.0, to include Cycas 0.5.2
+
 ## 1.1.0
 
 - Added variant support scatterplots to the output report.
