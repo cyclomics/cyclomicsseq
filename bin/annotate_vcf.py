@@ -22,7 +22,10 @@ def obtain_legacy_cosmic_id(
     """extract legacy information from the clinicaltables.nlm.nih.gov api."""
 
     query = base_url + cosv_id + "&ef=LegacyMutationID"
-    response = requests.get(url=query, headers={"Content-Type": "application/json"})
+    try:
+        response = requests.get(url=query, headers={"Content-Type": "application/json"})
+    except requests.exceptions.ConnectionError:
+        return "None"
     try:
         id_list = set(json.loads(response.text)[2]["LegacyMutationID"])
     except KeyError:  # LegacyMutationID was not found in
