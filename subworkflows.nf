@@ -158,12 +158,12 @@ workflow AlignByID {
         jsons
 
     main:
-        id = reads.map(it -> it[0])
         Minimap2Align(reads, reference_genome)
-        metadata_pairs = Minimap2Align.out.join(jsons).map(it -> tuple(it[0], it[1], it[2], it[4]))
+        metadata_pairs = Minimap2Align.out.combine(jsons, by:[0, 1])
 	    AnnotateBamYTags(metadata_pairs)
         bams = AnnotateBamYTags.out.groupTuple(by: 0).map(it -> tuple(it[0], it[1], it[2]))
-        bam = SamtoolsMergeBams(bams)
+        SamtoolsMergeBams(bams)
+        bam = SamtoolsMergeBams.out
 
     emit:
         bam
@@ -206,10 +206,10 @@ workflow AnnotateBam {
 workflow FilterBam {
     take:
         annotated_bam
-        minimun_repeat_count
+        minimum_repeat_count
 
     main:
-        BamTagFilter(annotated_bam, 'YM', minimun_repeat_count)
+        BamTagFilter(annotated_bam, 'YM', minimum_repeat_count)
         if (params.region_file != 'auto' && params.filter_by_alignment_rate == true) {
             BamAlignmentRateFilter(BamTagFilter.out)
             filtered_bam = BamAlignmentRateFilter.out

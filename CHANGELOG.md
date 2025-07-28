@@ -1,5 +1,11 @@
 # changelog
 
+## 1.1.1
+
+- Updated Docker container to version 0.9.0, to include Cycas 0.5.2
+- Fixes metadata pairing with consensus BAM files
+- Handles spontaneous connection errors when requesting cosmic legacy IDs, now leading to 'None' annotations in case of error
+
 ## 1.1.0
 
 - Added variant support scatterplots to the output report.
