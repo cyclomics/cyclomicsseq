@@ -162,6 +162,8 @@ class BaseConsensusCaller(ABC):
         """
         Add an empty location for all non insert alignments
         """
+        # TODO: this should be part of the alignment group object, not the consensus caller
+
         return [
             x.add_empty_location(i)
             for x in alignment_objects.values()
@@ -172,6 +174,8 @@ class BaseConsensusCaller(ABC):
         """
         Add _ at the start and end of COnsensus Alignment to make them all the same length
         """
+        # TODO: this should be part of the alignment group object, not the consensus caller
+
         required_additions = desired_length - len(alignment_object)
 
         alignment_object.seq += extender * required_additions
@@ -179,6 +183,7 @@ class BaseConsensusCaller(ABC):
         alignment_object.qual += [0] * required_additions
 
     def update_insert_locations(self, alignment_objects):
+        # TODO: this should be part of the alignment group object, not the consensus caller
         max_length = max([x.alignment_length for x in alignment_objects.keys()])
         max_insert_n = max(
             [x.extended_cigar.count("I") for x in alignment_objects.keys()]
@@ -297,7 +302,9 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
         for block in blocks:
             # Assign tag and increase appropriate counter
-            if block.consensus_chromosome.startswith("BB"):
+            if block.consensus_chromosome and block.consensus_chromosome.startswith(
+                "BB"
+            ):
                 tag = f"backbone{backbone_id}"
                 backbone_id += 1
             else:
@@ -336,7 +343,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 "barcode_array": barcode_arrays,
                 "alignment_count": len(block),
                 "aligned_bases_before_consensus": block.count_aligned_bases(),
-                "alignment_position": f"{block.consensus_chromosome}:{alignment_start}:{alignment_start+len(cons)}",
+                "alignment_position": f"{block.consensus_chromosome}:{alignment_start}:{alignment_start + len(cons)}",
                 "alignment_orientation": "R" if flipped else "F",
                 "original_read_positions": self.generate_block_positions(block),
                 "nt_repeat_support": best_nuc_support,
@@ -431,7 +438,6 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             # if we detect a real delition we dont have to do anything
             deletion_ratio = nucs.count("-") / len(nucs)
             if deletion_ratio >= self.minimal_deletion_ratio:
-
                 consensus_structure_entry = consensus_structure_seperator.join(
                     ["D" + str(len(filtered_nucs))] + reprs
                 )
