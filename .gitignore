@@ -132,3 +132,8 @@ dmypy.json
 plots/*
 data/*
 example_*
+results/
+data
+dev
+internal
+.snakemake

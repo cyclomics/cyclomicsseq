@@ -1,17 +1,16 @@
-from cgitb import reset
-from ctypes import Structure
-from functools import lru_cache
-from math import ceil, floor
 import re
 from collections import defaultdict
+from functools import lru_cache
+from math import ceil, floor
 from pprint import pprint
 from statistics import mean, median
-from turtle import position
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
+import pysam
 from loguru import logger
-from pysam import IndexedReads
 
+from .config import ReadClassificationConfig
+from .consecutiveness import ConsecutivenessStrategyFactory
 from .filters import Filter
 from .plots.spagettogram import create_spagettogram
 
@@ -35,6 +34,8 @@ class Alignment:
         self.raw_read_length = pysam_obj.infer_read_length()
         self.mapping_quality = pysam_obj.mapping_quality
         self.sequence = pysam_obj.query_alignment_sequence
+        self.nm_tag = pysam_obj.get_cigar_stats()[0][-1]
+        self.mapq = pysam_obj.mapq
 
         self.extended_cigar = self.extend_cigar(self.cigars)
         self.extended_seq = self.extend_sequence(
@@ -48,6 +49,30 @@ class Alignment:
         """String representation."""
         print(f"{self.readname} - {self.cigarstring} ({self.alignment_direction})")
 
+    def to_pysam(self) -> pysam.AlignedSegment:
+        seg = self.pysam_obj
+        seg.query_name = self.readname  # e.g. with _0 suffix if renamed
+        seg.reference_name = self.alignment_chromosome  # updated reference id
+        seg.reference_start = self.alignment_chromosome_start  # updated start
+        seg.mapping_quality = self.mapping_quality
+
+        seg.flag = seg.flag  # updated flag
+        seg.cigar = seg.cigar  # updated cigar, like with hard clips etc.
+
+        # TODO: modify query sequence and qualities
+        # seg.query_sequence = seg.query_sequence  # processed sequence if changed
+        # seg.query_qualities = seg.query_qualities  # processed qualities if changed
+
+        # TODO: modify supplementary alignments?
+        # NOTE: if read is split, only 1 primary will remain. Recalculate flag based on MAPQ?
+
+        # Update any optional or auxiliary tags (NM, AS, etc.)
+        # for tag, value in seg.tags:
+        #     if tag == "SA":
+        #         sup_alignments = value.split(";")
+        #     seg.set_tag(tag, value)
+        return seg
+
     def get_cigars(self, allow_flip=True) -> List[Tuple[str, int]]:
         """
         Converts a cigarstring into a workable format:
@@ -56,7 +81,8 @@ class Alignment:
         # Find all alternating letters and numbers
         cigars = list(
             zip(
-                re.findall("\D+", self.cigarstring), re.findall("\d+", self.cigarstring)
+                re.findall(r"\D+", self.cigarstring),
+                re.findall(r"\d+", self.cigarstring),
             )
         )
         # convert numerical part to an int
@@ -79,7 +105,7 @@ class Alignment:
         try:
             value = int(self.cigars[0][1])
         except IndexError:
-            logger.critical(f"Could not retrieve cigar value for alignment")
+            logger.critical("Could not retrieve cigar value for alignment")
             value = 0
 
         return value
@@ -155,21 +181,28 @@ class AlignmentGroup:
     def __init__(
         self,
         read_name: str,
-        bam: IndexedReads,
+        bam: pysam.IndexedReads,
         filters: List[Filter],
         keep_per_read_objects: bool = True,
+        config: ReadClassificationConfig = None,
     ):
         """
         Class to store all alignments of a given read in a bam file
         """
         logger.debug(f"{self.__class__.__name__} created")
+        self.config = config or ReadClassificationConfig()
         self.read_name = read_name
         self.read_length_raw = 0  # gets updated by the get_alignments
         self.filters = filters
         self.keep_per_read_objects = keep_per_read_objects
+        self.high_reject_ratio = False
 
-        self.alignments, self.alignment_count_prefilter = self.get_alignments(bam)
+        (self.alignments, self.alignment_count_prefilter) = self.get_alignments(bam)
+
         self.sort_alignments()
+        self.assign_alignment_ids()
+        self.structure = self.create_intermediate_read_structure()
+        self.clusters = self.parse_structure()
         self.consensus_chromosome = None
 
     def __len__(self):
@@ -180,6 +213,29 @@ class AlignmentGroup:
 
     def __repr__(self) -> str:
         return f"AlignmentGroup for {self.read_name} containing {len(self)} Alignments on {self.alignment_chromosomes_present()}"
+
+    @classmethod
+    def from_existing(
+        cls, existing_group: "AlignmentGroup", id: str, alignments: List
+    ) -> "AlignmentGroup":
+        """
+        Create a new AlignmentGroup instance based on an existing one,
+        but replacing the alignments list.
+        """
+        new_group = cls.__new__(cls)  # create an uninitialized instance
+
+        # Copy relevant attributes from existing_group
+        new_group.read_name = existing_group.read_name + f"_{id}"
+        new_group.read_length_raw = existing_group.read_length_raw
+        new_group.filters = existing_group.filters
+        new_group.keep_per_read_objects = existing_group.keep_per_read_objects
+        new_group.consensus_chromosome = existing_group.consensus_chromosome
+
+        # Override the alignments and related attributes
+        new_group.alignments = alignments
+        new_group.alignment_count_prefilter = len(alignments)
+
+        return new_group
 
     def get_start_position(self):
         "return the median start position of all alignments in the group, note that it does not take chromosomes into account."
@@ -235,24 +291,17 @@ class AlignmentGroup:
 
     def create_intermediate_read_structure(self):
         """
-        create an alternative representatation of a read that follows the following structure:
-
-        bases_on_read:type:orient:assembly:position:mapping_length:ID
+        Create an alternative representation of a read with the structure:
+        bases_on_read:type:orient:assembly:alignment_position:read_position:mapping_length:ID
         """
         structure = []
-        visited_positions = defaultdict(dict)
-        position_margin = 250
-
         gaps = self.find_unaligned_regions()
-        first_aln_cigars = self.alignments[0].cigars
-        if first_aln_cigars[0][0] in ["H", "S"]:
-            gaps.insert(0, first_aln_cigars[0][1])
-        else:
-            gaps.insert(0, 0)
 
-        for n, (aln, gap) in enumerate(zip(self.alignments, gaps)):
-            if gap != 0:
+        for aln, gap in zip(self.alignments, gaps):
+            if gap > 0:
                 structure.append(f"{gap}:U")
+            elif gap < 0:
+                structure.append(f"{gap}:O")
 
             len_bases = aln.alignment_length
             len_mapping = len(aln.sequence)
@@ -260,27 +309,115 @@ class AlignmentGroup:
             type = "BB" if aln.alignment_chromosome.startswith("BB") else "I"
             orientation = "F" if aln.alignment_direction == "+" else "R"
             assembly = aln.alignment_chromosome
-            position = aln.alignment_chromosome_start
-
-            # we find out what the ID is using an nested dict of [assembly][position] = ID
-            ID = None
-            # new assembly so ID must be 0
-            if len(visited_positions[assembly].keys()) == 0:
-                visited_positions[assembly][position] = 0
-
-            # Check all other positions, if the absolute value is less than the threshold we give it the same ID
-            for posible_match in visited_positions[assembly].keys():
-                if abs(posible_match - position) < position_margin:
-                    ID = visited_positions[assembly][posible_match]
-            if ID == None:
-                ID = max(visited_positions[assembly].values()) + 1
-                visited_positions[assembly][position] = ID
+            aln_position = aln.alignment_chromosome_start
+            read_position = aln.first_cigar_value
 
             structure.append(
-                f"{len_bases}:{type}:{orientation}:{assembly}:{position}:{len_mapping}:{ID}"
+                f"{len_bases}:{type}:{orientation}:{assembly}:{aln_position}:{read_position}:{len_mapping}:{aln.id}"
             )
 
+        # If concatemer ends in a gap, add it
+        last_aln_cigars = self.alignments[-1].cigars
+        if last_aln_cigars[-1][0] in ["H", "S"]:
+            structure.append(f"{last_aln_cigars[-1][1]}:U")
+
         return ",".join(structure)
+
+    def parse_structure(self) -> List[Tuple[int, List[Dict], bool]]:
+        """
+        Parse a structure string into clusters with consecutiveness info.
+
+        Args:
+            structure: Comma-separated segment string.
+
+        Returns:
+            List of tuples: (cluster_id, cluster_blocks, is_consecutive)
+        """
+        blocks = self.structure.strip().split(",")
+        insert_blocks = self.parse_insert_blocks(blocks)
+        # NOTE: TEMPORARY
+        self.all_blocks = insert_blocks
+        clusters = self.group_by_rel_id(insert_blocks)
+        return clusters
+
+    def parse_insert_blocks(self, blocks: List[str]) -> List[Dict]:
+        """
+        Extract insert blocks and their metadata from parsed structure strings.
+
+        Args:
+            blocks: List of colon-delimited segment strings.
+
+        Returns:
+            A list of dictionaries containing parsed insert block fields:
+            - "ori": orientation
+            - "ref": reference name
+            - "pos": genomic position
+            - "read_pos": position within read
+            - "rel_id": relative segment ID
+        """
+        insert_blocks = []
+
+        for block in blocks:
+            parts = block.split(":")
+            if len(parts) < 8 or parts[1] != "I":
+                continue
+            _, btype, ori, ref, aln_pos, read_pos, _, rel_id = parts
+            if ref.startswith(self.config.backbone_prefix):
+                continue  # Skip backbone
+            try:
+                pos = int(aln_pos)
+            except ValueError:
+                continue
+            insert_blocks.append(
+                {
+                    "ori": ori,
+                    "ref": ref,
+                    "pos": pos,
+                    "read_pos": int(read_pos),
+                    "rel_id": int(rel_id),
+                }
+            )
+
+        return insert_blocks
+
+    def group_by_rel_id(self, blocks: List[Dict]) -> List[Tuple[int, List[Dict], bool]]:
+        """
+        Cluster insert blocks by their relative ID (rel_id) and determine consecutiveness.
+
+        Args:
+            blocks: A list of parsed insert block dictionaries.
+
+        Returns:
+            List of tuples: (cluster_id, cluster_blocks, is_consecutive)
+        """
+        grouped_blocks = defaultdict(list)
+        for block in blocks:
+            grouped_blocks[int(block["rel_id"])].append(block)
+
+        clusters = []
+        for cluster_id, cluster in grouped_blocks.items():
+            is_consec = self.is_cluster_consecutive(cluster_id, blocks)
+            clusters.append((cluster_id, cluster, is_consec))
+
+        return clusters
+
+    def is_cluster_consecutive(self, cluster_id: int, all_blocks: List[Dict]) -> bool:
+        """
+        Determine if a cluster is consecutive in read order using the configured strategy.
+
+        Args:
+            cluster_id: The relative ID of the cluster.
+            all_blocks: All blocks for this read.
+
+        Returns:
+            True if consecutive according to the selected strategy.
+        """
+        method = self.config.consecutiveness_method
+        threshold = self.config.consecutiveness_threshold
+
+        strategy = ConsecutivenessStrategyFactory().get_strategy(method)
+        metric = strategy.calculate_metric(cluster_id, all_blocks)
+        return strategy.is_consecutive(metric, threshold)
 
     def alignment_chromosomes_present(self, directional=True) -> Tuple[str, str]:
         """Create a tuple from the chromosomes where the is alignment."""
@@ -316,38 +453,25 @@ class AlignmentGroup:
         logger.debug("done filtering by position")
 
     def _alignments_rejected_warn(
-        self, alignments_rejected, alignments, info_threshold=0.51, warn_threshold=0.80
+        self, alignments_rejected, alignments, warn_threshold=1.8
     ):
-        # Trow info logger above th
         if (
-            alignments_rejected
-            and len(alignments_rejected) / (len(alignments_rejected) + len(alignments))
-            > info_threshold
-        ):
-            logger.info(
-                f"rejected {len(alignments_rejected.keys())}/{len(alignments) + len(alignments_rejected.keys())} alignments on read {self.read_name}"
-            )
-        # Trow warn logger above th
-        if (
-            alignments_rejected
-            and len(alignments_rejected) / (len(alignments_rejected) + len(alignments))
+            len(alignments_rejected) / (len(alignments_rejected) + len(alignments))
             > warn_threshold
         ):
-            logger.warning(
-                f"rejected {len(alignments_rejected.keys())}/{len(alignments) + len(alignments_rejected.keys())} alignments on read {self.read_name}"
-            )
+            self.high_reject_ratio = True
 
     @staticmethod
     def _update_alignments_rejected(cigar_string, alignments_rejected, filter_status):
         """
         Helper function to update the failed alignments and why
         """
-        failed_filters = [key for key, value in filter_status.items() if value == False]
+        failed_filters = [key for key, value in filter_status.items() if not value]
         for filt in failed_filters:
             alignments_rejected[cigar_string].add(filt)
         return alignments_rejected
 
-    def get_alignments(self, bam: IndexedReads) -> List[Alignment]:
+    def get_alignments(self, bam: pysam.IndexedReads) -> List[Alignment]:
         """
         Collect all pysam alignmentsegment objects in a wrapper class in the propper way.
         This is done since the cigarstring of reversely mapping reads needs to be reversed.
@@ -387,7 +511,35 @@ class AlignmentGroup:
 
         # Trow some warnings if we reject stuff
         self._alignments_rejected_warn(alignments_rejected, alignments)
-        return alignments, alignment_count
+        return (
+            alignments,
+            alignment_count,
+        )
+
+    def assign_alignment_ids(self, position_margin: int = 250) -> None:
+        """
+        Assigns an integer ID to each alignment in self.alignments.
+        IDs are reused for alignments mapped to similar regions within the same chromosome.
+        """
+        visited: defaultdict[str, dict[int, int]] = defaultdict(dict)
+        next_id = 0
+
+        for aln in self.alignments:
+            assembly = aln.alignment_chromosome
+            aln_position = aln.alignment_chromosome_start
+
+            ID = None
+            for pos, existing_id in visited[assembly].items():
+                if abs(pos - aln_position) <= position_margin:
+                    ID = existing_id
+                    break
+
+            if ID is None:
+                ID = next_id
+                next_id += 1
+
+            visited[assembly][aln_position] = ID
+            aln.id = ID  # Assign ID to the alignment object
 
     def sort_alignments(self):
         logger.debug("sorting AlignmentGroup")

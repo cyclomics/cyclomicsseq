@@ -4,16 +4,53 @@ CYclomics Consensus Alignment Sequences, or the interesting genus of the ["vrede
 
 Cycas uses the alignment against the reference genome to determine the type of read, and creates consensus sequences accordingly.
 
+## TODO
 
-## Todo
-
-- add unittests
-- Remove pandas as dependancy (in piechart code)
-- explore gap extention (inclusion of original fastq)
-- explore superalignment (aka realignment of secondary alignments) (potentially fixed by better alignment)
-- Add code to create piechart from multiple metadata jsons.
+- Better default management. Defaults should only be defined in the "public" space, all the rest should contain no defaults and require explicit.
+- Rewrite of the metric system:
+  - Rethink of different levels of metrics (per read, per file, per run).
+  - Plots per metric, save to a small file ready for plotting. plot/save/load methods per metric.
+  - Callback system for metrics to add in app calls.
+  - Unit tests and examples for classification/split/metrics/algorithms.
+- Rotate consensus reads: complement MSA arrays, such that overlapping nucleotides are identified by some sort of index number.
+- Remove deprecated legacy code.
 
 ## Changelog
+
+### 0.6.0
+ - Major changes to Cycas, enabling splitting of chimeric reads, classification of concatemer structures and calibration of consensus quality scores.
+ - Introduced the following commands to `cycas.py`:
+   - `consensus` generates consensus from an aligned BAM file, outputs a consensus FASTQ and optionally a metadata JSON.
+   - `classify` (for advanced users) splits and classifies reads from an aligned BAM file, outputs a split BAM file, a FASTQ file and optionally an HDF5 file. Does not perform consensus.
+   - `simulate` (for advanced users) simulates CyclomicsSeq reads from a reference genome.
+   - `file-prep` (for advanced users) prepares data from an HDF5 file for calibration.
+   - `fit-model` (for advanced users) fits the model according to the prepared data.
+   - `quick-consensus` (DEPRECATED) generates the structure-unaware consensus. Previously `consensus`.
+   - `quick-consensus-sr` (DEPRECATED) generates structure-unaware consensus for a single read. Previously `single-read`.
+ - Changed segment IDs to be locus-specific, unaware of orientation (if two alignments are in the same region, they will have the same ID irrespective of their orientation).
+
+### 0.5.3
+ - Fix an issue in alternative representation where first alignment gap was added twice
+ - Fix an issue in alternative representation where last alignment gap was not added
+ - Change annotation of negative alignment gap lengths to correctly describe overlaps (e.g. `-6:O` instead of `-6:U`)
+ - Add segment start position within concatemer to alternative representation
+ - Extend unit tests for alternative representation
+
+### 0.5.2
+ - Add YN tags for the consensus structure of reads
+
+### 0.5.1
+ - Change user for nextflow compatibility
+
+### 0.5.0
+ - Update dependencies to python 3.12 in new docker file
+ - Change regex patterns to new syntax
+ - Remove unused imports
+
+### 0.4.9
+ - Updated docker container
+ - Added procps
+ - Minor log changes
 
 ### 0.4.8
 - Optimized `minimal_deletion_ratio` to new optimum (`minimal_deletion_ratio=55`) as described in ELAB experiment 300
