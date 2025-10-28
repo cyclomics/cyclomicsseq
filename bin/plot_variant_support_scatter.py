@@ -88,7 +88,6 @@ def get_relevant_YN_support(
             continue
 
         elif YN_pos == query_position:
-
             relevant_YN_struct = sub_struct
             break
 
@@ -397,7 +396,7 @@ def main(
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
-        # Initialize HTML tab
+    # Initialize HTML tab
 
     if TAB_PRIORITY > priority_limit:
         with open(Path(output_path).with_suffix(".json"), "w") as f:
@@ -447,30 +446,18 @@ def main(
     if len(plots) == 0:
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
             "",
-            "<h1>No variants where plotable, indels are not plotted.</h1>",
+            "<h1>No SNPs were found to plot.</h1>",
         )
-        return json_obj
+    else:
+        final_plot = column(*plots)
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
+        json_obj["additional_info"] = add_info
 
-    final_plot = column(*plots)
-    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
-    json_obj["additional_info"] = add_info
-
-    print("writing json")
-    print(output_path)
     with open(output_path, "w") as f:
         f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":
-    # test_vcf = "/home/dami/Software/cyclomicsseq/vis_test_data_cyc000492_bc2/variants/annotated/gDNA_Healthy_Controls_RCA_1_BF40c5B_barcode02_annotated.vcf"
-    # test_bam = "/home/dami/Software/cyclomicsseq/vis_test_data_cyc000492_bc2/consensus_aligned/gDNA_Healthy_Controls_RCA_1_BF40c5B_barcode02.YM_gt_3.bam"
-    # test_output = "output.html"
-    # main(test_vcf, test_bam, test_output)
-
-    # test_output = "output_az4.html"
-    # main(test_vcf, test_bam, test_output)
-
-    # Uncomment the following lines to run the script from the command line
     import argparse
 
     parser = argparse.ArgumentParser(description="Plot variant support scatter plot.")
@@ -481,4 +468,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.vcf_path, args.bam_path, args.output_path, args.priority_limit )
+    main(args.vcf_path, args.bam_path, args.output_path, args.priority_limit)
