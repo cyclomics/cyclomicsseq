@@ -15,6 +15,16 @@ Cycas uses the alignment against the reference genome to determine the type of r
 
 ## Changelog
 
+### 0.5.4
+ - Hotfix an issue where base quality probabilities are invalid during block consensus. If probabilitiy type is invalid, no consensus is provided for that read.
+
+### 0.5.3
+ - Fix an issue in alternative representation where first alignment gap was added twice
+ - Fix an issue in alternative representation where last alignment gap was not added
+ - Change annotation of negative alignment gap lengths to correctly describe overlaps (e.g. `-6:O` instead of `-6:U`)
+ - Add segment start position within concatemer to alternative representation
+ - Extend unit tests for alternative representation
+
 ### 0.5.2
  - Add YN tags for the consensus structure of reads
 
