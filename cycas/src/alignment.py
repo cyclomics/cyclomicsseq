@@ -1,12 +1,9 @@
-from cgitb import reset
-from ctypes import Structure
-from functools import lru_cache
-from math import ceil, floor
 import re
 from collections import defaultdict
+from functools import lru_cache
+from math import ceil, floor
 from pprint import pprint
 from statistics import mean, median
-from turtle import position
 from typing import List, Tuple
 
 from loguru import logger
@@ -56,7 +53,8 @@ class Alignment:
         # Find all alternating letters and numbers
         cigars = list(
             zip(
-                re.findall("\D+", self.cigarstring), re.findall("\d+", self.cigarstring)
+                re.findall(r"\D+", self.cigarstring),
+                re.findall(r"\d+", self.cigarstring),
             )
         )
         # convert numerical part to an int
@@ -79,7 +77,7 @@ class Alignment:
         try:
             value = int(self.cigars[0][1])
         except IndexError:
-            logger.critical(f"Could not retrieve cigar value for alignment")
+            logger.critical("Could not retrieve cigar value for alignment")
             value = 0
 
         return value
@@ -237,22 +235,19 @@ class AlignmentGroup:
         """
         create an alternative representatation of a read that follows the following structure:
 
-        bases_on_read:type:orient:assembly:position:mapping_length:ID
+        bases_on_read:type:orient:assembly:alignment_position:read_position:mapping_length:ID
         """
         structure = []
-        visited_positions = defaultdict(dict)
+        visited = defaultdict(lambda: defaultdict(dict))
         position_margin = 250
 
         gaps = self.find_unaligned_regions()
-        first_aln_cigars = self.alignments[0].cigars
-        if first_aln_cigars[0][0] in ["H", "S"]:
-            gaps.insert(0, first_aln_cigars[0][1])
-        else:
-            gaps.insert(0, 0)
 
         for n, (aln, gap) in enumerate(zip(self.alignments, gaps)):
-            if gap != 0:
+            if gap > 0:
                 structure.append(f"{gap}:U")
+            elif gap < 0:
+                structure.append(f"{gap}:O")
 
             len_bases = aln.alignment_length
             len_mapping = len(aln.sequence)
@@ -260,25 +255,44 @@ class AlignmentGroup:
             type = "BB" if aln.alignment_chromosome.startswith("BB") else "I"
             orientation = "F" if aln.alignment_direction == "+" else "R"
             assembly = aln.alignment_chromosome
-            position = aln.alignment_chromosome_start
+            aln_position = aln.alignment_chromosome_start
+            read_position = aln.first_cigar_value
 
-            # we find out what the ID is using an nested dict of [assembly][position] = ID
+            # Calculate ID for this alignment segment
+            existing_IDs = []
             ID = None
-            # new assembly so ID must be 0
-            if len(visited_positions[assembly].keys()) == 0:
-                visited_positions[assembly][position] = 0
 
-            # Check all other positions, if the absolute value is less than the threshold we give it the same ID
-            for posible_match in visited_positions[assembly].keys():
-                if abs(posible_match - position) < position_margin:
-                    ID = visited_positions[assembly][posible_match]
-            if ID == None:
-                ID = max(visited_positions[assembly].values()) + 1
-                visited_positions[assembly][position] = ID
+            for pos, (existing_id, existing_orient) in (
+                visited.get(type, {}).get(assembly, {}).items()
+            ):
+                if abs(pos - aln_position) < position_margin:
+                    if orientation == existing_orient:
+                        ID = existing_id
+                        break
+                    else:
+                        existing_IDs.append(existing_id)
 
+            # No match found → assign next ID
+            if ID is None:
+                existing_IDs += [
+                    id
+                    for asm in visited.get(type, {}).values()
+                    for id, _ in asm.values()
+                ]
+                ID = max(existing_IDs, default=-1) + 1
+
+            # Store (ID, orientation)
+            visited[type][assembly][aln_position] = (ID, orientation)
+
+            # Add segment to structure
             structure.append(
-                f"{len_bases}:{type}:{orientation}:{assembly}:{position}:{len_mapping}:{ID}"
+                f"{len_bases}:{type}:{orientation}:{assembly}:{aln_position}:{read_position}:{len_mapping}:{ID}"
             )
+
+        # If concatemer ends in a gap, add it to structure
+        last_aln_cigars = self.alignments[-1].cigars
+        if last_aln_cigars[-1][0] in ["H", "S"]:
+            structure.append(f"{last_aln_cigars[-1][1]}:U")
 
         return ",".join(structure)
 

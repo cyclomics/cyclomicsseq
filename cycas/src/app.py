@@ -1,13 +1,7 @@
-from cgitb import reset
-from curses import meta
 import json
 import re
-import sys
-from collections import Counter
 from pathlib import Path
-from typing import Dict
 
-import click
 import pysam
 from loguru import logger
 
@@ -15,11 +9,8 @@ from src.alignment import AlignmentGroup
 from src.barcode_extractor import UNKNOWN_BARCODE
 from src.consensus_caller import ConsensusCallerMetadata
 from src.filters import (
-    FilterMinimunMappingQuality,
-    FilterMinimunRawReadLength,
     FilterSecondaryAlignments,
 )
-from src.plots.piechart import create_piechart
 from tqdm import tqdm
 
 from src.classification_rules import RuleFactory

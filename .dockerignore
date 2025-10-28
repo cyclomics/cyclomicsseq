@@ -1,5 +1,10 @@
-plots/*
-images/*
-example_*
-development_notebooks/*
-.vscode/*
+plots
+images
+example
+development_notebooks
+.vscode
+create_docker.sh
+cycas_and_align.sh
+dockerfile
+README.md
+**_pycache__

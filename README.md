@@ -15,6 +15,32 @@ Cycas uses the alignment against the reference genome to determine the type of r
 
 ## Changelog
 
+### 0.5.4
+ - Hotfix an issue where base quality probabilities are invalid during block consensus. If probabilitiy type is invalid, no consensus is provided for that read.
+
+### 0.5.3
+ - Fix an issue in alternative representation where first alignment gap was added twice
+ - Fix an issue in alternative representation where last alignment gap was not added
+ - Change annotation of negative alignment gap lengths to correctly describe overlaps (e.g. `-6:O` instead of `-6:U`)
+ - Add segment start position within concatemer to alternative representation
+ - Extend unit tests for alternative representation
+
+### 0.5.2
+ - Add YN tags for the consensus structure of reads
+
+### 0.5.1
+ - Change user for nextflow compatibility
+
+### 0.5.0
+ - Update dependencies to python 3.12 in new docker file
+ - Change regex patterns to new syntax
+ - Remove unused imports
+
+### 0.4.9
+ - Updated docker container
+ - Added procps
+ - Minor log changes
+
 ### 0.4.8
 - Optimized `minimal_deletion_ratio` to new optimum (`minimal_deletion_ratio=55`) as described in ELAB experiment 300
 

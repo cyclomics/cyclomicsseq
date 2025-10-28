@@ -10,7 +10,7 @@ from .barcode_extractor import BarcodeExtrator
 
 
 class ConsensusAlignment:
-    def __init__(self, extended_seq, extended_cigar, extended_qual):
+    def __init__(self, extended_seq, extended_cigar, extended_qual, direction=None):
         self.consensus_cigar = ""
         self.consensus_seq = ""
         self.consensus_quality = ""
@@ -18,6 +18,7 @@ class ConsensusAlignment:
         self.seq = extended_seq
         self.cigar = extended_cigar
         self.qual = extended_qual
+        self.direction = direction
         # self.qual = np.array(extended_qual)
 
     def __repr__(self):
@@ -153,6 +154,7 @@ class BaseConsensusCaller(ABC):
                 extended_seq=start_extender * start_extension + i.extended_seq,
                 extended_cigar=start_extender * start_extension + i.extended_cigar,
                 extended_qual=extended_qual,
+                direction=i.alignment_direction,
             )
         return consensus
 
@@ -318,8 +320,12 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 alignment_start,
                 best_nuc_support,
                 flipped,
+                consensus_structure,
             ) = self.create_block_consensus(block)
 
+            full_consensus_structure = "|".join(
+                [str(len(consensus_structure)), str(len(cons))] + consensus_structure
+            )
             # add to the reporting for the output
             result[tag] = {
                 "filtered": filter_on_count,
@@ -330,10 +336,11 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 "barcode_array": barcode_arrays,
                 "alignment_count": len(block),
                 "aligned_bases_before_consensus": block.count_aligned_bases(),
-                "alignment_position": f"{block.consensus_chromosome}:{alignment_start}:{alignment_start+len(cons)}",
+                "alignment_position": f"{block.consensus_chromosome}:{alignment_start}:{alignment_start + len(cons)}",
                 "alignment_orientation": "R" if flipped else "F",
                 "original_read_positions": self.generate_block_positions(block),
                 "nt_repeat_support": best_nuc_support,
+                "consensus_structure": full_consensus_structure,
             }
         return result
 
@@ -375,20 +382,36 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
         alignment_start = 0
         aligned_segment_count = len(consensus_alignments)
         best_nuc_support = []
+        consensus_structure = []
+        consensus_structure_seperator = ","
+        invalid_block = False
         # loop over all posible positions
         for i in range(max_length):
             nucs = [x.get_seq_pos(i) for x in consensus_alignments.values()]
             quals = [x.get_qual_pos(i) for x in consensus_alignments.values()]
             started_or_ended_count = len([x for x in nucs if x == "_"])
+            directions = [x.direction for x in consensus_alignments.values()]
 
             # remove non-participating reads, check if we have enough participation to make consensus
             filtered_nucs = []
             filtered_quals = []
+            filtered_directions = []
 
-            for n, q in zip(nucs, quals):
+            for n, q, d in zip(nucs, quals, directions):
                 if n != "_":
                     filtered_nucs.append(n)
                     filtered_quals.append(q)
+                    filtered_directions.append(d)
+
+            reprs = []
+
+            for n, q, d in zip(filtered_nucs, filtered_quals, filtered_directions):
+                if n == "-":
+                    base = "D"
+                else:
+                    base = n.capitalize() if d == "+" else n.lower()
+                string_repr = f"{base}{q}"
+                reprs.append(string_repr)
 
             nucs = filtered_nucs
             quals = filtered_quals
@@ -398,15 +421,29 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
                 len(nucs) < 2
                 or math.ceil(aligned_segment_count * 0.1) < started_or_ended_count
             ):
+                consensus_structure_entry = consensus_structure_seperator.join(
+                    ["D" + str(len(filtered_nucs))] + reprs
+                )
+                consensus_structure.append(consensus_structure_entry)
+                logger.debug("skipping consensus base creation due to low coverage")
                 continue
+            logger.debug("starting consensus creation")
 
             # if we detect a real delition we dont have to do anything
             deletion_ratio = nucs.count("-") / len(nucs)
             if deletion_ratio >= self.minimal_deletion_ratio:
+                consensus_structure_entry = consensus_structure_seperator.join(
+                    ["D" + str(len(filtered_nucs))] + reprs
+                )
+                consensus_structure.append(consensus_structure_entry)
+                logger.debug(
+                    f"skipping consensus base creation due to deletion ratio {deletion_ratio}"
+                )
                 continue
 
             filtered_nucs = []
             filtered_quals = []
+            # Remove deltions from the descision making
             for n, q in zip(nucs, quals):
                 if n != "-":
                     filtered_nucs.append(n)
@@ -415,7 +452,15 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             nucs = filtered_nucs
             quals = filtered_quals
             # now we can calculate probs
-            probs = [self.phred_to_prob(x) for x in quals]
+            try:
+                probs = [self.phred_to_prob(x) for x in quals]
+            except TypeError:
+                invalid_block = True
+                logger.exception(
+                    f"Could not convert Phred scores to probabilities. "
+                    f"Values are either NoneType or float: {quals}"
+                )
+                break
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             best_nuc_support.append(tuple([nucs.count(best_nuc), len(nucs)]))
@@ -432,11 +477,16 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
             consensus += best_nuc
             quality.append(determined_qual)
-
+            consensus_structure_entry = consensus_structure_seperator.join(
+                [best_nuc + str(len(filtered_nucs))] + reprs
+            )
+            consensus_structure.append(consensus_structure_entry)
+            pass
         # get barcode, we need to do this here since we need positional awareness within the barcode alignment
         barcode_extractor = BarcodeExtrator(
             alignment_blocks=consensus_alignments, offset=block.get_start_position()
         )
+
         barcode, barcode_arrays = barcode_extractor.extract_barcode()
         logger.debug("barcode extractor made")
 
@@ -446,7 +496,20 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             consensus = str(Seq(consensus).reverse_complement())
             quality = quality[::-1]
             best_nuc_support = best_nuc_support[::-1]
+            consensus_structure = consensus_structure[::-1]
             flipped = True
+
+        if invalid_block:
+            return (
+                "",
+                [],
+                barcode,
+                barcode_arrays,
+                alignment_start,
+                best_nuc_support,
+                flipped,
+                [],
+            )
 
         return (
             consensus,
@@ -456,4 +519,5 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             alignment_start,
             best_nuc_support,
             flipped,
+            consensus_structure,
         )
