@@ -369,6 +369,7 @@ process BwaMemContaminants{
 process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
+    container "cyclomics/cycas:0.6.0"
     label 'many_cpu_medium'
 
     input:
@@ -380,8 +381,7 @@ process Cycas{
     script:
         
         """
-        mkdir plots
-        python $params.cycas_location consensus --bam-file $bam --output ${file_id}.consensus.fastq --metadata-json  ${file_id}.metadata.json
+        python $params.cycas_location consensus --input-bam $bam --output-fastq ${file_id}.consensus.fastq --output-json ${file_id}.metadata.json --calibration-model ${params.calibration_model}
         """
     }
 
@@ -600,7 +600,7 @@ process SeparateMultiallelicVariants{
 }
 
 process FindRegionOfInterest{
-    // publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
     
     input:
@@ -647,7 +647,7 @@ process PlotFastqsQUalAndLength {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
 
     input:
     tuple val(sample_id), path(fastq)
@@ -671,8 +671,8 @@ process PlotReadStructure {
     label 'many_cpu_medium'
 
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries 3
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    // maxRetries 3
 
     input:
     tuple val(sample_id), val(file_id), path(bam), path(bai)
@@ -695,8 +695,8 @@ process PlotVcf {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries 3
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    // maxRetries 3
 
     input:
     tuple val(sample_id), val(file_id), path(vcf)
@@ -715,7 +715,7 @@ process PlotVcf {
 process PasteVariantTable {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
 
     input:
     tuple val(sample_id), val(file_id), path(vcf_file)
@@ -733,7 +733,7 @@ process PasteVariantTable {
 process PasteContaminantTable {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
 
     input:
     tuple val(sample_id), path(vcf_file)
@@ -752,7 +752,7 @@ process PlotQScores {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
 
     input:
     tuple val(sample_id), path(split_pileup), path(consensus_pileup)
@@ -772,8 +772,8 @@ process PlotMetadataStats {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_huge_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries 3
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    // maxRetries 3
 
     input:
     tuple val(sample_id), path(jsons)
@@ -792,8 +792,8 @@ process PlotVcfVariantsScatter {
     publishDir "${params.output_dir}/QC", mode: 'copy'
     label 'many_low_cpu_high_mem'
     memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries 3
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    // maxRetries 3
 
     input:
     tuple val(sample_id), val(file_id), path(vcf) 

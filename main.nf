@@ -31,7 +31,7 @@ params.output_dir                 = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.report                     = "detailed"
+params.report                     = "standard"
 params.split_fastq_by_size        = true
 params.split_on_adapter           = false
 params.filter_by_alignment_rate   = false
@@ -39,7 +39,7 @@ params.sequence_summary_tagging   = false
 params.include_fastq_fail         = false
 
 params.synthetics_file            = "$projectDir/contaminants/synthetic_mutants.fasta"
-params.priority_limit             = (params.report == "detailed") ? 9999 : 89
+params.priority_limit             = (params.report == "standard") ? 9999 : 89
 
 // Pipeline performance metrics
 params.min_repeat_count           = 3
@@ -108,19 +108,14 @@ if (params.profile_selected == "conda") {
 ========================================================================================
 */
 include {
-    Report
     FilterWithAdapterDetection
     CycasConsensus
     AlignByID
-    AlignContaminants
     PrepareGenome
     AnnotateBam
     FilterBam
-    ProcessTargetRegions as ProcessContaminantRegions
     ProcessTargetRegions
-    CallContaminantMutants
-    CallVariantsValidate
-    CrosscheckContaminantVariants
+    Report
 } from "./subworkflows.nf"
 
 
@@ -306,57 +301,18 @@ workflow {
 
 /*
 ========================================================================================
-03.    Variant calling
+02.    Variant Calling
 ========================================================================================
-*/  
-    locations = ""
-    variant_vcf = ""
-
+*/ 
     ProcessTargetRegions(region_file, reads_aligned)
     regions = ProcessTargetRegions.out
-    CallVariantsValidate(reads_aligned_filtered, regions, fasta_combi)
-    locations = CallVariantsValidate.out.locations
-    variant_vcf = CallVariantsValidate.out.variants
-
 
 /*
 ========================================================================================
-04.    Contamination check
+03.    Reporting
 ========================================================================================
 */  
-    synthetic_vcf = ""
-
-    // String[] contaminantSeqExt = [".fasta", ".fna", ".fa", ".fastq", ".fq"]
-
-    // if (params.synthetics_file.endsWithAny(contaminantSeqExt)) {
-    //     AlignContaminants(synthetic_reads, PrepareGenome.out.fasta_ref, bwa_index)
-    //     synthetics_aligned = AlignContaminants.out.bam
-    //     synthetics
-    //     // ProcessContaminantRegions(region_file, synthetics_aligned)
-    //     ProcessContaminantRegions('auto', synthetics_aligned)
-
-    //     CallContaminantMutants(synthetics_aligned,  ProcessContaminantRegions.out, PrepareGenome.out.fasta_combi)
-    //     synthetic_vcf = CallContaminantMutants.out.variants       
-
-    // } else if (params.synthetics_file.endsWith(".vcf")) {
-    //     synthetic_vcf = synthetic_reads
-
-    // } else {
-    //     error "Invalid --synthetics_file format: ${params.synthetics_file}"
-    // }
-
-    if (synthetic_vcf) {
-        contaminants_vcf = CrosscheckContaminantVariants(variant_vcf, synthetic_vcf)
-    }
-    else {
-        contaminants_vcf = ""
-    }
-/*
-========================================================================================
-05.    Reporting
-========================================================================================
-*/  
-    if (params.report in ["detailed", "standard"]) {
+    if (params.report in ["standard"]) {
         Report(
             fasta_combi,
             read_fastq,
@@ -366,10 +322,7 @@ workflow {
             base_unit_reads,
             read_info_json,
             reads_aligned_filtered,
-            regions,
-            locations,
-            variant_vcf,
-            contaminants_vcf,
+            regions
         )
     }
     else if (params.report == "skip") {
@@ -378,6 +331,7 @@ workflow {
     else {
         error "Invalid reporting selector: ${params.report}"
     }
+
 
 }
 

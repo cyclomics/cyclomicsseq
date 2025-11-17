@@ -9,11 +9,9 @@ from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
-from bokeh.embed import components
-from bokeh.layouts import column, gridplot
-from bokeh.models import NumeralTickFormatter
-from bokeh.plotting import figure
-from plotting_defaults import cyclomics_defaults
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from plotting_defaults import plotly_components
 
 chromosomal_region = Tuple[str, int, int]
 SIDE_DIST_PLOT_SIZE = 100
@@ -243,7 +241,6 @@ def perbase_table_to_df(table_path):
     df["Q"] = df.ACCURACY.apply(acc_to_Q)
     df["CHROM"] = df["REF"]
 
-    print("done")
     return df
 
 
@@ -312,151 +309,162 @@ def compute_accuracy(
 
 
 def plot_compare_accuracy(
-    roi: List[chromosomal_region], df_list: List[pd.DataFrame], my_title="untitled"
-):
-    print("plot_compare_accuracy)")
+    roi: List[chromosomal_region],
+    df_list: List[pd.DataFrame],
+    my_title="untitled",
+) -> list[go.Figure]:
     """
-    Plot the q score against the position for each region of interest.
-
+    Plot the Q score against position for each region of interest.
+    Returns a list of Plotly figures.
     """
     plots = []
-    for region in roi:
-        chrom = region[0]
-        start = region[1]
-        stop = region[2]
-
+    for chrom, start, stop in roi:
         df1 = df_list[0]
-        df1 = df1[df1.CHROM == chrom]
-        df1 = df1[df1.POS >= start]
-        df1 = df1[df1.POS <= stop]
-
         df2 = df_list[1]
-        df2 = df2[df2.CHROM == chrom]
-        df2 = df2[df2.POS >= start]
-        df2 = df2[df2.POS <= stop]
 
-        p_freq = figure(
-            title=f"{my_title} {chrom}:{start}-{stop}", width=cyclomics_defaults.width
+        df1_region = df1.query("CHROM == @chrom and @start <= POS <= @stop")
+        df2_region = df2.query("CHROM == @chrom and @start <= POS <= @stop")
+
+        if df1_region.empty or df2_region.empty:
+            continue
+
+        fig = go.Figure()
+
+        # Raw Q line
+        fig.add_trace(
+            go.Scatter(
+                x=df1_region["POS"],
+                y=df1_region["Q"],
+                mode="lines",
+                name="Raw",
+                line=dict(color="steelblue", width=2),
+                hovertemplate="CHROM=%{customdata[0]}<br>POS=%{x}<br>Q_raw=%{y}<extra></extra>",
+                customdata=np.stack([df1_region["CHROM"]], axis=-1),
+            )
         )
-        p_freq.xaxis.axis_label = "Position"
-        p_freq.yaxis.axis_label = "Q Score"
-        p_freq.line("POS", "Q", source=df1, line_width=2, legend_label="Raw")
-        p_freq.line(
-            "POS",
-            "Q",
-            source=df2,
-            line_width=2,
-            color="orange",
-            legend_label="Consensus",
+
+        # Consensus Q line
+        fig.add_trace(
+            go.Scatter(
+                x=df2_region["POS"],
+                y=df2_region["Q"],
+                mode="lines",
+                name="Consensus",
+                line=dict(color="orange", width=2),
+                hovertemplate="CHROM=%{customdata[0]}<br>POS=%{x}<br>Q_cons=%{y}<extra></extra>",
+                customdata=np.stack([df2_region["CHROM"]], axis=-1),
+            )
         )
 
-        p_freq.xaxis.formatter = NumeralTickFormatter(format="0")
-
-        p_freq.title.text_font_size = cyclomics_defaults.plot_title_size
-        p_freq.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
-        p_freq.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
-        p_freq.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
-        p_freq.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
-        p_freq.legend.location = "bottom_right"
-
-        plots.append(p_freq)
-
-    return column(*plots)
+        fig.update_layout(
+            title=f"{my_title} {chrom}:{start}-{stop}",
+            xaxis_title="Position",
+            yaxis_title="Q Score",
+            legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.6)"),
+            width=700,
+            height=400,
+            margin=dict(l=40, r=20, t=60, b=40),
+        )
+        plots.append(fig)
+    return plots
 
 
 def make_qscore_scatter(df1, df2, csv_merge=None):
-    print("make_qscore_scatter)")
+    """
+    Scatter of Q_raw vs Q_cons with marginal histograms.
+    """
     pre = df1[["CHROM", "POS", "Q"]]
     post = df2[["CHROM", "POS", "Q"]]
 
-    df_merge = pd.merge(
-        pre, post, how="left", left_on=["CHROM", "POS"], right_on=["CHROM", "POS"]
-    )
+    df_merge = pd.merge(pre, post, how="left", on=["CHROM", "POS"])
+    df_merge.rename(columns={"Q_x": "Q_raw", "Q_y": "Q_cons"}, inplace=True)
+
     if csv_merge:
-        df_merge.to_csv(csv_merge)
+        df_merge.to_csv(csv_merge, index=False)
 
-    q_scatter = figure(
-        title="Q score scatter, variant unaware.",
-        width=cyclomics_defaults.width - SIDE_DIST_PLOT_SIZE,
-    )
-    q_scatter.xaxis.axis_label = "ONT Q score"
-    q_scatter.yaxis.axis_label = "Cyclomics Q score"
-
-    q_scatter.scatter("Q_x", "Q_y", source=df_merge, color="orange")
-    q_scatter.line([0, 50], [0, 50], color="grey", alpha=0.5)
-
-    q_scatter.title.text_font_size = cyclomics_defaults.plot_title_size
-    q_scatter.xaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
-    q_scatter.yaxis.axis_label_text_font_size = cyclomics_defaults.plot_label_size
-    q_scatter.xaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
-    q_scatter.yaxis.major_label_text_font_size = cyclomics_defaults.plot_axis_text_size
-
-    x = df_merge.Q_x.dropna().to_numpy()
-    print(x)
-    hhist, hedges = np.histogram(x, bins=50)
-    hmax = max(hhist) * 1.1
-
-    ph = figure(
-        toolbar_location=None,
-        width=q_scatter.width,
-        height=SIDE_DIST_PLOT_SIZE,
-        x_range=q_scatter.x_range,
-        y_range=(0, hmax),
-        min_border=10,
-        min_border_left=50,
-        y_axis_location="right",
-    )
-    ph.xgrid.grid_line_color = None
-    ph.yaxis.major_label_orientation = np.pi / 4
-    ph.background_fill_color = "#fafafa"
-
-    ph.quad(
-        bottom=0,
-        left=hedges[:-1],
-        right=hedges[1:],
-        top=hhist,
-        color="white",
-        line_color="#3A5785",
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        column_widths=[0.8, 0.2],
+        row_heights=[0.2, 0.8],
+        specs=[
+            [{}, {"rowspan": 1, "colspan": 1}],
+            [{"colspan": 1, "rowspan": 1}, None],
+        ],
+        horizontal_spacing=0.02,
+        vertical_spacing=0.02,
     )
 
-    # create the vertical histogram
-    y = df_merge.Q_y.dropna().to_numpy()
-
-    vhist, vedges = np.histogram(y, bins=50)
-    vzeros = np.zeros(len(vedges) - 1)
-    vmax = max(vhist) * 1.1
-
-    pv = figure(
-        toolbar_location=None,
-        width=SIDE_DIST_PLOT_SIZE,
-        height=q_scatter.height,
-        x_range=(0, vmax),
-        y_range=q_scatter.y_range,
-        min_border=10,
-        y_axis_location="right",
-    )
-    pv.ygrid.grid_line_color = None
-    pv.xaxis.major_label_orientation = np.pi / 4
-    pv.background_fill_color = "#fafafa"
-
-    pv.quad(
-        left=0,
-        bottom=vedges[:-1],
-        top=vedges[1:],
-        right=vhist,
-        color="white",
-        line_color="#3A5785",
+    # Scatter
+    fig.add_trace(
+        go.Scatter(
+            x=df_merge["Q_raw"],
+            y=df_merge["Q_cons"],
+            mode="markers",
+            marker=dict(color="orange", size=6, opacity=0.5),
+            name="Q scores",
+            hovertemplate="CHROM=%{customdata[0]}<br>POS=%{customdata[1]}<br>Raw=%{x}<br>Cons=%{y}<extra></extra>",
+            customdata=np.stack([df_merge["CHROM"], df_merge["POS"]], axis=-1),
+        ),
+        row=2,
+        col=1,
     )
 
-    layout = gridplot([[q_scatter, pv], [ph, None]], merge_tools=False)
+    # Diagonal line y=x
+    fig.add_trace(
+        go.Scatter(
+            x=[0, 50],
+            y=[0, 50],
+            mode="lines",
+            line=dict(color="grey", width=1, dash="dash"),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
 
-    return layout
+    # Top histogram (Q_raw)
+    fig.add_trace(
+        go.Histogram(
+            x=df_merge["Q_raw"],
+            nbinsx=50,
+            marker_color="steelblue",
+            showlegend=False,
+        ),
+        row=1,
+        col=1,
+    )
+
+    # Right histogram (Q_cons)
+    fig.add_trace(
+        go.Histogram(
+            y=df_merge["Q_cons"],
+            nbinsy=50,
+            marker_color="orange",
+            showlegend=False,
+        ),
+        row=2,
+        col=2,
+    )
+
+    fig.update_layout(
+        title="Q score scatter, variant unaware",
+        width=700,
+        height=700,
+        xaxis2={"showticklabels": False},
+        yaxis1={"showticklabels": False},
+        xaxis_title="ONT Q score",
+        yaxis_title="Cyclomics Q score",
+        bargap=0.05,
+    )
+
+    return fig
 
 
 def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
     tab_name = "Consensus quality"
-    add_info = {}
     json_obj = {}
+    json_obj["additional_info"] = {}  # NOTE: Do we need this?
     json_obj[tab_name] = {}
     json_obj[tab_name]["name"] = tab_name
     json_obj[tab_name]["priority"] = TAB_PRIORITY
@@ -467,29 +475,24 @@ def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
 
         if df1.empty or df2.empty:
             json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
-                "",
-                "<h1>One of the pileups was not deep enough.</h1>",
+                [],
+                ["<h1>No loci were covered deeply enough to compare accuracy.</h1>"],
             )
 
         else:
             roi = get_roi_pileup_df(df1)
 
-            positional_accuracy = plot_compare_accuracy(
+            q_score_plot = make_qscore_scatter(df1, df2)
+            positional_accuracy_figs = plot_compare_accuracy(
                 roi, [df1, df2], "Variant unaware Q"
             )
-            q_score_plot = make_qscore_scatter(df1, df2)
 
-            final_plot = column([q_score_plot, positional_accuracy])
+            scripts, divs = plotly_components([q_score_plot, *positional_accuracy_figs])
+            json_obj[tab_name]["script"] = scripts
+            json_obj[tab_name]["div"] = divs
 
-            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(
-                final_plot
-            )
-            json_obj["additional_info"] = add_info
-
-    print("writing json")
-    print(Path(output_plot_file).with_suffix(".json"))
-    with open(Path(output_plot_file).with_suffix(".json"), "w") as f:
-        f.write(json.dumps(json_obj))
+    with open(Path(output_plot_file).with_suffix(".json"), "w", encoding="utf-8") as f:
+        json.dump(json_obj, f, ensure_ascii=False)
 
 
 if __name__ == "__main__":

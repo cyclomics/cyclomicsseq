@@ -5,28 +5,25 @@ import json
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import pysam
-from bokeh.embed import components
-from bokeh.layouts import column, gridplot
-from bokeh.models import CategoricalColorMapper, ColumnDataSource
-from bokeh.plotting import figure
-from bokeh.transform import jitter
+from plotly.subplots import make_subplots
+from plotting_defaults import plotly_components
 
 TAB_PRIORITY = 95
 
 
 def relaxed_float(x: Any) -> float:
-    """Return a float, with value error catch"""
+    """Return a float, with value error catch."""
     try:
-        my_float = float(x)
+        return float(x)
     except ValueError:
-        my_float = x
-    return my_float
+        return x
 
 
 def read_vcf(path: Path) -> pd.DataFrame:
+    """Read VCF file into a DataFrame with formatted genotype columns."""
     with open(path, "r") as f:
         lines = [l for l in f if not l.startswith("##")]
     df = (
@@ -57,111 +54,12 @@ def read_vcf(path: Path) -> pd.DataFrame:
             lambda x: relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
         )
 
-    del df["FORMAT"]
-    del df["SAMPLE1"]
-    return df
-
-
-def get_relevant_YN_support(
-    YN: str, query_position: int, reverse: bool, entry_split="|", subentry_split=","
-) -> str:
-    """
-    Get the relevant YN support for a given query position.
-    """
-    YN_struct = YN.split(entry_split)
-    YN_len = YN_struct[0]
-    YN_bases = YN_struct[1]
-
-    YN_support = YN_struct[2:]
-    YN_pos = 0
-    YN_skip = 0
-    relevant_YN_struct = None
-
-    if reverse:
-        YN_support = YN_support[::-1]
-
-    for i, base in enumerate(YN_support):
-        sub_struct = base.split(subentry_split)
-
-        if sub_struct[0].startswith("D"):
-            YN_skip += 1
-            continue
-
-        elif YN_pos == query_position:
-
-            relevant_YN_struct = sub_struct
-            break
-
-        YN_pos += 1
-
-    if not relevant_YN_struct:
-        relevant_YN_struct = ""
-    return relevant_YN_struct
-
-
-def count_base_support(
-    df: pd.DataFrame, letters=["A", "C", "D", "G", "T"]
-) -> pd.DataFrame:
-    # inline func to apply to the YN_support column
-    def count_initials(lst, letter):
-        return sum(1 for x in lst if x and x[0].upper() == letter)
-
-    # Apply the function per row
-    for letter in letters:
-        df[f"{letter}_count"] = df["YN_support"].apply(
-            lambda lst: count_initials(lst, letter)
-        )
-
-    return df
-
-
-def _add_reference_information_snp(df: pd.DataFrame, vcf_entry: str) -> pd.DataFrame:
-    ref_base = vcf_entry.REF.upper()
-    alt_base = vcf_entry.ALT.upper()
-
-    # Make sure the base names match column format
-    ref_col = f"{ref_base}_count"
-    alt_col = f"{alt_base}_count"
-
-    # Add the total fractions
-    df["total_count"] = df[["A_count", "C_count", "G_count", "T_count"]].sum(axis=1)
-    # Fractional reference support over all bases
-    df["ref_frac_all"] = df[ref_col] / df["total_count"]
-    # Fractional alt support over all bases
-    df["alt_frac_all"] = df[alt_col] / df["total_count"]
-
-    # Total over just ref + alt
-    df["ref_alt_total"] = df[ref_col] + df[alt_col]
-    # Fractional reference support over ref+alt
-    df["ref_frac_ref_alt"] = df[ref_col] / df["ref_alt_total"]
-    # Fractional alt support over ref+alt
-    df["alt_frac_ref_alt"] = df[alt_col] / df["ref_alt_total"]
-
-    # fix the NaN values due to division by zero
-    df.fillna(0, inplace=True)
-    return df
-
-
-def _add_reference_information_insert(df: pd.DataFrame, vcf_entry: str) -> pd.DataFrame:
-    return df
-
-
-def _add_reference_information_deletion(
-    df: pd.DataFrame, vcf_entry: str
-) -> pd.DataFrame:
-    ref_base = vcf_entry.REF.upper()
-    alt_base = vcf_entry.ALT.upper()
-
-    deleted_bases = ref_base[1:]
-
+    df.drop(columns=["FORMAT", "SAMPLE1"], inplace=True)
     return df
 
 
 def determine_variant_is_snp(vcf_entry: pd.Series) -> bool:
-    """
-    Simply check if the variant is a Single nucleotide polymorphism.
-    e.g. N-> N and not NN -> N or N-> NN
-    """
+    """Return True if variant is a SNP."""
     return vcf_entry.REF.upper() in ["A", "C", "G", "T"] and vcf_entry.ALT.upper() in [
         "A",
         "C",
@@ -170,141 +68,76 @@ def determine_variant_is_snp(vcf_entry: pd.Series) -> bool:
     ]
 
 
-def print_read_stuff(
-    pileupread: pysam.PileupRead, pileupcolumn, YN_support: str = None
-):
-    """
-    Debug support func to print read and positional info information.
-    """
-    read = pileupread.alignment
-    print(f"Read name: {read.query_name}")
-    print(f"read fwd: {read.is_forward}")
-    print(f"Read start: {read.reference_start}")
-    print(f"Read CIGAR: {read.cigartuples}")
-    print(f"Reference pos: {pileupcolumn.reference_pos}")
-    print(f"Query pos: {pileupread.query_position}")
-    print(f"Query seq (start): {read.query_sequence[:10]}")
-    print(f"YN support: {YN_support if YN_support else 'None'}")
-    print(f"Base: {pileupread.alignment.query_sequence[pileupread.query_position]}")
-    print("---")
+def get_relevant_YN_support(
+    YN: str, query_position: int, reverse: bool, entry_split="|", subentry_split=","
+) -> str:
+    """Extract relevant YN subentry for a given position."""
+    YN_struct = YN.split(entry_split)
+    YN_support = YN_struct[2:]
+    if reverse:
+        YN_support = YN_support[::-1]
+
+    YN_pos, YN_skip = 0, 0
+    for base in YN_support:
+        sub_struct = base.split(subentry_split)
+        if sub_struct[0].startswith("D"):
+            YN_skip += 1
+            continue
+        if YN_pos == query_position:
+            return sub_struct
+        YN_pos += 1
+    return ""
 
 
-def plot_variant(df: pd.DataFrame, vcf_entry: pd.Series):
-    # output_file("my_plot.html")
+def count_base_support(
+    df: pd.DataFrame, letters=["A", "C", "D", "G", "T"]
+) -> pd.DataFrame:
+    """Count bases supporting each letter from YN_support."""
 
-    # Color setup
-    igv_colors = {
-        "A": "#00C000",  # Green
-        "C": "#0000C0",  # Blue
-        "G": "#FFA500",  # Orange
-        "T": "#FF0000",  # Red
-        "D": "#808080",  # Gray for deletion
-    }
-    categories = list(igv_colors.keys())
-    palette = [igv_colors[base] for base in categories]
-    color_mapper = CategoricalColorMapper(factors=categories, palette=palette)
+    def count_initials(lst, letter):
+        return sum(1 for x in lst if x and x[0].upper() == letter)
 
-    source = ColumnDataSource(df)
+    for letter in letters:
+        df[f"{letter}_count"] = df["YN_support"].apply(
+            lambda lst: count_initials(lst, letter)
+        )
+    return df
 
-    # Main scatter plot
-    p_main = figure(
-        title=f"Variant Support Scatter Plot for {vcf_entry.CHROM}:{vcf_entry.POS} ({vcf_entry.REF.upper()} -> {vcf_entry.ALT.upper()})",
-        x_axis_label="Number of repeats in read position",
-        y_axis_label="Support for the variant",
-        width=800,
-        height=600,
-        x_range=(0, 25),
-        y_range=(-0.02, 1.02),
-        tools="pan,wheel_zoom,box_zoom,reset",
-    )
 
-    p_main.circle(
-        x=jitter("total_count", width=0.45),
-        y=jitter("alt_frac_all", width=0.02),
-        source=source,
-        size=6,
-        alpha=0.6,
-        color={"field": "YN_base", "transform": color_mapper},
-        legend_field="YN_base",
-    )
-    p_main.legend.title = "YN_base"
-    p_main.legend.location = "top_right"
+def _add_reference_information_snp(
+    df: pd.DataFrame, vcf_entry: pd.Series
+) -> pd.DataFrame:
+    """Compute reference/alt allele fractions."""
+    ref_col = f"{vcf_entry.REF.upper()}_count"
+    alt_col = f"{vcf_entry.ALT.upper()}_count"
 
-    # X histogram
-    hist_x, edges_x = np.histogram(df["total_count"], bins=25, range=(0, 25))
-    p_hist_x = figure(
-        width=800, height=150, x_range=p_main.x_range, tools="", toolbar_location=None
-    )
-    p_hist_x.quad(
-        top=hist_x,
-        bottom=0,
-        left=edges_x[:-1],
-        right=edges_x[1:],
-        fill_color="gray",
-        line_color="white",
-    )
-    p_hist_x.xaxis.visible = False
-    p_hist_x.yaxis.axis_label = "Frequency"
+    df["total_count"] = df[["A_count", "C_count", "G_count", "T_count"]].sum(axis=1)
+    df["ref_frac_all"] = df[ref_col] / df["total_count"]
+    df["alt_frac_all"] = df[alt_col] / df["total_count"]
 
-    # Y histogram
-    hist_y, edges_y = np.histogram(
-        df["alt_frac_all"], bins=53, range=(-0.02, 1.02), density=True
-    )
-    hist_y = hist_y / np.sum(hist_y)
-    hist_y_display = np.where(hist_y == 0, 1e-6, hist_y)
-    # Create Bokeh figure
-    p_hist_y = figure(
-        width=150,
-        height=600,
-        y_range=(-0.02, 1.02),  # same as main plot Y
-        x_range=(1e-4, 1.4),  # same as main plot X
-        toolbar_location=None,
-        x_axis_type="log",
-        title="Y-axis Histogram (normalized + log1p)",
-    )
+    df["ref_alt_total"] = df[ref_col] + df[alt_col]
+    df["ref_frac_ref_alt"] = df[ref_col] / df["ref_alt_total"]
+    df["alt_frac_ref_alt"] = df[alt_col] / df["ref_alt_total"]
 
-    p_hist_y.quad(
-        left=1e-6,
-        right=hist_y_display,
-        bottom=edges_y[:-1],
-        top=edges_y[1:],
-        fill_color="gray",
-        line_color="white",
-    )
-    p_hist_y.yaxis.visible = False
-    p_hist_y.yaxis.axis_label = "alt_frac_all"
-    p_hist_y.xaxis.axis_label = "log1p(freq density)"
-
-    # Combine plots using gridplot
-    layout = gridplot([[p_hist_x, None], [p_main, p_hist_y]], merge_tools=False)
-    return layout
+    df.fillna(0, inplace=True)
+    return df
 
 
 def get_read_support_snp(vcf_entry: pd.Series, bam: pysam.AlignmentFile):
-    """
-    Get the read support for a given variant.
-    """
-
-    contig = vcf_entry.CHROM
-    start = vcf_entry.POS - 1
-    stop = vcf_entry.POS
-    print(f"Plotting variant at {contig}:{start}-{stop}")
+    """Collect read support for SNP."""
+    contig, start, stop = vcf_entry.CHROM, vcf_entry.POS - 1, vcf_entry.POS
     read_support = []
     for pileupcolumn in bam.pileup(contig, start, stop, stepper="all", truncate=True):
         for pileupread in pileupcolumn.pileups:
-            if pileupread.is_del:
-                print(f"Deletion at position {pileupcolumn.reference_pos}")
             if pileupread.query_position is None:
-                print(
-                    f"Query position is None for base at position {pileupcolumn.reference_pos}"
-                )
                 continue
-
             YN_support = get_relevant_YN_support(
                 pileupread.alignment.get_tag("YN"),
                 pileupread.query_position,
                 reverse=not pileupread.alignment.is_forward,
             )
+            if not YN_support:
+                continue
             read_support.append(
                 [
                     pileupread.alignment.query_name,
@@ -314,113 +147,106 @@ def get_read_support_snp(vcf_entry: pd.Series, bam: pysam.AlignmentFile):
                     YN_support[1:],
                 ]
             )
-
-    print(f"found {len(read_support)} reads")
     return read_support
 
 
-def get_relevant_YN_support_deletion(
-    YN: str,
-    query_position_next: int,
-    reverse: bool,
-    entry_split="|",
-    subentry_split=",",
-) -> str:
-    """ALignment based consensus methods will have a different YN structure for deletions than sequence based methods."""
-    deletion_support = []
-    progress = 0
-    for tag in YN.split(entry_split):
-        if tag.startswith("D"):
-            deletion_support.append(tag)
-        else:
-            progress += 1
-            print(
-                f"Progress: {progress} query_position_next: {query_position_next} D support was {deletion_support}"
-            )
-            if progress == query_position_next:
-                return deletion_support
-            else:
-                deletion_support = []
+def plot_variant(df: pd.DataFrame, vcf_entry: pd.Series):
+    """Plot SNP variant with scatter + histograms using Plotly."""
+    igv_colors = {
+        "A": "#00C000",
+        "C": "#0000C0",
+        "G": "#FFA500",
+        "T": "#FF0000",
+        "D": "#808080",
+    }
 
-    pass
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        column_widths=[0.8, 0.2],
+        row_heights=[0.2, 0.8],
+        specs=[[{"type": "xy"}, None], [{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.02,
+        vertical_spacing=0.02,
+    )
+
+    # Scatter
+    colors = [igv_colors.get(base, "#888888") for base in df["YN_base"]]
+    fig.add_trace(
+        go.Scatter(
+            x=df["total_count"],
+            y=df["alt_frac_all"],
+            mode="markers",
+            marker=dict(size=6, color=colors, opacity=0.6),
+            text=df["YN_base"],
+            name="Scatter",
+        ),
+        row=2,
+        col=1,
+    )
+
+    # X histogram
+    fig.add_trace(
+        go.Histogram(
+            x=df["total_count"],
+            nbinsx=25,
+            marker_color="gray",
+            name="X hist",
+            showlegend=False,
+        ),
+        row=1,
+        col=1,
+    )
+
+    # Y histogram
+    fig.add_trace(
+        go.Histogram(
+            y=df["alt_frac_all"],
+            nbinsy=53,
+            marker_color="gray",
+            name="Y hist",
+            showlegend=False,
+        ),
+        row=2,
+        col=2,
+    )
+
+    # Layout
+    fig.update_layout(
+        title=f"Variant Support Scatter Plot for {vcf_entry.CHROM}:{vcf_entry.POS} "
+        f"({vcf_entry.REF.upper()} → {vcf_entry.ALT.upper()})",
+        width=900,
+        height=700,
+        xaxis_title="Total count (repeats)",
+        yaxis_title="Alt allele fraction",
+        bargap=0.05,
+        hovermode="closest",
+        showlegend=False,
+    )
+    fig.update_yaxes(range=[-0.02, 1.02], row=2, col=1)
+    fig.update_xaxes(range=[0, 25], row=2, col=1)
+
+    return fig
 
 
-def _get_read_support_deletion(vcf_entry: pd.Series, bam: pysam.AlignmentFile):
-    contig = vcf_entry.CHROM
-    # deletions are shown as ATC -> A if TC is deleted, so we need to start at the next base
-    start = vcf_entry.POS
-    stop = vcf_entry.POS + 1
-    print(f"Plotting variant at {contig}:{start}-{stop}")
-    read_support = []
-    for pileupcolumn in bam.pileup(contig, start, stop, stepper="all", truncate=True):
-        for read in pileupcolumn.pileups:
-            if read.is_del:
-                print(f"Deletion at position {pileupcolumn.reference_pos}")
-                get_del_YN_support = get_relevant_YN_support_deletion(
-                    read.alignment.get_tag("YN"),
-                    read.query_position_or_next,
-                    reverse=not read.alignment.is_forward,
-                )
-            if read.query_position is None:
-                print(
-                    f"Query position is None for base at position {pileupcolumn.reference_pos}"
-                )
-            else:
-                # normal base at pos
-                print(
-                    f"Base at position {pileupcolumn.reference_pos} is {read.alignment.query_sequence[read.query_position]}"
-                )
-                read_support.append(
-                    get_relevant_YN_support(
-                        read.alignment.get_tag("YN"),
-                        read.query_position,
-                        reverse=not read.alignment.is_forward,
-                    )
-                )
-
-    return read_support
-
-
-def main(
-    vcf_path: Path,
-    bam_path: Path,
-    output_path: Path,
-    priority_limit: int = 0,
-):
-    """
-    Main function to plot the variant support scatter plot.
-    """
-    # Tab info:
+def main(vcf_path: Path, bam_path: Path, output_path: Path, priority_limit: int = 0):
+    """Main: generate variant scatter plot JSON output."""
     tab_name = "Variant support scatter plots"
+    json_obj = {tab_name: {"name": tab_name, "priority": TAB_PRIORITY}}
     add_info = {}
-    json_obj = {}
-    json_obj[tab_name] = {}
-    json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["priority"] = TAB_PRIORITY
-        # Initialize HTML tab
 
     if TAB_PRIORITY > priority_limit:
         with open(Path(output_path).with_suffix(".json"), "w") as f:
             f.write(json.dumps(json_obj))
         return
 
-    # Step 1: Collect all files
-    vcf_path = Path(vcf_path)
-    bam_file = Path(bam_path)
-    output_path = Path(output_path)
+    vcf_path, bam_path, output_path = Path(vcf_path), Path(bam_path), Path(output_path)
+    bam = pysam.AlignmentFile(bam_path, "rb")
+    vcf = read_vcf(vcf_path)
 
-    # Step 2:convert paths into related objects
-    bam = pysam.AlignmentFile(bam_file, "rb")
-    vcf = read_vcf(vcf_path)  # pandas df
-
-    plots = []
-
-    for index, vcf_entry in vcf.iterrows():
-        variant_is_snp = determine_variant_is_snp(vcf_entry)
-        if variant_is_snp:
-            print(
-                f"Plotting SNP variant at {vcf_entry.CHROM}:{vcf_entry.POS} ({vcf_entry.REF.upper()} -> {vcf_entry.ALT.upper()})"
-            )
+    figs = []
+    for _, vcf_entry in vcf.iterrows():
+        if determine_variant_is_snp(vcf_entry):
             read_support = get_read_support_snp(vcf_entry, bam)
             df = pd.DataFrame(
                 read_support,
@@ -428,57 +254,33 @@ def main(
             )
             df = count_base_support(df)
             df = _add_reference_information_snp(df, vcf_entry)
-            plots.append(plot_variant(df, vcf_entry))
-        elif len(vcf_entry.REF) > len(vcf_entry.ALT):
-            print(
-                f"Skipping plotting deletion variant at {vcf_entry.CHROM}:{vcf_entry.POS} ({vcf_entry.REF.upper()} -> {vcf_entry.ALT.upper()})"
-            )
-            # read_support = _get_read_support_deletion(vcf_entry, bam)
-            # df = _add_reference_information_deletion(df,vcf_entry)
-        elif len(vcf_entry.REF) < len(vcf_entry.ALT):
-            print(
-                f"Skipping  plotting insertion variant at {vcf_entry.CHROM}:{vcf_entry.POS} ({vcf_entry.REF.upper()} -> {vcf_entry.ALT.upper()})"
-            )
-            # df = _add_`reference_information_insert(df,vcf_entry)
-        else:
-            print(f"Unknown variant type for {vcf_entry.REF} -> {vcf_entry.ALT}")
-            # exit(1, f"Unknown variant type for {vcf_entry.REF} -> {vcf_entry.ALT}")
+            figs.append(plot_variant(df, vcf_entry))
 
-    if len(plots) == 0:
+    if not figs:
         json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
             "",
-            "<h1>No variants where plotable, indels are not plotted.</h1>",
+            "<h1>No SNP variants were plottable (indels skipped).</h1>",
         )
-        return json_obj
+    else:
+        # Combine plots vertically
+        html_blocks = [plotly_components(fig) for fig in figs]
+        scripts = "".join(script for script, _ in html_blocks)
+        divs = "".join(div for _, div in html_blocks)
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = scripts, divs
 
-    final_plot = column(*plots)
-    json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(final_plot)
     json_obj["additional_info"] = add_info
-
-    print("writing json")
-    print(output_path)
     with open(output_path, "w") as f:
-        f.write(json.dumps(json_obj))
+        f.write(json.dumps(json_obj, indent=2))
 
 
 if __name__ == "__main__":
-    # test_vcf = "/home/dami/Software/cyclomicsseq/vis_test_data_cyc000492_bc2/variants/annotated/gDNA_Healthy_Controls_RCA_1_BF40c5B_barcode02_annotated.vcf"
-    # test_bam = "/home/dami/Software/cyclomicsseq/vis_test_data_cyc000492_bc2/consensus_aligned/gDNA_Healthy_Controls_RCA_1_BF40c5B_barcode02.YM_gt_3.bam"
-    # test_output = "output.html"
-    # main(test_vcf, test_bam, test_output)
-
-    # test_output = "output_az4.html"
-    # main(test_vcf, test_bam, test_output)
-
-    # Uncomment the following lines to run the script from the command line
     import argparse
 
     parser = argparse.ArgumentParser(description="Plot variant support scatter plot.")
     parser.add_argument("vcf_path", type=str, help="Path to the VCF file.")
     parser.add_argument("bam_path", type=str, help="Path to the BAM file.")
-    parser.add_argument("output_path", type=str, help="Path to save the output plot.")
+    parser.add_argument("output_path", type=str, help="Path to save the output JSON.")
     parser.add_argument("priority_limit", type=int, default=0)
-
     args = parser.parse_args()
 
-    main(args.vcf_path, args.bam_path, args.output_path, args.priority_limit )
+    main(args.vcf_path, args.bam_path, args.output_path, args.priority_limit)
