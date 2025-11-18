@@ -1,6 +1,11 @@
 # changelog
 
+## 1.1.3
+
+- Hotfix an issue where the workflow name in the manifest and config contained uppercase, breaking import in a recent EPI2ME update
+
 ## 1.1.2
+
 - Updated Docker container to version 0.9.1, to include Cycas 0.5.4, which handles an issue where some consensus blocks have invalide quality probabilities. If a read contains invalid quality probabilities, then no consensus is provided for that read.
 - Fixed an issue where printing the report fails because no SNPs were found for the scatterplots. If no reads were found, the variant support tab will display a message stating this, and the report HTML will still be produced.
 
