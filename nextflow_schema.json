@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
   "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
-  "title": "Cyclomics/CyclomicsSeq",
+  "title": "cyclomics/cyclomicsseq",
   "description": "Create high quality alignment data with variant identification for the Cyclomics CyclomicsSeq protocol.",
   "type": "object",
   "definitions": {
