@@ -28,6 +28,19 @@ include {
     // Consensus
     Cycas
 
+    // Variant calling and contaminantion QC
+    IntersectVCF
+    FindVariants
+    SortVCF as SortNoisySnp
+    SortVCF as SortNoisyIndel
+    SortVCF as SortFilteredSnp
+    SortVCF as SortFilteredIndel
+    MergeVCF as MergeNoisyVCF
+    MergeVCF as MergeFilteredVCF
+    FilterValidateVariants as FilterSnp
+    FilterValidateVariants as FilterIndel
+    AnnotateVCF
+
     // Reporting
     CountFastqInfo as FastqInfoRaw
     CountFastqInfo as FastqInfoConsensus
@@ -45,6 +58,9 @@ include {
     SamtoolsMergeBams as SamtoolsMergeBamsFiltered
     SamtoolsFlagstats
     PlotReport
+    PlotVcf
+    PasteVariantTable
+    CountNonBackboneVariants
 } from "./processes.nf"
 
 workflow PrepareGenome {
@@ -191,6 +207,59 @@ workflow ProcessTargetRegions{
         positions
 }
 
+workflow CallVariantsValidate{
+    // Allow to determine VAF for given genomic positions in both bed and vcf format
+    take:
+        reads_aligned
+        positions
+        reference
+
+    main:
+        // Determine noisy SNPs, indels
+        FindVariants(reference, reads_aligned.combine(positions, by: [0, 1]))
+        noisy_snp = FindVariants.out.map(it -> it[0, 1, 2])
+        noisy_indel = FindVariants.out.map(it -> it[0, 1, 3])
+        SortNoisySnp(noisy_snp)
+        SortNoisyIndel(noisy_indel)
+        MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy')
+
+        // Filter SNPs, indels
+        PerbaseBaseDepthConsensus(reads_aligned.combine(positions, by:[0, 1]), reference, 'consensus.tsv')
+        FilterSnp(noisy_snp.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]), 'snp')
+        FilterIndel(noisy_indel.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]), 'indel')
+        SortFilteredSnp(FilterSnp.out)
+        SortFilteredIndel(FilterIndel.out)
+        MergeFilteredVCF(SortFilteredSnp.out.combine(SortFilteredIndel.out, by: [0, 1]), 'filtered')
+
+        // Annotate VCF
+        AnnotateVCF(MergeFilteredVCF.out)
+
+    emit:
+        locations = MergeNoisyVCF.out
+        variants = AnnotateVCF.out
+}
+
+workflow CallVariants{
+    // TODO: make freebayes-parallel optionally take a region BED file
+    take:
+        reads_aligned
+        positions
+        reference
+    
+    main:
+        // indexed_ref = IndexReference(reference)
+        CallVariantsFreebayes(reference, reads_aligned.combine(positions, by: [0, 1]))
+        SeparateMultiallelicVariants(CallVariantsFreebayes.out)
+        AnnotateVCF(SeparateMultiallelicVariants.out)
+
+    emit:
+        // TODO: do we really still need locations...?
+        locations = SeparateMultiallelicVariants.out
+        variants = AnnotateVCF.out
+}
+
+
+
 workflow Report {
     take:
         reference_fasta
@@ -202,6 +271,8 @@ workflow Report {
         read_info
         consensus_bam
         roi
+        noisy_vcf
+        variants_vcf
 
     main:
         // Raw FASTQ reads
@@ -224,11 +295,11 @@ workflow Report {
         // Split BAM
         split_bam_grouped = split_bam.groupTuple(by: 0)
         merged_split_bam = SamtoolsMergeBams(split_bam_grouped)
-        PlotReadStructure(merged_split_bam) // 90
         
         // Consensus BAM
         SamtoolsQuickcheck(consensus_bam)
         SamtoolsIdxStats(consensus_bam)
+        CountNonBackboneVariants(variants_vcf)
 
         // Metadata
         meta_data = read_info.map(it -> it[0, 2]).groupTuple(by: 0)
@@ -240,20 +311,27 @@ workflow Report {
         qscores = PerbaseBaseDepthSplit.out.combine(PerbaseBaseDepthConsensus.out, by: [0, 1]).map(it -> it[0, 2, 3])
         PlotQScores(qscores) // 91
 
+        PlotVcf(noisy_vcf)
+
         // Filtered Split BAM
         split_bam_filtered_grouped = split_bam_filtered.groupTuple(by: 0)
         merged_split_bam_filtered = SamtoolsMergeBamsFiltered(split_bam_filtered_grouped)
         SamtoolsFlagstats(merged_split_bam_filtered)
+
+        // Variants
+        PasteVariantTable(variants_vcf)
 
         // Plot Report
         PlotReport(
             PlotRawFastqHist.out
             .combine(PlotFilteredHist.out, by: 0)
             .combine(PlotConFastqHist.out, by: 0)
-            .combine(PlotReadStructure.out, by: 0)
             .combine(PlotQScores.out, by: 0)
+            .combine(PlotVcf.out, by: 0)
             .combine(PlotMetadataStats.out, by: 0)
+            .combine(PasteVariantTable.out, by: 0)
             .combine(SamtoolsFlagstats.out, by: 0)
+            .combine(CountNonBackboneVariants.out, by: 0)
             .combine(SamtoolsIdxStats.out, by: 0)
             .map { values ->
                 def key = values[0]

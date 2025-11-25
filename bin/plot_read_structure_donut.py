@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 from collections import Counter
 from itertools import chain
@@ -139,10 +140,11 @@ def create_assembly_count_plot(chromosome_counts, my_title, priority_limit: int)
                 x=df["CHROM"],
                 y=df["count"],
                 marker_color="steelblue",
-                hovertemplate="CHROM=%{x}<br>Count=%{y}<extra></extra>",
+                hovertemplate="Chromosome: %{x}<br>Count: %{y:.2f}<extra></extra>",
             )
         )
         fig.update_layout(
+            template="simple_white",
             title=my_title,
             xaxis_title="Chromosome",
             yaxis_title="Count",
@@ -188,7 +190,7 @@ def create_readtype_donuts(
                 values=df["count"],
                 hole=0.5,
                 marker=dict(colors=df["color"]),
-                textinfo="label+percent",
+                textinfo="percent",
                 insidetextorientation="radial",
                 textposition="inside",
                 hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
@@ -214,6 +216,8 @@ def create_readtype_donuts(
                 x=1.05,
                 font=dict(size=12),
             ),
+            uniformtext_minsize=10,
+            uniformtext_mode="hide",
         )
         return fig
 
@@ -265,33 +269,16 @@ def main(
 
 
 if __name__ == "__main__":
-    import argparse
+    parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
+    parser.add_argument("bam_file")
+    parser.add_argument("plot_file")
+    parser.add_argument("priority_limit", type=int, default=89)
+    args = parser.parse_args()
 
-    dev = False
-    if dev:
-        import os
-
-        os.chdir("test_read_structure")
-        main(
-            "ALK_multiplex_panel_AMP2_lSQDW0i_barcode06.merged.bam",
-            "Segment count per assembly in reference",
-            "ALK_multiplex_panel_AMP2_lSQDW0i_barcode06_read_structure.json",
-            "Read structure based on chromosomal presence per readname",
-            999,
-        )
-    else:
-        parser = argparse.ArgumentParser(
-            description="Create plots for a split read bam."
-        )
-        parser.add_argument("bam_file")
-        parser.add_argument("plot_file")
-        parser.add_argument("priority_limit", type=int, default=89)
-        args = parser.parse_args()
-
-        main(
-            args.bam_file,
-            "Segment count per assembly in reference",
-            args.plot_file,
-            "Read structure based on chromosomal presence per readname",
-            args.priority_limit,
-        )
+    main(
+        args.bam_file,
+        "Segment count per assembly in reference",
+        args.plot_file,
+        "Read structure based on chromosomal presence per readname",
+        args.priority_limit,
+    )

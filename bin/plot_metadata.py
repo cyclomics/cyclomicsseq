@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import glob
 import json
 import re
@@ -97,51 +98,103 @@ def _plot_donut(classif_data, figtitle: str):
     return fig
 
 
-def _plot_mappability(aln_len_data, raw_len_data, figtitle: str):
-    Y_n = np.divide(
-        aln_len_data,
-        raw_len_data,
-        out=np.zeros_like(aln_len_data, dtype=float),
-        where=raw_len_data != 0,
-    )
-    fig = go.Figure(go.Histogram(x=Y_n, nbinsx=100))
+def _plot_mappability_per_structure(df: pd.DataFrame, figtitle: str):
+    """
+    Plot normalized mappability per read structure, stacked histogram (percent per structure).
+
+    df must have columns: ['raw_length', 'aln_len', 'structure'].
+    """
+    structure_order = ["Unknown", "too_few_inserts", "1D", "2D", "3D"]
+    hidden_by_default = ["Unknown", "too_few_inserts"]
+
+    fig = go.Figure()
+
+    for struct in structure_order:
+        subset = df[df["structure"] == struct]
+        if subset.empty:
+            continue
+
+        # Compute normalized mappability
+        Y_n = np.divide(
+            subset["aln_len"].to_numpy(),
+            subset["raw_length"].to_numpy(),
+            out=np.zeros_like(subset["raw_length"].to_numpy(), dtype=float),
+            where=subset["raw_length"].to_numpy() != 0,
+        )
+
+        fig.add_trace(
+            go.Histogram(
+                x=Y_n,
+                name=struct,
+                marker_color=cycas_structure_mapper.get(struct, "Grey"),
+                opacity=0.7,
+                histnorm="percent",
+                visible="legendonly" if struct in hidden_by_default else True,
+                xbins=dict(
+                    start=0,
+                    end=1,
+                    size=0.05,
+                ),
+            )
+        )
+
     fig.update_layout(
+        template="simple_white",
+        barmode="overlay",
         title_text=figtitle,
-        xaxis_title="bases/bases mapped",
-        yaxis_title="Occurrence",
+        xaxis_title="Fraction of raw bases mapped",
+        yaxis_title="Percent of reads",
         width=500,
         height=400,
+        legend_title_text="Structure",
     )
     return fig
 
 
-def _plot_lengthsegments(raw_len_data, segment_data, figtitle: str):
-    fig = go.Figure(
-        go.Scatter(
-            x=raw_len_data,
-            y=segment_data,
-            mode="markers",
-            marker=dict(size=8, opacity=0.5),
+def _plot_lengthsegments_per_structure(df: pd.DataFrame, figtitle: str):
+    """
+    Plot number of segments per read length, colored by structure.
+
+    df must have columns: ['raw_length', 'alignment_count', 'structure'].
+    """
+    structure_order = ["Unknown", "too_few_inserts", "1D", "2D", "3D"]
+    hidden_by_default = ["Unknown", "too_few_inserts"]
+
+    fig = go.Figure()
+
+    for struct in structure_order:
+        subset = df[df["structure"] == struct]
+        if subset.empty:
+            continue
+
+        fig.add_trace(
+            go.Scatter(
+                x=subset["raw_length"],
+                y=subset["alignment_count"],
+                mode="markers",
+                marker=dict(
+                    size=8,
+                    opacity=0.5,
+                    color=cycas_structure_mapper.get(struct, "Grey"),
+                ),
+                name=struct,
+                visible="legendonly" if struct in hidden_by_default else True,
+                hovertemplate=(
+                    "Raw read length: %{x}<br>"
+                    "Structure: %{fullData.name}<br>"
+                    "Segments: %{y}<extra></extra>"
+                ),
+            )
         )
-    )
+
     fig.update_layout(
+        template="plotly_white",
         title_text=figtitle,
-        xaxis_title="Read length",
+        xaxis_title="Raw read length",
         yaxis_title="Aligned segments",
         width=500,
         height=400,
-    )
-    return fig
-
-
-def _plot_segmentdist(segment_data, figtitle: str):
-    fig = go.Figure(go.Histogram(x=segment_data, nbinsx=100))
-    fig.update_layout(
-        title_text=figtitle,
-        xaxis_title="# Segments",
-        yaxis_title="Occurrence",
-        width=500,
-        height=400,
+        legend_title_text="Structure",
     )
     return fig
 
@@ -149,11 +202,7 @@ def _plot_segmentdist(segment_data, figtitle: str):
 def _plot_structures_per_read(structures, figtitle: str):
     structure_order = ["Unknown", "too_few_inserts", "1D", "2D", "3D"]
 
-    df = (
-        pd.DataFrame.from_dict(structures, orient="index")
-        .rename_axis("readname")
-        .reset_index()
-    )
+    df = structures.copy()
     reads_count = df["structure"].value_counts().to_dict()
     bases_count = df.groupby("structure")["raw_length"].sum().to_dict()
 
@@ -213,11 +262,7 @@ def _plot_structures_per_aln_count(structures, figtitle: str):
     structure_order = ["Unknown", "too_few_inserts", "1D", "2D", "3D"]
     hidden_by_default = ["Unknown", "too_few_inserts"]
 
-    df = (
-        pd.DataFrame.from_dict(structures, orient="index")
-        .rename_axis("readname")
-        .reset_index()
-    )
+    df = structures.copy()
     df["structure"] = pd.Categorical(
         df["structure"], categories=structure_order, ordered=True
     )
@@ -252,7 +297,7 @@ def _plot_structures_per_aln_count(structures, figtitle: str):
         title_text=figtitle,
         xaxis=dict(range=[0, 30]),
         xaxis_title="Number of segments",
-        yaxis_title="Percent of reads per type",
+        yaxis_title="Percent of reads",
         width=500,
         height=400,
         legend_title_text="Structure",
@@ -265,11 +310,7 @@ def _plot_structures_per_length(structures, figtitle: str, bin_size=1000):
     structure_order = ["Unknown", "too_few_inserts", "1D", "2D", "3D"]
     hidden_by_default = ["Unknown", "too_few_inserts"]
 
-    df = (
-        pd.DataFrame.from_dict(structures, orient="index")
-        .rename_axis("readname")
-        .reset_index()
-    )
+    df = structures.copy()
     df["structure"] = pd.Categorical(
         df["structure"], categories=structure_order, ordered=True
     )
@@ -301,7 +342,7 @@ def _plot_structures_per_length(structures, figtitle: str, bin_size=1000):
                 customdata=np.stack([counts, bin_upper], axis=-1),
                 opacity=0.7,
                 hovertemplate=(
-                    "Read length: %{x} - %{customdata[1]}<br>"
+                    "Raw read length: %{x} - %{customdata[1]}<br>"
                     "Structure: %{fullData.name}<br>"
                     "Reads: %{customdata[0]:,} (%{y:.1f}%)<extra></extra>"
                 ),
@@ -313,8 +354,8 @@ def _plot_structures_per_length(structures, figtitle: str, bin_size=1000):
         barmode="overlay",
         template="simple_white",
         title_text=figtitle,
-        xaxis_title="Read length",
-        yaxis_title="Percent of reads per type",
+        xaxis_title="Raw read length",
+        yaxis_title="Percent of reads",
         width=500,
         height=400,
         legend_title_text="Structure",
@@ -328,9 +369,6 @@ def main(json_folder, plot_file, priority_limit: int, subsample_size: int = 1000
     json_obj = {tab_name: {"name": tab_name, "priority": TAB_PRIORITY}}
 
     nr_reads = 0
-    raw_lens = []
-    aln_lens = []
-    segments = []
     classifs = []
     structures = {}
 
@@ -339,17 +377,17 @@ def main(json_folder, plot_file, priority_limit: int, subsample_size: int = 1000
         with open(str(data_json)) as d:
             dict_data = json.load(d)
         for read, data in dict_data.items():
-            raw_lens.append(data.get("raw_length", 0))
-            total_aligned_bp = data.get("total_aligned_bases", 0)
-            overlap_length = sum_overlaps(data.get("original_structure", None))
-            aln_lens.append(total_aligned_bp - overlap_length)
-            segments.append(data.get("alignment_count", 0))
-            classifs.append(data.get("classification", "Unknown"))
             structures[read] = {
                 "raw_length": data.get("raw_length", 0),
-                "structure": data.get("structure_classification", "Unknown"),
+                "aln_len": data.get(
+                    "aligned_bases_before_consensus", 0
+                )  # will change to total_aligned_bases in next version
+                - sum_overlaps(data.get("original_structure", None)),
                 "alignment_count": data.get("alignment_count", 0),
+                "structure": data.get("structure_classification", "Unknown"),
+                "classification": data.get("classification", "Unknown"),
             }
+            classifs.append(structures[read]["classification"])
             nr_reads += 1
             if subsample_size != 0 and nr_reads >= subsample_size:
                 break
@@ -359,21 +397,28 @@ def main(json_folder, plot_file, priority_limit: int, subsample_size: int = 1000
     if nr_reads == 0:
         json_obj[tab_name]["script"] = []
         json_obj[tab_name]["div"] = ["<h1>No metadata found.</h1>"]
-
     else:
-        p1 = _plot_structures_per_read(structures, f"Read structures (n={nr_reads})")
+        # convert structures dict to DataFrame
+        df = (
+            pd.DataFrame.from_dict(structures, orient="index")
+            .rename_axis("readname")
+            .reset_index()
+        )
+
+        p1 = _plot_structures_per_read(df, f"Read structure abundance (n={nr_reads})")
         p2 = _plot_structures_per_aln_count(
-            structures, f"Read structures (n={nr_reads})"
+            df, f"Number of segments per read type (n={nr_reads})"
         )
-        p3 = _plot_structures_per_length(structures, f"Read structures (n={nr_reads})")
-        p4 = _plot_donut(classifs, f"Per read classification (n={nr_reads})")
-        p5 = _plot_mappability(
-            np.array(aln_lens),
-            np.array(raw_lens),
-            f"Normalized Mappability (n={nr_reads})",
+        p3 = _plot_structures_per_length(
+            df, f"Raw read length per read type (n={nr_reads})"
         )
-        p6 = _plot_lengthsegments(
-            np.array(raw_lens), np.array(segments), f"Length vs segments (n={nr_reads})"
+        p4 = _plot_donut(classifs, f"Read metadata classification (n={nr_reads})")
+
+        p5 = _plot_mappability_per_structure(
+            df, f"Normalized mappability (n={nr_reads})"
+        )
+        p6 = _plot_lengthsegments_per_structure(
+            df, f"Number of segments per raw read length (n={nr_reads})"
         )
 
         scripts, divs = plotly_components([p1, p2, p3, p4, p5, p6])
@@ -385,26 +430,15 @@ def main(json_folder, plot_file, priority_limit: int, subsample_size: int = 1000
 
 
 if __name__ == "__main__":
-    import argparse
-
-    dev = True
-    if dev:
-        main(
-            "./plot_metadata/",
-            "./test_report_data/metadata",
-            priority_limit=9999,
-            subsample_size=1000,
-        )
-    else:
-        parser = argparse.ArgumentParser(description="Plot read metadata statistics.")
-        parser.add_argument("json_glob_path")
-        parser.add_argument("plot_file")
-        parser.add_argument("priority_limit", type=int, default=89)
-        parser.add_argument("subsample_size", type=int, default=10000)
-        args = parser.parse_args()
-        main(
-            args.json_glob_path,
-            args.plot_file,
-            args.priority_limit,
-            args.subsample_size,
-        )
+    parser = argparse.ArgumentParser(description="Plot read metadata statistics.")
+    parser.add_argument("json_glob_path")
+    parser.add_argument("plot_file")
+    parser.add_argument("priority_limit", type=int, default=89)
+    parser.add_argument("--subsample_size", type=int, default=10000)
+    args = parser.parse_args()
+    main(
+        args.json_glob_path,
+        args.plot_file,
+        args.priority_limit,
+        args.subsample_size,
+    )

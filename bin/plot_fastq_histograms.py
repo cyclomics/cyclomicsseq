@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import json
 import os
 from collections import Counter
@@ -33,8 +34,8 @@ def plot_overall_Q_hist(overall_Q, figtitle: str):
         go.Bar(
             x=df["Q"],
             y=df["relative_count"],
-            text=[
-                f"count={c}<br>rel={r:.2f}"
+            hovertext=[
+                f"Fraction: {r:.2f}<br>Count: {c}"
                 for c, r in zip(df["count"], df["relative_count"])
             ],
             hoverinfo="text",
@@ -43,9 +44,11 @@ def plot_overall_Q_hist(overall_Q, figtitle: str):
     )
 
     fig.update_layout(
+        template="simple_white",
         title_text=figtitle,
-        xaxis_title="Base Q",
-        yaxis_title="Relative abundance",
+        xaxis=dict(range=[0, 51]),
+        xaxis_title="Base quality (Phred)",
+        yaxis_title="Fraction of reads",
         width=600,
         height=400,
         margin=dict(l=50, r=20, t=60, b=40),
@@ -65,6 +68,7 @@ def plot_length_hist(lengths, figtitle: str):
     )
 
     fig.update_layout(
+        template="simple_white",
         title_text=figtitle,
         xaxis_title="Read length",
         yaxis_title="Count",
@@ -90,7 +94,7 @@ def main(
             total = sum(Q_scores.values())
             overall_Q = [[ord(k) - 33, v / total, v] for k, v in Q_scores.items()]
 
-            p1 = plot_overall_Q_hist(overall_Q, "Q scores relative abundance")
+            p1 = plot_overall_Q_hist(overall_Q, "Base quality score distribution")
             p2 = plot_length_hist(lengths, "Length distribution")
 
             scripts, divs = plotly_components([p1, p2])
@@ -108,8 +112,6 @@ def main(
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Create hist plot from fastq files.")
     parser.add_argument("fastq_regex_suffix")
     parser.add_argument("plot_file")

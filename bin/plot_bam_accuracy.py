@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 import math
-import re
-from collections import Counter
 from pathlib import Path
 from typing import List, Tuple
 
@@ -21,17 +20,15 @@ TAB_PRIORITY = 91
 def get_roi_pileup_df(
     df: pd.DataFrame, distance: int = 100
 ) -> List[chromosomal_region]:
-    print("get_roi_pileup_df)")
     """
     Given a dataframe with CHROM and POS columns, find all streches in chromosomes that are less than `distance` appart.
-    reports 
+    reports
 
     """
 
     def get_continous_strech(array: np.array, distance: int):
-        print("get_continous_strech)")
         """
-        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a 
+        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a
         """
         m = np.concatenate(([True], array[1:] > array[:-1] + distance, [True]))
         idx = np.flatnonzero(m)
@@ -60,171 +57,6 @@ def acc_to_Q(acc: float, max_Q=50) -> int:
         return -10 * math.log10(1 - acc)
 
 
-def _parse_pileup(row):
-    print("_parse_pileup)")
-    """
-    . (dot) means a base that matched the reference on the forward strand
-    , (comma) means a base that matched the reference on the reverse strand
-    </> (less-/greater-than sign) denotes a reference skip. This occurs, for example, if a base in the reference genome is intronic and a read maps to two flanking exons. If quality scores are given in a sixth column, they refer to the quality of the read and not the specific base.
-    AGTCN (upper case) denotes a base that did not match the reference on the forward strand
-    agtcn (lower case) denotes a base that did not match the reference on the reverse strand
-    A sequence matching the regular expression \+[0-9]+[ACGTNacgtn]+ denotes an insertion of one or more bases starting from the next position. For example, +2AG means insertion of AG in the forward strand
-    A sequence matching the regular expression \-[0-9]+[ACGTNacgtn]+ denotes a deletion of one or more bases starting from the next position. For example, -2ct means deletion of CT in the reverse strand
-    ^ (caret) marks the start of a read segment and the ASCII of the character following `^' minus 33 gives the mapping quality
-    $ (dollar) marks the end of a read segment
-    * (asterisk) is a placeholder for a deleted base in a multiple basepair deletion that was mentioned in a previous line by the -[0-9]+[ACGTNacgtn]+ notation
-    """
-    pileup = row.PILEUP[:]
-    starts = []
-    while True:
-        try:
-            i = pileup.index("^")
-            starts.append(pileup[i : i + 3])
-            pileup = pileup[:i] + pileup[i + 3 :]
-        except ValueError:
-            break
-
-    ends = []
-    while True:
-        try:
-            i = pileup.index("$")
-            ends.append(pileup[i - 1 : i + 1])
-            pileup = pileup[: i - 1] + pileup[i + 1 :]
-        except ValueError:
-            break
-
-    skips = []
-    while True:
-        try:
-            i = pileup.index(">")
-            skips.append(pileup[i])
-            pileup = pileup[:i] + pileup[i + 1 :]
-        except ValueError:
-            break
-    while True:
-        try:
-            i = pileup.index("<")
-            skips.append(pileup[i])
-            pileup = pileup[:i] + pileup[i + 1 :]
-        except ValueError:
-            break
-
-    forw_ins = []
-    p = re.compile("\+[0-9]+[ACGTN]+")
-    matches = list(p.finditer(pileup))
-    spans = reversed([m.span() for m in matches])
-    forw_ins += [m.group() for m in matches]
-    for i, j in spans:
-        pileup = pileup[:i] + pileup[j:]
-
-    rev_ins = []
-    p = re.compile("\+[0-9]+[acgtn]+")
-    matches = list(p.finditer(pileup))
-    spans = reversed([m.span() for m in matches])
-    rev_ins += [m.group() for m in matches]
-    for i, j in spans:
-        pileup = pileup[:i] + pileup[j:]
-
-    forw_del = []
-    p = re.compile("\-[0-9]+[ACGTN]+")
-    matches = list(p.finditer(pileup))
-    spans = reversed([m.span() for m in matches])
-    forw_del += [m.group() for m in matches]
-    for i, j in spans:
-        pileup = pileup[:i] + pileup[j:]
-
-    while True:
-        try:
-            i = pileup.index("*")
-            forw_del.append(pileup[i])
-            pileup = pileup[:i] + pileup[i + 1 :]
-        except ValueError:
-            break
-
-    rev_del = []
-    p = re.compile("\-[0-9]+[acgtn]+")
-    matches = list(p.finditer(pileup))
-    spans = reversed([m.span() for m in matches])
-    rev_del += [m.group() for m in matches]
-    for i, j in spans:
-        pileup = pileup[:i] + pileup[j:]
-
-    while True:
-        try:
-            i = pileup.index("#")  # del in reverse strand
-            rev_del.append(pileup[i])
-            pileup = pileup[:i] + pileup[i + 1 :]
-        except ValueError:
-            break
-
-    # Put back start and end bases
-    for seq in starts:
-        pileup += seq[-1]
-    for seq in ends:
-        pileup += seq[0]
-
-    # Count matches/mismatches
-    forw_matches = pileup.count(".")
-    rev_matches = pileup.count(",")
-    pileup = pileup.replace(".", "").replace(",", "")
-    snps = Counter(pileup)
-
-    calls = Counter(
-        {
-            "A": 0,
-            "T": 0,
-            "C": 0,
-            "G": 0,
-            "N": 0,
-            "a": 0,
-            "t": 0,
-            "c": 0,
-            "g": 0,
-            "n": 0,
-            "fINS": 0,
-            "fDEL": 0,
-            "rINS": 0,
-            "rDEL": 0,
-            "SKIP": 0,
-            "FMB": 0,
-            "LMB": 0,
-        }
-    )
-
-    calls.update(snps)
-    calls.update({"FMB": len(starts)})  # first mapping base
-    calls.update({"LMB": len(ends)})  # last mapping base
-    calls.update({"fDEL": len(forw_del)})
-    calls.update({"fINS": len(forw_ins)})
-    calls.update({"rDEL": len(forw_del)})
-    calls.update({"rINS": len(forw_ins)})
-    calls.update({row.REF: forw_matches})
-    calls.update({row.REF.lower(): rev_matches})
-    return pd.Series(calls)
-
-
-def pileup_to_df(pileup_path: str) -> pd.DataFrame:
-    print("pileup_to_df)")
-
-    with open(pileup_path, "r") as pu:
-        lines = pu.readlines()
-        lines = [x.split("\t") for x in lines]
-        df1 = pd.DataFrame(
-            data=lines,
-            columns=["CHROM", "POS", "REF", "COV", "PILEUP", "BASEQ", "MAPQ", "READ"],
-        )
-        df1["POS"] = df1.POS.astype(int)
-        df1["COV"] = df1.COV.astype(int)
-        df1["CONCAT"] = [len(set(v.split(","))) for v in df1.READ.values]  # concatemers
-        df1 = df1.join(df1.apply(_parse_pileup, axis=1), lsuffix="", rsuffix="_right")
-        df1["ACCURACY"] = df1.apply(
-            compute_accuracy, insertions=True, deletions=True, axis=1
-        )
-        df1["Q"] = df1.ACCURACY.apply(acc_to_Q)
-
-        return df1
-
-
 def perbase_table_to_df(table_path):
     """
     https://github.com/sstadick/perbase
@@ -247,7 +79,6 @@ def perbase_table_to_df(table_path):
 def compute_accuracy(
     row: pd.Series, insertions=True, deletions=True, by_strand=False
 ) -> float:
-    print("compute_accuracy)")
     """Compute base call accuracy as reference-calls/coverage"""
     # designed to be used with df.apply(compute_accuracy, axis=1)
     # insertions/deletions determine wether or not ins and dels will be counted in the COV
@@ -311,7 +142,6 @@ def compute_accuracy(
 def plot_compare_accuracy(
     roi: List[chromosomal_region],
     df_list: List[pd.DataFrame],
-    my_title="untitled",
 ) -> list[go.Figure]:
     """
     Plot the Q score against position for each region of interest.
@@ -338,7 +168,7 @@ def plot_compare_accuracy(
                 mode="lines",
                 name="Raw",
                 line=dict(color="steelblue", width=2),
-                hovertemplate="CHROM=%{customdata[0]}<br>POS=%{x}<br>Q_raw=%{y}<extra></extra>",
+                hovertemplate="CHROM: %{customdata[0]}<br>POS: %{x}<br>Raw Q: %{y:.0f}<extra></extra>",
                 customdata=np.stack([df1_region["CHROM"]], axis=-1),
             )
         )
@@ -351,21 +181,25 @@ def plot_compare_accuracy(
                 mode="lines",
                 name="Consensus",
                 line=dict(color="orange", width=2),
-                hovertemplate="CHROM=%{customdata[0]}<br>POS=%{x}<br>Q_cons=%{y}<extra></extra>",
+                hovertemplate="CHROM: %{customdata[0]}<br>POS: %{x}<br>Consensus Q: %{y:.0f}<extra></extra>",
                 customdata=np.stack([df2_region["CHROM"]], axis=-1),
             )
         )
 
         fig.update_layout(
-            title=f"{my_title} {chrom}:{start}-{stop}",
-            xaxis_title="Position",
-            yaxis_title="Q Score",
+            title=f"Variant unaware positional Q scores: {chrom}:{start}-{stop}",
+            template="plotly_white",
+            xaxis_title=f"Position in {chrom}",
+            yaxis_title="Q score",
             legend=dict(x=0.01, y=0.99, bgcolor="rgba(255,255,255,0.6)"),
             width=700,
             height=400,
             margin=dict(l=40, r=20, t=60, b=40),
         )
+        fig.update_xaxes(tickformat=",d", tickangle=-30)
+
         plots.append(fig)
+
     return plots
 
 
@@ -385,14 +219,14 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
     fig = make_subplots(
         rows=2,
         cols=2,
-        column_widths=[0.8, 0.2],
-        row_heights=[0.2, 0.8],
+        column_widths=[0.75, 0.15],
+        row_heights=[0.15, 0.75],
         specs=[
             [{}, {"rowspan": 1, "colspan": 1}],
-            [{"colspan": 1, "rowspan": 1}, None],
+            [{"colspan": 1, "rowspan": 1}, {}],
         ],
-        horizontal_spacing=0.02,
-        vertical_spacing=0.02,
+        horizontal_spacing=0.05,
+        vertical_spacing=0.05,
     )
 
     # Scatter
@@ -402,8 +236,8 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
             y=df_merge["Q_cons"],
             mode="markers",
             marker=dict(color="orange", size=6, opacity=0.5),
-            name="Q scores",
-            hovertemplate="CHROM=%{customdata[0]}<br>POS=%{customdata[1]}<br>Raw=%{x}<br>Cons=%{y}<extra></extra>",
+            showlegend=False,
+            hoverinfo="skip",
             customdata=np.stack([df_merge["CHROM"], df_merge["POS"]], axis=-1),
         ),
         row=2,
@@ -418,6 +252,7 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
             mode="lines",
             line=dict(color="grey", width=1, dash="dash"),
             showlegend=False,
+            hoverinfo="skip",
         ),
         row=2,
         col=1,
@@ -430,6 +265,8 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
             nbinsx=50,
             marker_color="steelblue",
             showlegend=False,
+            histnorm="percent",
+            hovertemplate="Raw Q: %{x:.0f}<br>%{y:.1f}<extra></extra>",
         ),
         row=1,
         col=1,
@@ -442,21 +279,34 @@ def make_qscore_scatter(df1, df2, csv_merge=None):
             nbinsy=50,
             marker_color="orange",
             showlegend=False,
+            histnorm="percent",
+            hovertemplate="Consensus Q: %{y:.0f}<br>%{x:.1f}<extra></extra>",
         ),
         row=2,
         col=2,
     )
 
     fig.update_layout(
-        title="Q score scatter, variant unaware",
+        title="Variant unaware Q score distribution",
+        template="plotly_white",
         width=700,
         height=700,
         xaxis2={"showticklabels": False},
-        yaxis1={"showticklabels": False},
-        xaxis_title="ONT Q score",
-        yaxis_title="Cyclomics Q score",
+        yaxis1={"showticklabels": True},
         bargap=0.05,
     )
+
+    # Update axes on main plot
+    fig.update_xaxes(title_text="Raw Q score", row=2, col=1)
+    fig.update_yaxes(title_text="Consensus Q score", row=2, col=1)
+
+    # Update axes on top histogram
+    fig.update_xaxes(showticklabels=False, row=1, col=1)
+    fig.update_yaxes(title_text="Percent", row=1, col=1)
+
+    # Update axes right histogram
+    fig.update_xaxes(title_text="Percent", row=2, col=2)
+    fig.update_yaxes(showticklabels=False, row=2, col=2)
 
     return fig
 
@@ -483,9 +333,7 @@ def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
             roi = get_roi_pileup_df(df1)
 
             q_score_plot = make_qscore_scatter(df1, df2)
-            positional_accuracy_figs = plot_compare_accuracy(
-                roi, [df1, df2], "Variant unaware Q"
-            )
+            positional_accuracy_figs = plot_compare_accuracy(roi, [df1, df2])
 
             scripts, divs = plotly_components([q_score_plot, *positional_accuracy_figs])
             json_obj[tab_name]["script"] = scripts
@@ -496,8 +344,6 @@ def main(perbase_path1, perbase_path2, output_plot_file, priority_limit: int):
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(
         description="Create hist plot from a regex for fastq and fastq.gz files."
     )

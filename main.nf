@@ -116,6 +116,7 @@ include {
     FilterBam
     ProcessTargetRegions
     Report
+    CallVariantsValidate
 } from "./subworkflows.nf"
 
 
@@ -227,7 +228,15 @@ workflow {
     read_fastq.dump(tag: "read_fastq_no_fail")
 
     // Generate a unique ID for the run
-    def run_UID = generateUid( (('A'..'Z')+('a'..'z')+('0'..'9')).join(), 7 )
+    def uid_file = "${params.output_dir}/.run_uid.txt"
+    File f = new File(uid_file)
+
+    if (f.exists()) {
+        run_UID = f.text.trim()
+    } else {
+        run_UID = generateUid((('A'..'Z')+('a'..'z')+('0'..'9')).join(), 7)
+        f.text = run_UID
+    }
 
     // Extract valid sample ID's for eah fastq file
     read_fastq = read_fastq.map { it ->
@@ -304,8 +313,14 @@ workflow {
 02.    Variant Calling
 ========================================================================================
 */ 
+    locations = ""
+    variant_vcf = ""
+
     ProcessTargetRegions(region_file, reads_aligned)
     regions = ProcessTargetRegions.out
+    CallVariantsValidate(reads_aligned_filtered, regions, fasta_combi)
+    locations = CallVariantsValidate.out.locations
+    variant_vcf = CallVariantsValidate.out.variants
 
 /*
 ========================================================================================
@@ -322,7 +337,9 @@ workflow {
             base_unit_reads,
             read_info_json,
             reads_aligned_filtered,
-            regions
+            regions,
+            locations,
+            variant_vcf,
         )
     }
     else if (params.report == "skip") {

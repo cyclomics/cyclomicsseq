@@ -344,26 +344,6 @@ process BwaMemSorted{
         """
 }
 
-process BwaMemContaminants{
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
-    label 'many_med_cpu_huge_mem'
-
-    input:
-        each path(fastq)
-        file(reference)
-        file(reference_indexes)
-
-    output:
-        tuple val("${fastq.simpleName}"), path("${fastq.simpleName}_contaminants.bam"), path("${fastq.simpleName}_contaminants.bam.bai")
-        
-    script:
-        """
-        bwa mem -R "@RG\\tID:${params.bwamem.readgroup}\\tSM:${params.bwamem.sampletag}\\tPL:${params.bwamem.platform}" -M -t ${task.cpus} -c ${params.bwamem.max_mem_occurrance} -L ${params.bwamem.softclip_penalty} -M $reference $fastq | \
-        samtools sort -@ ${task.cpus} /dev/stdin -o "${fastq.simpleName}_contaminants.bam"
-        samtools index ${fastq.simpleName}_contaminants.bam
-        """
-}
-
 
 // CONSENSUS CALLING
 process Cycas{
@@ -388,6 +368,7 @@ process Cycas{
 // VARIANT CALLING AND CONTAMINANTION QC
 process FindVariants {
     // publishDir "${params.output_dir}/variants", mode: 'copy'
+    maxForks 1
     label 'max_performance'
 
     input:
@@ -455,7 +436,7 @@ process FilterValidateVariants {
 
 
 process PerbaseBaseDepth {
-    // publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
+    publishDir "${params.output_dir}/depth_tables", pattern: "*consensus.tsv", mode: 'copy'
     label 'few_very_memory_intensive'
 
     input:
@@ -525,22 +506,6 @@ process MergeVCF {
         }
 }
 
-process IntersectVCF {
-    publishDir "${params.output_dir}/variants/contaminants", pattern: "*contaminants.vcf", mode: 'copy'
-    label 'many_low_cpu_high_mem'
-
-    input:
-        tuple val(sample_id), val(file_id), path(variants), path(synthetics)
-
-    output:
-        tuple val(sample_id), val(file_id), path("${file_id}_contaminants.vcf")
-
-    script:
-        """
-        bedtools intersect -header -a ${variants} -b ${synthetics}  > ${file_id}_contaminants.vcf
-        """
-}
-
 process AnnotateVCF {
     publishDir "${params.output_dir}/variants/annotated", pattern: "*annotated.vcf", mode: 'copy'
     label 'many_low_cpu_high_mem'
@@ -554,48 +519,6 @@ process AnnotateVCF {
     script:
         """
         annotate_vcf.py ${vcf} ${file_id}_annotated.vcf
-        """
-}
-
-process FreebayesContaminants {
-    // publishDir "${params.output_dir}/variants", mode: 'copy'
-    label 'many_low_cpu_huge_mem'
-    memory { task.memory * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries 3
-
-    input:
-        tuple val(sample_id), val(file_id), path(input_bam_file), path(input_bai_file), path(reference), path(reference_idx)
-        tuple val(roi_sample_id), val(roi_file_id), path(roi)
-
-    output:
-        tuple val(sample_id), path(file_id), path("${input_bam_file.SimpleName}.multiallelic.vcf")
-
-    script:
-        """
-        freebayes \
-        -f $reference \
-        --min-alternate-fraction 0 \
-        --min-alternate-count 1 \
-        --min-base-quality 0 \
-        --vcf ${input_bam_file.SimpleName}.multiallelic.vcf \
-        $input_bam_file
-        """
-}
-
-process SeparateMultiallelicVariants{
-    publishDir "${params.output_dir}/variants", mode: 'copy'
-    label 'many_low_cpu_high_mem'
-
-    input:
-        tuple val(X), path(vcf)
-
-    output:
-        tuple val(X), path("${vcf.SimpleName}.vcf")
-
-    script:
-        """
-        bcftools norm -m -any $vcf > ${vcf.SimpleName}.vcf
         """
 }
 
@@ -730,23 +653,6 @@ process PasteVariantTable {
     """
 }
 
-process PasteContaminantTable {
-    publishDir "${params.output_dir}/QC", mode: 'copy'
-    label 'many_low_cpu_high_mem'
-    // errorStrategy 'ignore'
-
-    input:
-    tuple val(sample_id), path(vcf_file)
-
-    output:
-    tuple val(sample_id), path("${sample_id}_contaminant_table.json")
-
-    script:
-    """
-    write_contaminants_table.py ${vcf_file} ${sample_id}_contaminant_table.json 'Contaminants' ${params.priority_limit} \
-    2> >(tee -a ${sample_id}_error.txt >&2) || catch_plotting_errors.sh ${sample_id}_error.txt ${sample_id}_contaminant_table.json
-    """
-}
 
 process PlotQScores {
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
@@ -826,7 +732,7 @@ process PlotReport {
 }
 
 process SamtoolsQuickcheck{
-    // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
 
     input:

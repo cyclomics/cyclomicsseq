@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import io
 import json
 from pathlib import Path
@@ -9,7 +10,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plotting_defaults import cyclomics_defaults, plotly_components
+from plotting_defaults import plotly_components
 
 chromosomal_region = Tuple[str, int, int]
 TAB_PRIORITY = 3
@@ -111,9 +112,9 @@ def make_scatter_plots(data: pd.DataFrame, roi: List[chromosomal_region]):
             rows=3,
             cols=1,
             subplot_titles=(
-                f"Positional VAF {chrom}:{start}-{stop}",
-                f"Support ratios per direction {chrom}:{start}-{stop}",
-                f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}",
+                f"Variant allele frequencies in {chrom}:{start}-{stop}",
+                f"Variant support ratios per direction in {chrom}:{start}-{stop}",
+                f"Depth before and after base-quality filtering in {chrom}:{start}-{stop}",
             ),
             vertical_spacing=0.1,
         )
@@ -222,19 +223,25 @@ def make_scatter_plots(data: pd.DataFrame, roi: List[chromosomal_region]):
 
         # --- Layout ---
         fig.update_layout(
-            width=cyclomics_defaults.width,
-            height=900,
+            template="plotly_white",
+            width=900,
+            height=1200,
             showlegend=True,
             legend=dict(orientation="h", y=-0.1),
             hovermode="closest",
-            template="plotly_white",
         )
 
-        fig.update_xaxes(title_text="Position", row=1, col=1)
+        fig.update_xaxes(
+            title_text="Position", row=1, col=1, tickformat=",d", tickangle=-30
+        )
         fig.update_yaxes(title_text="VAF", row=1, col=1)
-        fig.update_xaxes(title_text="Forward ratio", row=2, col=1)
-        fig.update_yaxes(title_text="Reverse ratio", row=2, col=1)
-        fig.update_xaxes(title_text="Position", row=3, col=1)
+
+        fig.update_xaxes(title_text="Forward ratio", range=[0, 1], row=2, col=1)
+        fig.update_yaxes(title_text="Reverse ratio", range=[0, 1], row=2, col=1)
+
+        fig.update_xaxes(
+            title_text="Position", row=3, col=1, tickformat=",d", tickangle=-30
+        )
         fig.update_yaxes(title_text="Depth", row=3, col=1)
 
         plots.append(fig)
@@ -257,9 +264,7 @@ def main(vcf_file: str, plot_file: str, priority_limit: int):
         else:
             roi = get_roi_pileup_df(data)
             figs = make_scatter_plots(data, roi)
-            html_blocks = [plotly_components(fig) for fig in figs]
-            scripts = "".join(script for script, _ in html_blocks)
-            divs = "".join(div for _, div in html_blocks)
+            scripts, divs = plotly_components(figs)
             json_obj[tab_name]["script"], json_obj[tab_name]["div"] = scripts, divs
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
@@ -267,8 +272,6 @@ def main(vcf_file: str, plot_file: str, priority_limit: int):
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Create variant scatter plots.")
     parser.add_argument("vcf_file")
     parser.add_argument("plot_file")

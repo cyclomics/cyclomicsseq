@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 from collections import defaultdict
 from dataclasses import dataclass
@@ -110,8 +111,8 @@ def main(args):
     # Summary cards
     data["cards"] = []
     card_definitions = [
-        ("Sequencing reads", "fa-dna", "readsRaw fastq info", "text-dark"),
-        ("Post split & QC reads", "fa-filter", "readsFiltered fastq info", "text-dark"),
+        ("Sequencing reads", "fa-dna", "readsRaw read info", "text-dark"),
+        ("Post split & QC reads", "fa-filter", "readsFiltered read info", "text-dark"),
         (
             "Aligning reads",
             "fa-align-center",
@@ -125,7 +126,6 @@ def main(args):
             "variants_found_non_backbone",
             "text-dark",
         ),
-        ("Backbone-insert %", "fa-bullseye", "read_struc_prec_bbi", "text-dark"),
         ("Pipeline version", "fa-code-branch", "git_version", "text-dark"),
     ]
 
@@ -146,27 +146,12 @@ def main(args):
 
 
 if __name__ == "__main__":
-    import argparse
-    from types import SimpleNamespace
-
     parser = argparse.ArgumentParser(description="Generate Plotly report.")
     parser.add_argument("sample_name", type=str)
     parser.add_argument("nextflow_params", type=str)
     parser.add_argument("version", type=str)
     parser.add_argument("priority_limit", type=int, default=89)
 
-    dev = False
-    if dev:
-        import os
-
-        os.chdir("test_report_data")
-        args = SimpleNamespace(
-            sample_name="ALK_multiplex_panel_AMP2_h6Xqwrr_barcode06",
-            nextflow_params="[...]",
-            version="1.1.1",
-            priority_limit=9999,
-        )
-    else:
-        args = parser.parse_args()
+    args = parser.parse_args()
 
     main(args)

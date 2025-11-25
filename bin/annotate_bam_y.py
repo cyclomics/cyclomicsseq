@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-from pathlib import Path
-from datetime import datetime
-from typing import Any, Dict
 import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
 
-from tqdm import tqdm
 import pysam
+from tqdm import tqdm
 
 
 def process_query_name(name, split_queryname=True, splitter="_"):
@@ -15,13 +15,14 @@ def process_query_name(name, split_queryname=True, splitter="_"):
     Split a string called name if split_queryname is True based on the splitter provided
     eg:
 
-    abc_def with splitter _ will become abc
-    abc_def_efg with splitter _ will become abc
+    abc_def_1D with splitter _ will become ['abc_def', 'def', '1D']
     """
     if not split_queryname:
         return name
 
-    return name.split(splitter)[0]
+    query_name, structure = name.rsplit(splitter, 1)
+    seg_id = query_name.split(splitter)[1]
+    return query_name, seg_id, structure
 
 
 def create_metadata(json_path) -> Dict:
@@ -41,7 +42,6 @@ def extract_segment_from_meta(general_meta, full_name) -> Dict:
     segment_data = [(k, v) for k, v in c_reads.items()]
     result = None
     for i in segment_data:
-
         # first check presence to prevent keyerror
         if "readname_unique" in i[1] and i[1]["readname_unique"] == full_name:
             result = i
@@ -95,41 +95,43 @@ def update_tags(
     return aln
 
 
-def make_tags(gen_meta, seg_meta, seg_id, metadata_json) -> Dict:
+def make_tags(gen_meta, seg_id, structure, metadata_json) -> Dict:
     """
     Given the metadata, create a dict with the tags as key and the corresponding value as value.
     """
     tags = {}
 
     tags["YC"] = gen_meta["classification"]
+    tags["YG"] = structure
     tags["YT"] = gen_meta["raw_length"]
-    tags["YB"] = extract_barcode(gen_meta)
-    tags["YP"] = extract_partner_locations(gen_meta)
-    tags['YS'] = metadata_json.stem
+    # tags["YB"] = extract_barcode(gen_meta)
+    # tags["YP"] = extract_partner_locations(gen_meta)
+    tags["YS"] = Path(metadata_json).stem
     # add more info if we find the segment data
     if seg_id:
         tags["YI"] = seg_id
 
     requested_tags = {
-        "aligned_bases_before_consensus" : "YE" ,
-        "len" : "YL" ,
-        "alignment_position" : "YA" ,
-        "alignment_orientation" : "YR" ,
-        "alignment_count" : "YM" ,
-        "consensus_structure" : "YN" ,
+        "aligned_bases_before_consensus": "YE",
+        "len": "YL",
+        "alignment_position": "YA",
+        "alignment_orientation": "YR",
+        "alignment_count": "YM",
+        "consensus_structure": "YN",
     }
-    if seg_meta:
-        for metadata, tag in requested_tags.items():
-            if metadata in seg_meta:
-                tags[tag] = seg_meta[metadata]
-            else:
-                print("Tag not found in segment metadata", metadata)
 
+    for metadata, tag in requested_tags.items():
+        if metadata in gen_meta:
+            tags[tag] = gen_meta[metadata]
+        else:
+            print("Tag not found in segment metadata", metadata)
 
     return tags
 
 
-def main(metadata_json:Path, in_bam_path:Path, out_bam_path:Path, split_queryname=True):
+def main(
+    metadata_json: Path, in_bam_path: Path, out_bam_path: Path, split_queryname=True
+):
     """
     Look up the Y tags in the metadata for all reads in a bam.
     """
@@ -143,14 +145,16 @@ def main(metadata_json:Path, in_bam_path:Path, out_bam_path:Path, split_querynam
     for aln in tqdm(in_bam.fetch()):
         aln_count += 1
         full_name = aln.query_name
-        query_name = process_query_name(full_name, split_queryname, "_")
+        query_name, seg_id, structure = process_query_name(
+            full_name, split_queryname, "_"
+        )
 
         if query_name in metadata:
             metadata_count += 1
             gen_meta = metadata[query_name]
-            seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
-            tags = make_tags(gen_meta, seg_meta, seg_id, metadata_json)
-            
+            # seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
+            tags = make_tags(gen_meta, seg_id, structure, metadata_json)
+
             aln = update_tags(aln, tags)
         out_bam_file.write(aln)
 
@@ -176,10 +180,3 @@ if __name__ == "__main__":
     # pysam requires pure strings
     pysam.sort("-o", str(args.file_out), str(intermediate_bam))
     pysam.index(str(args.file_out))
-
-    # test_metadata = (
-    #     "/home/dami/Software/cycloseq/FAT55692_pass_43d236d5_123_filtered.metadata.json"
-    # )
-    # test_bam = "/home/dami/Software/cycloseq/FAT55692_pass_43d236d5_123_filtered.annotated.bam"
-
-    # main(test_metadata, test_bam, "annotatetest.bam")

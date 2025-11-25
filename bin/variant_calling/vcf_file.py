@@ -199,7 +199,7 @@ class Vcf:
         min_dpq_ratio: float = 0.3,
         max_sap: int = 60,
         min_rel_ratio: float = 0.3,
-        min_abq: int = 70,
+        min_abq: int = 20,
     ):
         """
         Filters the VCF DataFrame based on parsed or default parameters.
@@ -249,10 +249,10 @@ class Vcf:
             min_depth_filter,
             local_depth_filter,
             dynamic_vaf_filter,
-            min_ratio_filter,
+            # min_ratio_filter,
         ]
-        if max_sap > 0:
-            filters.append(max_sap_filter)
+        # if max_sap > 0:
+        #     filters.append(max_sap_filter)
 
         # Loop over list of filters and apply them in succession
         for filter_function in filters:
