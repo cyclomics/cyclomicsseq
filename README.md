@@ -17,6 +17,9 @@ Cycas uses the alignment against the reference genome to determine the type of r
 
 ## Changelog
 
+### 0.6.1
+ - Hotfix: added `--calibration-model` user argument to mode `consensus`.
+
 ### 0.6.0
  - Major changes to Cycas, enabling splitting of chimeric reads, classification of concatemer structures and calibration of consensus quality scores.
  - Introduced the following commands to `cycas.py`:

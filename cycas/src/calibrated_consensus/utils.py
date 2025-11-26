@@ -53,7 +53,7 @@ def make_align_array(
         Gaps are indicated as '-' in both the reference and query sequences.
     """
 
-    aln_array = np.empty((4, len(cigar)), dtype=np.dtypes.StringDType())
+    aln_array = np.empty((4, len(cigar)), dtype=np.dtypes.StrDType)
 
     if reference_seq != query_seq:
         c_i = 0

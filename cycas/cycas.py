@@ -324,6 +324,13 @@ def cli_classify(
     show_default=True,
     help="Method to calculate whether a segment appears consecutively in the original concatemer.",
 )
+@click.option(
+    "--calibration-model",
+    default=None,
+    type=click.Path(exists=True, dir_okay=True),
+    show_default=False,
+    help="Path to a Cycas calibration model folder containing a model pkl file.",
+)
 def cli_consensus(
     input_bam,
     output_fastq,
@@ -343,6 +350,11 @@ def cli_consensus(
         min_mapped_inserts=min_mapped_inserts,
         backbone_prefix=backbone_prefix,
         consecutiveness_method=consecutiveness_method,
+        **(
+            {"calibration_model": calibration_model}
+            if calibration_model is not None
+            else {}
+        ),
     )
 
     app.call_consensus(
