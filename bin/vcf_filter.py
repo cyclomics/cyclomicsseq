@@ -88,8 +88,8 @@ def parse_arguments():
         "--min_abq",
         type=float,
         required=False,
-        default=70,
-        help="Minimum average base quality (default: 70).",
+        default=20,
+        help="Minimum average base quality (default: 20).",
     )
 
     return parser.parse_args()

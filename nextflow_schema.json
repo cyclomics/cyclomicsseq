@@ -263,8 +263,8 @@
           "title": "SNP: min_abq",
           "type": "integer",
           "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
+          "help_text": "Default: 20 ",
+          "default": 20
         },
         "indel_filters.min_ao": {
           "title": "Indel: min_ao",
@@ -305,8 +305,8 @@
           "title": "Indel: min_abq",
           "type": "integer",
           "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
+          "help_text": "Default: 20 ",
+          "default": 20
         }
       }
     }
