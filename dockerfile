@@ -1,8 +1,13 @@
-FROM continuumio/miniconda3:4.11.0
+FROM mambaorg/micromamba:2.4.0
 
 WORKDIR /app
 COPY environment.yml environment.yml
-RUN conda env update -n base -f environment.yml
+
+USER root
+RUN apt-get update && apt-get install -y procps && apt-get clean
+
+RUN micromamba install -y -n base -f environment.yml && \
+    micromamba clean --all --yes
 
 # Add code form the cycas git submodule 
-COPY Cycas/cycas/ /cycas
+COPY Cycas/ /app/Cycas

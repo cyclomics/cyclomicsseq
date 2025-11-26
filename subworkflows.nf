@@ -15,7 +15,6 @@ include {
     Minimap2AlignAdaptiveParameterized
     Minimap2Align
     BwaMemSorted
-    BwaMemContaminants
     AnnotateBamXTags
     AnnotateBamYTags
     BamAlignmentRateFilter
@@ -29,7 +28,6 @@ include {
     Cycas
 
     // Variant calling and contaminantion QC
-    IntersectVCF
     FindVariants
     SortVCF as SortNoisySnp
     SortVCF as SortNoisyIndel

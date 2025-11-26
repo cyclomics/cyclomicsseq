@@ -349,7 +349,6 @@ process BwaMemSorted{
 process Cycas{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     publishDir "${params.output_dir}/consensus", mode: 'copy'
-    container "cyclomics/cycas:0.6.0"
     label 'many_cpu_medium'
 
     input:

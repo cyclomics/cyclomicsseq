@@ -2,8 +2,9 @@ name: cyseq
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
+  - bcftools=1.22
+  - bedtools=2.31.1
   - biopython=1.86
   - bokeh=3.7.3
   - bwa=0.7.19
@@ -11,9 +12,11 @@ dependencies:
   - h5py=3.15.1
   - hdf5=1.14.6
   - jinja2=3.1.6
+  - jq=1.6
   - joblib=1.5.2
   - loguru=0.7.3
   - mappy=2.30
+  - minimap2=2.30
   - numpy=2.3.4
   - pandas=2.3.3
   - perbase=1.1.0
