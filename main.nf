@@ -31,7 +31,7 @@ params.output_dir                 = "$HOME/Data/CyclomicsSeq"
 
 
 // method selection
-params.report                     = "standard"
+params.report                     = "detailed"
 params.split_fastq_by_size        = true
 params.split_on_adapter           = false
 params.filter_by_alignment_rate   = false
@@ -39,7 +39,7 @@ params.sequence_summary_tagging   = false
 params.include_fastq_fail         = false
 
 params.synthetics_file            = "$projectDir/contaminants/synthetic_mutants.fasta"
-params.priority_limit             = (params.report == "standard") ? 9999 : 89
+params.priority_limit             = (params.report == "detailed") ? 9999 : 89
 
 // Pipeline performance metrics
 params.min_repeat_count           = 3
@@ -327,7 +327,7 @@ workflow {
 03.    Reporting
 ========================================================================================
 */  
-    if (params.report in ["standard"]) {
+    if (params.report in ["detailed", "standard"]) {
         Report(
             fasta_combi,
             read_fastq,

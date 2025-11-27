@@ -70,7 +70,7 @@
           "type": "string",
           "description": "Type of report to generate at the end of the pipeline.",
           "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
-          "default": "standard",
+          "default": "detailed",
           "enum": ["standard", "detailed", "skip"]
         }
       },
