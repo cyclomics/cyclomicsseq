@@ -341,6 +341,7 @@ def cli_consensus(
     min_mapped_inserts,
     backbone_prefix,
     consecutiveness_method,
+    calibration_model,
 ):
     click.echo("Cycas: Consensus calling on complex concatemers.")
 
