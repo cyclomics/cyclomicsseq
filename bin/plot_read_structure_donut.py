@@ -196,9 +196,11 @@ def create_readtype_donuts(
                 hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
                 # Hide labels for slices <5%
                 text=[
-                    f"{row['type']} {row['count']} ({row['count'] / total_count * 100:.1f}%)"
-                    if row["count"] / total_count > 0.05
-                    else ""
+                    (
+                        f"{row['type']} {row['count']} ({row['count'] / total_count * 100:.1f}%)"
+                        if row["count"] / total_count > 0.05
+                        else ""
+                    )
                     for _, row in df.iterrows()
                 ],
             )

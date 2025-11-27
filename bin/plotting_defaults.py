@@ -75,10 +75,12 @@ def plotly_components(charts: list, tab_class: str = "tab") -> tuple[str, str]:
 
         fig_dict = chart.to_dict()
         fig_json = json.dumps(fig_dict, cls=PlotlyJSONEncoder)
-        script_calls.append(f"""
+        script_calls.append(
+            f"""
             var fig = {fig_json};
             Plotly.newPlot('{div_id}', fig.data, fig.layout, {{responsive:true}});
-        """)
+        """
+        )
 
     # Container div with inline flex/grid layout
     div_grid = f"""
