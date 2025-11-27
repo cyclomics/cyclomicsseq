@@ -312,6 +312,29 @@ class AlignmentGroup:
             aln_position = aln.alignment_chromosome_start
             read_position = aln.first_cigar_value
 
+            for pos, (existing_id, existing_orient) in (
+                visited.get(type, {}).get(assembly, {}).items()
+            ):
+                if abs(pos - aln_position) < position_margin:
+                    if orientation == existing_orient:
+                        ID = existing_id
+                        break
+                    else:
+                        existing_IDs.append(existing_id)
+
+            # No match found → assign next ID
+            if ID is None:
+                existing_IDs += [
+                    id
+                    for asm in visited.get(type, {}).values()
+                    for id, _ in asm.values()
+                ]
+                ID = max(existing_IDs, default=-1) + 1
+
+            # Store (ID, orientation)
+            visited[type][assembly][aln_position] = (ID, orientation)
+
+            # Add segment to structure
             structure.append(
                 f"{len_bases}:{type}:{orientation}:{assembly}:{aln_position}:{read_position}:{len_mapping}:{aln.id}"
             )

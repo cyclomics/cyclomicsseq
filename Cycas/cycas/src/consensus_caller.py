@@ -391,6 +391,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
         best_nuc_support = []
         consensus_structure = []
         consensus_structure_seperator = ","
+        invalid_block = False
         # loop over all posible positions
         for i in range(max_length):
             nucs = [x.get_seq_pos(i) for x in consensus_alignments.values()]
@@ -458,7 +459,15 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             nucs = filtered_nucs
             quals = filtered_quals
             # now we can calculate probs
-            probs = [self.phred_to_prob(x) for x in quals]
+            try:
+                probs = [self.phred_to_prob(x) for x in quals]
+            except TypeError:
+                invalid_block = True
+                logger.exception(
+                    f"Could not convert Phred scores to probabilities. "
+                    f"Values are either NoneType or float: {quals}"
+                )
+                break
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             best_nuc_support.append(tuple([nucs.count(best_nuc), len(nucs)]))
@@ -496,6 +505,18 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             best_nuc_support = best_nuc_support[::-1]
             consensus_structure = consensus_structure[::-1]
             flipped = True
+
+        if invalid_block:
+            return (
+                "",
+                [],
+                barcode,
+                barcode_arrays,
+                alignment_start,
+                best_nuc_support,
+                flipped,
+                [],
+            )
 
         return (
             consensus,

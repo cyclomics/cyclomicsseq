@@ -256,7 +256,7 @@ This was done instead of submodule to make pulling of the repo easier for enduse
 
 More specifically:
 ``` bash
-git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.4.3 --squash
+git subtree add --prefix Cycas https://github.com/cyclomics/Cycas 0.5.4 --squash
 ```
 
 To update, run:

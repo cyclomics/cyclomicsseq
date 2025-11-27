@@ -32,6 +32,9 @@ Cycas uses the alignment against the reference genome to determine the type of r
    - `quick-consensus-sr` (DEPRECATED) generates structure-unaware consensus for a single read. Previously `single-read`.
  - Changed segment IDs to be locus-specific, unaware of orientation (if two alignments are in the same region, they will have the same ID irrespective of their orientation).
 
+### 0.5.4
+ - Hotfix an issue where base quality probabilities are invalid during block consensus. If probabilitiy type is invalid, no consensus is provided for that read.
+
 ### 0.5.3
  - Fix an issue in alternative representation where first alignment gap was added twice
  - Fix an issue in alternative representation where last alignment gap was not added

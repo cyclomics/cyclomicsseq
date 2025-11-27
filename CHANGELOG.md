@@ -1,5 +1,9 @@
 # changelog
 
+## 1.1.2
+- Updated Docker container to version 0.9.1, to include Cycas 0.5.4, which handles an issue where some consensus blocks have invalide quality probabilities. If a read contains invalid quality probabilities, then no consensus is provided for that read.
+- Fixed an issue where printing the report fails because no SNPs were found for the scatterplots. If no reads were found, the variant support tab will display a message stating this, and the report HTML will still be produced.
+
 ## 1.1.1
 
 - Updated Docker container to version 0.9.0, to include Cycas 0.5.2
