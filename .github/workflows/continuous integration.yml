@@ -51,7 +51,7 @@ jobs:
   RunPythonUnitTests:
     runs-on: ubuntu-latest
     container:
-      image: docker://cyclomics/cyclomicseq:2.0.0-rc1
+      image: docker://cyclomics/cyclomicsseq:2.0.0-rc1
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2
