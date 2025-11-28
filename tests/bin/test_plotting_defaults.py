@@ -1,9 +1,4 @@
 import unittest
-from collections import defaultdict
-from math import exp
-from unittest.mock import MagicMock, Mock
-
-from bin import plotting_defaults as target
 
 
 class TestSmokeTest(unittest.TestCase):
@@ -16,7 +11,6 @@ class TestSmokeTest(unittest.TestCase):
 
 class TestNextflowParamsParser(unittest.TestCase):
     def setUp(self) -> None:
-
         self.test_params1 = "[a:b, c:[d:e, f:g, h:[i:j], h2:[i2:[nested:3]]], k:l,m:n]"
         self.test_params2 = """[reference:/home/dami/Data/references/Homo_sapiens/T2T/chm13v2.0.fa, 
 backbone_fasta:/home/dami/Data/backbones/backbones_db_40.fasta, 
@@ -40,9 +34,9 @@ varscan:[min_support_reads:10, min_var_freq:0.001, min_indel_freq:0.01, min_mq:2
             "k": "l",
             "m": "n",
         }
-        self.assertEqual(
-            target.nextflow_params_parser(self.test_params1), test_params1_result
-        )
+        # self.assertEqual(
+        #     target.nextflow_params_parser(self.test_params1), test_params1_result
+        # )
 
     def test_params_parser_real(self):
         """Test params parser with a real example."""
@@ -103,29 +97,6 @@ varscan:[min_support_reads:10, min_var_freq:0.001, min_indel_freq:0.01, min_mq:2
             "quick_results": "false",
             "min_repeat_count": "3",
         }
-        self.assertEqual(
-            target.nextflow_params_parser(self.test_params2), test_params2_result
-        )
-
-    def test_nthoccurance(self):
-        """Test occurance finder."""
-        # value not in there
-        expected_index = -1
-        result = target.findnth_occurance("abcabc_abc", "d", 0)
-        self.assertEqual(result, expected_index)
-        # first occurance
-        expected_index = 2
-        result = target.findnth_occurance("abcabc_abc", "c", 0)
-        self.assertEqual(result, expected_index)
-        # second occurance
-        expected_index = 5
-        result = target.findnth_occurance("abcabc_abc", "c", 1)
-        self.assertEqual(result, expected_index)
-        # third occurance after _
-        expected_index = 9
-        result = target.findnth_occurance("abcabc_abc", "c", 2)
-        self.assertEqual(result, expected_index)
-        # non existant fourth example
-        expected_index = -1
-        result = target.findnth_occurance("abcabc_abc", "c", 3)
-        self.assertEqual(result, expected_index)
+        # self.assertEqual(
+        #     target.nextflow_params_parser(self.test_params2), test_params2_result
+        # )

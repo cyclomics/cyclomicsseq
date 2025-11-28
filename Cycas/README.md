@@ -4,19 +4,33 @@ CYclomics Consensus Alignment Sequences, or the interesting genus of the ["vrede
 
 Cycas uses the alignment against the reference genome to determine the type of read, and creates consensus sequences accordingly.
 
+## TODO
 
-## Todo
-
-- add unittests
-- Remove pandas as dependancy (in piechart code)
-- explore gap extention (inclusion of original fastq)
-- explore superalignment (aka realignment of secondary alignments) (potentially fixed by better alignment)
-- Add code to create piechart from multiple metadata jsons.
+- Better default management. Defaults should only be defined in the "public" space, all the rest should contain no defaults and require explicit.
+- Rewrite of the metric system:
+  - Rethink of different levels of metrics (per read, per file, per run).
+  - Plots per metric, save to a small file ready for plotting. plot/save/load methods per metric.
+  - Callback system for metrics to add in app calls.
+  - Unit tests and examples for classification/split/metrics/algorithms.
+- Rotate consensus reads: complement MSA arrays, such that overlapping nucleotides are identified by some sort of index number.
+- Remove deprecated legacy code.
 
 ## Changelog
 
-### 0.5.4
- - Hotfix an issue where base quality probabilities are invalid during block consensus. If probabilitiy type is invalid, no consensus is provided for that read.
+### 0.6.1
+ - Hotfix: added `--calibration-model` user argument to mode `consensus`.
+
+### 0.6.0
+ - Major changes to Cycas, enabling splitting of chimeric reads, classification of concatemer structures and calibration of consensus quality scores.
+ - Introduced the following commands to `cycas.py`:
+   - `consensus` generates consensus from an aligned BAM file, outputs a consensus FASTQ and optionally a metadata JSON.
+   - `classify` (for advanced users) splits and classifies reads from an aligned BAM file, outputs a split BAM file, a FASTQ file and optionally an HDF5 file. Does not perform consensus.
+   - `simulate` (for advanced users) simulates CyclomicsSeq reads from a reference genome.
+   - `file-prep` (for advanced users) prepares data from an HDF5 file for calibration.
+   - `fit-model` (for advanced users) fits the model according to the prepared data.
+   - `quick-consensus` (DEPRECATED) generates the structure-unaware consensus. Previously `consensus`.
+   - `quick-consensus-sr` (DEPRECATED) generates structure-unaware consensus for a single read. Previously `single-read`.
+ - Changed segment IDs to be locus-specific, unaware of orientation (if two alignments are in the same region, they will have the same ID irrespective of their orientation).
 
 ### 0.5.3
  - Fix an issue in alternative representation where first alignment gap was added twice

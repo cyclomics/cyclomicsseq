@@ -1,12 +1,9 @@
+import random
 from abc import ABC, abstractmethod
 from collections import Counter
 from typing import Dict, Union
-import random
 
-from loguru import logger
-
-from src.alignment_processor import AlignmentProcessor
-
+from .alignment_processor import AlignmentProcessor
 
 METADATA = Dict[str, int]
 UNKNOWN_CLASS_LABEL = "Unknown"

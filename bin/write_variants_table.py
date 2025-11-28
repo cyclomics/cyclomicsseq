@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import io
 import json
 from pathlib import Path
@@ -41,7 +42,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
 
 
 def restructure_annotations(
-    variants_df: pd.DataFrame, variant_decimal_points=3
+    variants_df: pd.DataFrame, variant_decimal_points=2
 ) -> pd.DataFrame:
     """Restructures variants dataframe to have readable annotations."""
     chrom = variants_df["CHROM"]
@@ -61,48 +62,43 @@ def restructure_annotations(
 
     info = variants_df["INFO"].str.split(";")
 
-    # Due to the fact that a list is unhashable we need to do a forloop iso a set.
-    # unique = []
-    # for x in info:
-    #     if x not in unique:
-    #         unique.append(x)
+    # Mask: row has annotation
+    annot_mask = (info.str[0] == "ANNOTATION") & (info.str[1] != ".")
 
-    if (info.str[0] == "ANNOTATION").all() and (info.str[1] != ".").all():
-        var_type = info.str[1].str.split("=").str[1]
-        consequence = info.str[2].str.split("=").str[1]
-        symbol = info.str[5].str.split("=").str[1]
-        impact = info.str[6].str.split("=").str[1]
-        biotype = info.str[7].str.split("=").str[1]
-        sift = info.str[10].str.split("=").str[1]
-        polyphen = info.str[11].str.split("=").str[1]
-        cosmic_ids = info.str[3].str.split("=").str[1]
-        legacy_ids = info.str[4].str.split("=").str[1]
-    else:
-        var_type = pd.Series(["N/A"] * len(location))
-        consequence = pd.Series(["N/A"] * len(location))
-        symbol = pd.Series(["N/A"] * len(location))
-        impact = pd.Series(["N/A"] * len(location))
-        biotype = pd.Series(["N/A"] * len(location))
-        sift = pd.Series(["N/A"] * len(location))
-        polyphen = pd.Series(["N/A"] * len(location))
-        cosmic_ids = pd.Series(["N/A"] * len(location))
-        legacy_ids = pd.Series(["N/A"] * len(location))
+    # Default values (N/A)
+    var_type = pd.Series(["N/A"] * len(info))
+    consequence = pd.Series(["N/A"] * len(info))
+    symbol = pd.Series(["N/A"] * len(info))
+    biotype = pd.Series(["N/A"] * len(info))
+    clinsig = pd.Series(["N/A"] * len(info))
+    hgvsc = pd.Series(["N/A"] * len(info))
+    hgvsp = pd.Series(["N/A"] * len(info))
+    cosmic_ids = pd.Series(["N/A"] * len(info))
+
+    # Fill only for annotated rows
+    var_type.loc[annot_mask] = info.loc[annot_mask].str[1].str.split("=").str[1]
+    consequence.loc[annot_mask] = info.loc[annot_mask].str[2].str.split("=").str[1]
+    cosmic_ids.loc[annot_mask] = info.loc[annot_mask].str[3].str.split("=").str[1]
+    symbol.loc[annot_mask] = info.loc[annot_mask].str[5].str.split("=").str[1]
+    biotype.loc[annot_mask] = info.loc[annot_mask].str[7].str.split("=").str[1]
+    clinsig.loc[annot_mask] = info.loc[annot_mask].str[12].str.split("=").str[1]
+    hgvsc.loc[annot_mask] = info.loc[annot_mask].str[13].str.split("=").str[1]
+    hgvsp.loc[annot_mask] = info.loc[annot_mask].str[14].str.split("=").str[1]
 
     annot_columns = [
         "Location",
         "Ref",
         "Alt",
-        "Var (%)",
+        "VAF (%)",
         "Coverage",
-        "Type",
         "Symbol",
+        "Type",
+        "Codon change",
+        "Aminoacid change",
         "Biotype",
         "Consequence",
-        "Impact",
-        "SIFT",
-        "PolyPhen",
+        "Clinical significance",
         "COSMIC",
-        "COSMIC legacy",
     ]
 
     annot_data = [
@@ -111,25 +107,28 @@ def restructure_annotations(
         alt,
         vaf,
         coverage,
-        var_type,
         symbol,
+        var_type,
+        hgvsc,
+        hgvsp,
         biotype,
         consequence,
-        impact,
-        sift,
-        polyphen,
+        clinsig,
         cosmic_ids,
-        legacy_ids,
     ]
 
     annotation_df = pd.concat(annot_data, axis=1)
     annotation_df.columns = annot_columns
-    annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(
-        to_replace=",", value=", ", regex=True
+    annotation_df["COSMIC"] = annotation_df["COSMIC"].replace(",", ", ", regex=True)
+    annotation_df["Biotype"] = annotation_df["Biotype"].replace("_", " ", regex=True)
+    annotation_df["Consequence"] = (
+        annotation_df["Consequence"]
+        .replace("_variant", "", regex=True)
+        .replace("_", " ", regex=True)
     )
-    annotation_df["COSMIC legacy"] = annotation_df["COSMIC legacy"].replace(
-        to_replace=",", value=", ", regex=True
-    )
+    annotation_df["Clinical significance"] = annotation_df[
+        "Clinical significance"
+    ].replace("_", " ", regex=True)
     annotation_df = annotation_df.replace(to_replace=r"\(\)", value="")
     annotation_df = annotation_df.replace(to_replace=r"None \(None\)", value="N/A")
     annotation_df = annotation_df.replace(to_replace="None", value="N/A")
@@ -156,45 +155,47 @@ def main(vcf_file: Path, variant_table_file: Path, tab_name: str, priority_limit
     json_obj[tab_name]["priority"] = TAB_PRIORITY
 
     if TAB_PRIORITY < priority_limit:
-        version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14 and with variant calling option '--variant_calling validate'</p>"
+        version_notice = "<br><br><p>Variant annotation currently only supported with human genome version GRCh38.p14</p>"
 
         variants_df = load_vcf(vcf_file)
         annotation_df = restructure_annotations(variants_df)
-        vcf_table = annotation_df.to_html(na_rep="N/A")
+        vcf_table = annotation_df.to_html(na_rep="N/A", table_id="variant_table")
         vcf_table = vcf_table.replace(
-            'class="dataframe"', 'class="table table-sm table-hover table-striped"'
+            'class="dataframe"',
+            'class="table table-striped table-sm table-hover table-responsive"',
         )
         vcf_table = vcf_table.replace('border="1"', "")
         # f"width={cyclomics_defaults.width}")
 
-        json_obj[tab_name]["script"] = ""
-        json_obj[tab_name]["div"] = "<div>" + vcf_table + version_notice + "</div>"
+        json_obj[tab_name]["script"] = (
+            "<script>"
+            "$(document).ready(function() {"
+            "$('#variant_table').DataTable({"
+            "paging: true, searching: true, ordering: true, scrollX: true"
+            "});"
+            "});"
+            "</script>"
+        )
+        json_obj[tab_name]["div"] = (
+            '<div style="font-size: 12px; max-width:100%; overflow-x:auto; white-space:nowrap;">'
+            + vcf_table
+            + version_notice
+            + "</div>"
+        )
 
     with open(Path(variant_table_file).with_suffix(".json"), "w") as f:
         f.write(json.dumps(json_obj))
 
 
 if __name__ == "__main__":
-    dev = False
-    if not dev:
-        import argparse
+    parser = argparse.ArgumentParser(
+        description="Create hist plot from a regex for fastq and fastq.gz files."
+    )
 
-        parser = argparse.ArgumentParser(
-            description="Create hist plot from a regex for fastq and fastq.gz files."
-        )
+    parser.add_argument("vcf_file")
+    parser.add_argument("variant_table_file")
+    parser.add_argument("tab_name", default="Variant Table")
+    parser.add_argument("priority_limit", type=int, default=89)
+    args = parser.parse_args()
 
-        parser.add_argument("vcf_file")
-        parser.add_argument("variant_table_file")
-        parser.add_argument("tab_name", default="Variant Table")
-        parser.add_argument("priority_limit", type=int, default=89)
-        args = parser.parse_args()
-
-        main(args.vcf_file, args.variant_table_file, args.tab_name, args.priority_limit)
-
-    else:
-        vcf_file = "/data/projects/ROD_tmp/65/08147aed79107ea52881035e4be36a/FAW08675_filtered_annotated.vcf"
-        variant_table_file = "variant_table.json"
-        tab_name = "variant_table"
-        priority_limit = 9999
-
-        main(vcf_file, variant_table_file, tab_name, priority_limit)
+    main(args.vcf_file, args.variant_table_file, args.tab_name, args.priority_limit)

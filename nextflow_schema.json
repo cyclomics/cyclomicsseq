@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
   "$id": "https://raw.githubusercontent.com/cyclomics/cyclomicsseq/master/nextflow_schema.json",
-  "title": "Cyclomics/CyclomicsSeq",
+  "title": "cyclomics/cyclomicsseq",
   "description": "Create high quality alignment data with variant identification for the Cyclomics CyclomicsSeq protocol.",
   "type": "object",
   "definitions": {
@@ -70,7 +70,7 @@
           "type": "string",
           "description": "Type of report to generate at the end of the pipeline.",
           "help_text": "Standard reports show almost all information, and should suffice for an enduser. Detailed has some additional visualisation tabs, skip skips the generation all together.",
-          "default": "standard",
+          "default": "detailed",
           "enum": ["standard", "detailed", "skip"]
         }
       },
@@ -263,8 +263,8 @@
           "title": "SNP: min_abq",
           "type": "integer",
           "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
+          "help_text": "Default: 20 ",
+          "default": 20
         },
         "indel_filters.min_ao": {
           "title": "Indel: min_ao",
@@ -305,8 +305,8 @@
           "title": "Indel: min_abq",
           "type": "integer",
           "description": "Minimum average base quality.",
-          "help_text": "Default: 70 ",
-          "default": 70
+          "help_text": "Default: 20 ",
+          "default": 20
         }
       }
     }

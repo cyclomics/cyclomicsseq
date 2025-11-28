@@ -108,19 +108,15 @@ if (params.profile_selected == "conda") {
 ========================================================================================
 */
 include {
-    Report
     FilterWithAdapterDetection
     CycasConsensus
     AlignByID
-    AlignContaminants
     PrepareGenome
     AnnotateBam
     FilterBam
-    ProcessTargetRegions as ProcessContaminantRegions
     ProcessTargetRegions
-    CallContaminantMutants
+    Report
     CallVariantsValidate
-    CrosscheckContaminantVariants
 } from "./subworkflows.nf"
 
 
@@ -232,7 +228,15 @@ workflow {
     read_fastq.dump(tag: "read_fastq_no_fail")
 
     // Generate a unique ID for the run
-    def run_UID = generateUid( (('A'..'Z')+('a'..'z')+('0'..'9')).join(), 7 )
+    def uid_file = "${params.output_dir}/.run_uid.txt"
+    File f = new File(uid_file)
+
+    if (f.exists()) {
+        run_UID = f.text.trim()
+    } else {
+        run_UID = generateUid((('A'..'Z')+('a'..'z')+('0'..'9')).join(), 7)
+        f.text = run_UID
+    }
 
     // Extract valid sample ID's for eah fastq file
     read_fastq = read_fastq.map { it ->
@@ -306,9 +310,9 @@ workflow {
 
 /*
 ========================================================================================
-03.    Variant calling
+02.    Variant Calling
 ========================================================================================
-*/  
+*/ 
     locations = ""
     variant_vcf = ""
 
@@ -318,42 +322,9 @@ workflow {
     locations = CallVariantsValidate.out.locations
     variant_vcf = CallVariantsValidate.out.variants
 
-
 /*
 ========================================================================================
-04.    Contamination check
-========================================================================================
-*/  
-    synthetic_vcf = ""
-
-    // String[] contaminantSeqExt = [".fasta", ".fna", ".fa", ".fastq", ".fq"]
-
-    // if (params.synthetics_file.endsWithAny(contaminantSeqExt)) {
-    //     AlignContaminants(synthetic_reads, PrepareGenome.out.fasta_ref, bwa_index)
-    //     synthetics_aligned = AlignContaminants.out.bam
-    //     synthetics
-    //     // ProcessContaminantRegions(region_file, synthetics_aligned)
-    //     ProcessContaminantRegions('auto', synthetics_aligned)
-
-    //     CallContaminantMutants(synthetics_aligned,  ProcessContaminantRegions.out, PrepareGenome.out.fasta_combi)
-    //     synthetic_vcf = CallContaminantMutants.out.variants       
-
-    // } else if (params.synthetics_file.endsWith(".vcf")) {
-    //     synthetic_vcf = synthetic_reads
-
-    // } else {
-    //     error "Invalid --synthetics_file format: ${params.synthetics_file}"
-    // }
-
-    if (synthetic_vcf) {
-        contaminants_vcf = CrosscheckContaminantVariants(variant_vcf, synthetic_vcf)
-    }
-    else {
-        contaminants_vcf = ""
-    }
-/*
-========================================================================================
-05.    Reporting
+03.    Reporting
 ========================================================================================
 */  
     if (params.report in ["detailed", "standard"]) {
@@ -369,7 +340,6 @@ workflow {
             regions,
             locations,
             variant_vcf,
-            contaminants_vcf,
         )
     }
     else if (params.report == "skip") {
@@ -378,6 +348,7 @@ workflow {
     else {
         error "Invalid reporting selector: ${params.report}"
     }
+
 
 }
 

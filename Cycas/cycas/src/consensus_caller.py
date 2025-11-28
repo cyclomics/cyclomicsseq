@@ -162,6 +162,8 @@ class BaseConsensusCaller(ABC):
         """
         Add an empty location for all non insert alignments
         """
+        # TODO: this should be part of the alignment group object, not the consensus caller
+
         return [
             x.add_empty_location(i)
             for x in alignment_objects.values()
@@ -172,6 +174,8 @@ class BaseConsensusCaller(ABC):
         """
         Add _ at the start and end of COnsensus Alignment to make them all the same length
         """
+        # TODO: this should be part of the alignment group object, not the consensus caller
+
         required_additions = desired_length - len(alignment_object)
 
         alignment_object.seq += extender * required_additions
@@ -179,6 +183,8 @@ class BaseConsensusCaller(ABC):
         alignment_object.qual += [0] * required_additions
 
     def update_insert_locations(self, alignment_objects):
+
+        # TODO: this should be part of the alignment group object, not the consensus caller
         max_length = max([x.alignment_length for x in alignment_objects.keys()])
         max_insert_n = max(
             [x.extended_cigar.count("I") for x in alignment_objects.keys()]
@@ -297,7 +303,9 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
 
         for block in blocks:
             # Assign tag and increase appropriate counter
-            if block.consensus_chromosome.startswith("BB"):
+            if block.consensus_chromosome and block.consensus_chromosome.startswith(
+                "BB"
+            ):
                 tag = f"backbone{backbone_id}"
                 backbone_id += 1
             else:
@@ -384,7 +392,6 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
         best_nuc_support = []
         consensus_structure = []
         consensus_structure_seperator = ","
-        invalid_block = False
         # loop over all posible positions
         for i in range(max_length):
             nucs = [x.get_seq_pos(i) for x in consensus_alignments.values()]
@@ -452,15 +459,7 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             nucs = filtered_nucs
             quals = filtered_quals
             # now we can calculate probs
-            try:
-                probs = [self.phred_to_prob(x) for x in quals]
-            except TypeError:
-                invalid_block = True
-                logger.exception(
-                    f"Could not convert Phred scores to probabilities. "
-                    f"Values are either NoneType or float: {quals}"
-                )
-                break
+            probs = [self.phred_to_prob(x) for x in quals]
 
             best_nuc, best_nuc_prob = self._calculate_best_nucleotide(nucs, probs)
             best_nuc_support.append(tuple([nucs.count(best_nuc), len(nucs)]))
@@ -498,18 +497,6 @@ class ConsensusCallerMetadata(BaseConsensusCaller):
             best_nuc_support = best_nuc_support[::-1]
             consensus_structure = consensus_structure[::-1]
             flipped = True
-
-        if invalid_block:
-            return (
-                "",
-                [],
-                barcode,
-                barcode_arrays,
-                alignment_start,
-                best_nuc_support,
-                flipped,
-                [],
-            )
 
         return (
             consensus,

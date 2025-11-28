@@ -47,8 +47,9 @@ class TestAlignmentGroup(unittest.TestCase):
     def test_intermediate_read_structure(self):
         """Test the alternative representation of the read structure"""
         x = self.testcase(read_name=self.test_read_name, bam=self.bam, filters=[])
+        self.maxDiff = None
 
-        alternative_representation = "193:U,208:BB:R:BB41C:11:193:208:0,-24:O,207:BB:R:BB41C:1:377:207:0,101:U,219:BB:R:BB41C:1:685:219:0,101:I:F:chr17:7574727:904:101:0,222:BB:R:BB41C:1:1005:222:0,724:U,203:BB:F:BB41C:1:1951:203:1,-12:O,153:BB:F:BB41C:23:2142:153:1,376:U,214:BB:R:BB41C:11:2671:214:0,-24:O,208:BB:R:BB41C:1:2861:208:0,101:U,214:BB:R:BB41C:1:3170:214:0,99:I:F:chr17:7574727:3384:99:0,219:BB:R:BB41C:1:3483:219:0,101:I:F:chr17:7574727:3702:101:0,45:U"
+        alternative_representation = "193:U,208:BB:R:BB41C:11:193:208:0,-24:O,207:BB:R:BB41C:1:377:207:0,101:U,219:BB:R:BB41C:1:685:219:0,101:I:F:chr17:7574727:904:101:1,222:BB:R:BB41C:1:1005:222:0,724:U,203:BB:F:BB41C:1:1951:203:0,-12:O,153:BB:F:BB41C:23:2142:153:0,376:U,214:BB:R:BB41C:11:2671:214:0,-24:O,208:BB:R:BB41C:1:2861:208:0,101:U,214:BB:R:BB41C:1:3170:214:0,99:I:F:chr17:7574727:3384:99:1,219:BB:R:BB41C:1:3483:219:0,101:I:F:chr17:7574727:3702:101:1,45:U"
         result = x.create_intermediate_read_structure()
         result_length = sum([int(x.split(":")[0]) for x in result.split(",")])
         self.assertEqual(result_length, self.test_read_length)

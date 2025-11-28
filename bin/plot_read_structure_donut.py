@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 from collections import Counter
 from itertools import chain
-from math import pi
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 import pandas as pd
+import plotly.graph_objects as go
 import pysam
-from bokeh.embed import components
-from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Div, LabelSet
-from bokeh.plotting import figure
-from bokeh.transform import cumsum
+from plotting_defaults import plotly_components
 
 TAB_PRIORITY_CONTIG_COUNT = 90
 TAB_PRIORITY_DONUT = 1
@@ -24,11 +21,6 @@ def determine_read_type(
     per_read_counter: Counter,
     per_base_counter: Counter,
 ) -> None:
-    """
-    Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
-
-    """
-    # ignore empty reads. should not occur since the read should be unmapped.
     if not read_info_list:
         return
 
@@ -52,8 +44,6 @@ def determine_read_type(
         else:
             per_read_counter.update({"I-only"})
             per_base_counter.update({"I-only": raw_read_length})
-
-    # two elements mapped
     elif len(mapped) == 2:
         if mapped_bb and mapped_ins:
             per_read_counter.update({"BB-I"})
@@ -64,25 +54,19 @@ def determine_read_type(
         else:
             per_read_counter.update({"I-only"})
             per_base_counter.update({"I-only": raw_read_length})
-
-    # complex mapping
     else:
         if not mapped_ins and len(mapped_bb) > 1:
             per_read_counter.update({"mBB-only"})
             per_base_counter.update({"mBB-only": raw_read_length})
-
         elif not mapped_bb and len(mapped_ins) > 1:
             per_read_counter.update({"mI-only"})
             per_base_counter.update({"mI-only": raw_read_length})
-
         elif len(mapped_ins) > 1 and len(mapped_bb) == 1:
             per_read_counter.update({"BB-mI"})
             per_base_counter.update({"BB-mI": raw_read_length})
-
         elif len(mapped_bb) > 1 and len(mapped_ins) == 1:
             per_read_counter.update({"mBB-I"})
             per_base_counter.update({"mBB-I": raw_read_length})
-
         elif len(mapped_bb) > 1 and len(mapped_ins) > 1:
             per_read_counter.update({"mBB-mI"})
             per_base_counter.update({"mBB-mI": raw_read_length})
@@ -94,46 +78,9 @@ def determine_read_type(
 def update_chromosome_counts(
     reads: List[pysam.AlignedSegment], chromosome_counts: Counter
 ) -> None:
-    """
-    Given a list of pysam objects, update the per_read_counter and per_base_counter based on their infered read type from the present chromosomes.
-    """
-
     mapped = list(set([x.reference_name if x.reference_name else "*" for x in reads]))
-
     for map in mapped:
-        if map in chromosome_counts.keys():
-            chromosome_counts[map] += 1
-        else:
-            chromosome_counts[map] = 1
-
-
-def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
-    """
-    Given a coordinate sorted and indexed bam, create counters for read types and chromosome counts.
-
-    """
-
-    concat_type_stats, concat_type_stats_by_bases = initialize_counters()
-    chromosome_counts = {}
-    read_info = []
-    readname = None
-    for i, read in enumerate(bam):
-        if read.qname == readname:
-            read_info.append(read)
-        else:
-            if not readname:
-                readname = read.qname
-                read_info = [read]
-
-            determine_read_type(
-                read_info, concat_type_stats, concat_type_stats_by_bases
-            )
-            update_chromosome_counts(read_info, chromosome_counts)
-
-            readname = read.qname
-            read_info = [read]
-
-    return concat_type_stats, concat_type_stats_by_bases, chromosome_counts
+        chromosome_counts[map] = chromosome_counts.get(map, 0) + 1
 
 
 def initialize_counters():
@@ -142,53 +89,72 @@ def initialize_counters():
         "BB-only": 0,
         "I-only": 0,
         "Unmapped": 0,
-        "mBB-only": 0,  # multiple BB, no I
-        "mI-only": 0,  # multiple I, no BB
-        "BB-mI": 0,  # single BB, multiple I
-        "mBB-I": 0,  # multiple BB, single I
-        "mBB-mI": 0,  # multiple BB, multiple I
-        "Unknown": 0,  # anything else
+        "mBB-only": 0,
+        "mI-only": 0,
+        "BB-mI": 0,
+        "mBB-I": 0,
+        "mBB-mI": 0,
+        "Unknown": 0,
     }
     concat_type_stats = Counter(concat_types)
     concat_type_stats_by_bases = Counter(concat_types)
     return concat_type_stats, concat_type_stats_by_bases
 
 
+def direct_to_Couter(bam) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int]]:
+    concat_type_stats, concat_type_stats_by_bases = initialize_counters()
+    chromosome_counts = {}
+    read_info = []
+    readname = None
+
+    for read in bam:
+        if read.qname == readname:
+            read_info.append(read)
+        else:
+            if read_info:
+                determine_read_type(
+                    read_info, concat_type_stats, concat_type_stats_by_bases
+                )
+                update_chromosome_counts(read_info, chromosome_counts)
+            readname = read.qname
+            read_info = [read]
+
+    if read_info:
+        determine_read_type(read_info, concat_type_stats, concat_type_stats_by_bases)
+        update_chromosome_counts(read_info, chromosome_counts)
+
+    return concat_type_stats, concat_type_stats_by_bases, chromosome_counts
+
+
 def create_assembly_count_plot(chromosome_counts, my_title, priority_limit: int):
-    """
-    Create a barplot for the assembly statistics.
-    """
     tab_name = "Alignment"
-    add_info = {}
-    json_obj = {}
-    json_obj[tab_name] = {}
-    json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["priority"] = TAB_PRIORITY_CONTIG_COUNT
+    json_obj = {
+        tab_name: {"name": tab_name, "priority": TAB_PRIORITY_CONTIG_COUNT},
+        "additional_info": {},
+    }
 
     if TAB_PRIORITY_CONTIG_COUNT < priority_limit:
-        ##Segments count
-        # _d = Counter(split_table.RNAME.values)
-        segments = (
-            pd.DataFrame.from_dict(chromosome_counts, orient="index")
-            .reset_index()
-            .rename(columns={"index": "CHROM", 0: "count"})
+        df = pd.DataFrame(list(chromosome_counts.items()), columns=["CHROM", "count"])
+        fig = go.Figure(
+            go.Bar(
+                x=df["CHROM"],
+                y=df["count"],
+                marker_color="steelblue",
+                hovertemplate="Chromosome: %{x}<br>Count: %{y:.2f}<extra></extra>",
+            )
         )
-        print(segments)
-        source = ColumnDataSource(data=segments)
-
-        p = figure(
-            plot_height=500,
-            plot_width=1000,
-            x_range=segments.CHROM,
+        fig.update_layout(
+            template="simple_white",
             title=my_title,
-            tooltips="@CHROM: @count",
+            xaxis_title="Chromosome",
+            yaxis_title="Count",
+            xaxis_tickangle=-45,
+            width=1000,
+            height=500,
         )
-        p.vbar(x="CHROM", top="count", width=0.8, source=source)
-        p.xaxis.major_label_orientation = "vertical"
 
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(p)
-
-    json_obj["additional_info"] = add_info
+        script, div = plotly_components([fig])
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = script, div
 
     return json_obj
 
@@ -199,135 +165,81 @@ def create_readtype_donuts(
     plot_title,
     priority_limit: int,
 ):
-    """
-    Create a donut plot for the read structures.
-    """
-
     concat_type_colors = {
-        "BB-I": "DodgerBlue",  # perfect
-        "BB-only": "Crimson",  # waste
-        "I-only": "MediumSlateBlue",  # informing but missing barcode
-        "Unmapped": "Gray",  # waste
-        "mBB-only": "Tomato",  # waste
-        "mI-only": "DarkOrchid",  # informing but missing barcode
-        "BB-mI": "RoyalBlue",  # OK
-        "mBB-I": "Navy",  # OK
-        "mBB-mI": "SkyBlue",  # OK
-        "Unknown": "Gold",  # Waste
+        "BB-I": "DodgerBlue",
+        "BB-only": "Crimson",
+        "I-only": "MediumSlateBlue",
+        "Unmapped": "Gray",
+        "mBB-only": "Tomato",
+        "mI-only": "DarkOrchid",
+        "BB-mI": "RoyalBlue",
+        "mBB-I": "Navy",
+        "mBB-mI": "SkyBlue",
+        "Unknown": "Gold",
     }
 
-    def _calculate_angle_and_color(stats, concat_type_colors):
-        _df1 = pd.DataFrame.from_dict(stats, orient="index").reset_index()
-        _df1.columns = ["type", "count"]
-        _df1["angle"] = _df1["count"] / _df1["count"].sum() * 2 * pi
-        _df1["percentage"] = _df1["count"] / _df1["count"].sum() * 100
-        _df1["color"] = _df1.type.map(lambda x: concat_type_colors[x])
+    def _plot_donut(stats, subtitle):
+        df = pd.DataFrame.from_dict(stats, orient="index").reset_index()
+        df.columns = ["type", "count"]
+        df["color"] = df["type"].map(lambda x: concat_type_colors.get(x, "gray"))
+        total_count = df["count"].sum()
 
-        return _df1
-
-    def _plot_donut(
-        data,
-        donut_plot_height,
-        donut_plot_width,
-        donut_plot_x_range,
-        donut_plot_y_range,
-        subtitle,
-    ):
-        # data = ColumnDataSource(data)
-
-        # create empty plot object
-        donut_plot = figure(
-            plot_height=donut_plot_height,
-            plot_width=donut_plot_width,
-            title=subtitle,
-            tools="hover",
-            tooltips=[("type:", "@type"), ("count:", "@count"), ("%", "@percentage")],
-            x_range=donut_plot_x_range,
-            y_range=donut_plot_y_range,
-            toolbar_location=None,
+        fig = go.Figure(
+            go.Pie(
+                labels=df["type"],
+                values=df["count"],
+                hole=0.5,
+                marker=dict(colors=df["color"]),
+                textinfo="percent",
+                insidetextorientation="radial",
+                textposition="inside",
+                hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
+                # Hide labels for slices <5%
+                text=[
+                    (
+                        f"{row['type']} {row['count']} ({row['count'] / total_count * 100:.1f}%)"
+                        if row["count"] / total_count > 0.05
+                        else ""
+                    )
+                    for _, row in df.iterrows()
+                ],
+            )
         )
-        # add wedges per type
-        donut_plot.annular_wedge(
-            x=0,
-            y=1,
-            inner_radius=0.2,
-            outer_radius=0.45,
-            direction="anticlock",
-            start_angle=cumsum("angle", include_zero=True),
-            end_angle=cumsum("angle"),
-            line_color="white",
-            fill_color="color",
-            legend_group="type",
-            source=data,
+        fig.update_layout(
+            title_text=subtitle,
+            width=400,
+            height=400,
+            margin=dict(l=20, r=20, t=60, b=20),
+            legend=dict(
+                orientation="v",
+                yanchor="top",
+                y=1.0,
+                xanchor="left",
+                x=1.05,
+                font=dict(size=12),
+            ),
+            uniformtext_minsize=10,
+            uniformtext_mode="hide",
         )
-        # mask all % below 2%
-        data["percentage"] = data["percentage"].mask(data["percentage"] < 2)
-        # format to 1 decimal
-        data["percentage"] = data["percentage"].map("{:,.1f}%".format)
-        # remove nan string
-        data["percentage"] = data["percentage"].replace(["nan%"], "")
-        # padd to appear in right place
-        data["percentage"] = data["percentage"].str.pad(18, side="left")
-        source = ColumnDataSource(data)
-
-        labels = LabelSet(
-            x=0,
-            y=1,
-            text="percentage",
-            angle=cumsum("angle", include_zero=True),
-            source=source,
-            render_mode="canvas",
-        )
-
-        donut_plot.add_layout(labels)
-
-        # remove chart elements
-        donut_plot.axis.axis_label = None
-        donut_plot.axis.visible = False
-        donut_plot.grid.grid_line_color = None
-        donut_plot.title.text_font_size = "16pt"
-        return donut_plot
+        return fig
 
     tab_name = "Read structure"
-    json_obj = {}
-    json_obj[tab_name] = {}
-    json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["priority"] = TAB_PRIORITY_DONUT
+    json_obj = {tab_name: {"name": tab_name, "priority": TAB_PRIORITY_DONUT}}
 
     if TAB_PRIORITY_DONUT < priority_limit:
-        _df1 = _calculate_angle_and_color(concat_type_stats, concat_type_colors)
-        _df2 = _calculate_angle_and_color(
-            concat_type_stats_by_bases, concat_type_colors
-        )
-
         add_info = {}
-        add_info["read_struc_prec_bbi"] = _df1[_df1.type == "BB-I"].percentage[0]
-
-        donut_plot_height = 400
-        donut_plot_width = 600
-        donut_plot_x_range = (-0.6, 1.4)
-        donut_plot_y_range = (0, 2)
-        p1 = _plot_donut(
-            _df1,
-            donut_plot_height,
-            donut_plot_width,
-            donut_plot_x_range,
-            donut_plot_y_range,
-            "per read",
-        )
-        p2 = _plot_donut(
-            _df2,
-            donut_plot_height,
-            donut_plot_width,
-            donut_plot_x_range,
-            donut_plot_y_range,
-            "per base",
+        total = sum(concat_type_stats.values())
+        add_info["read_struc_prec_bbi"] = (
+            concat_type_stats.get("BB-I", 0) / total * 100 if total else 0
         )
 
-        donut_row = row(p1, p2)
-        donut_plot = column(Div(text=f"<h1>{plot_title}</h1>"), donut_row)
+        # Generate two independent figures
+        fig_per_read = _plot_donut(concat_type_stats, "Per read")
+        fig_per_base = _plot_donut(concat_type_stats_by_bases, "Per base")
 
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(donut_plot)
+        # Pass both figures as independent plots to plotly_components
+        script, div = plotly_components([fig_per_read, fig_per_base])
+        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = script, div
         json_obj["additional_info"] = add_info
 
     return json_obj
@@ -340,12 +252,7 @@ def main(
     donut_plot_title,
     priority_limit: int,
 ):
-    """
-    Extract data from bam and plot it using two functions that further select data
-    """
-
     aln_file = pysam.AlignmentFile(bam_path, "rb")
-
     read_counts, base_counts, chromosome_counts = direct_to_Couter(aln_file)
 
     assembly_info = create_assembly_count_plot(
@@ -355,21 +262,16 @@ def main(
         read_counts, base_counts, donut_plot_title, priority_limit
     )
 
-    json_obj = chain(assembly_info.items(), donut_info.items())
-    json_obj = dict(json_obj)
-    # correct the add info by merging them
+    json_obj = dict(chain(assembly_info.items(), donut_info.items()))
     json_obj["additional_info"] = assembly_info["additional_info"]
-    json_obj["additional_info"].update(donut_info["additional_info"])
+    json_obj["additional_info"].update(donut_info.get("additional_info", {}))
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
-        f.write(json.dumps(json_obj))
+        json.dump(json_obj, f, indent=2)
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Create plots for a split read bam.")
-
     parser.add_argument("bam_file")
     parser.add_argument("plot_file")
     parser.add_argument("priority_limit", type=int, default=89)
@@ -382,9 +284,3 @@ if __name__ == "__main__":
         "Read structure based on chromosomal presence per readname",
         args.priority_limit,
     )
-
-    # split_bam = (
-    #     "/scratch/nxf_work/dami/bf/b4e997120a32723705a5ffd59f7ba1/tmp_readname_sorted_splibams_merged.bam"
-    # )
-
-    # main(aln_file, "assem.html", "assem count", "Donuts.html", "Donut plot 123")

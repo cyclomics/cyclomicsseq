@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+import argparse
 import io
 import json
+import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Tuple
@@ -82,9 +84,9 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.SAMPLE1.apply(
-                    lambda x: self.relaxed_float(x.split(":")[i])
-                    if (x.split(":")[i])
-                    else 0
+                    lambda x: (
+                        self.relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
+                    )
                 )
 
         return df
@@ -164,7 +166,7 @@ class VCF_file:
         return json_data
 
     @staticmethod
-    def get_annotation_text(vep_json: dict) -> str:
+    def get_annotation_text(vep_json: dict, alt_allele: str) -> str:
         """Parse VEP response dict and find relevant annotations"""
         # Initialize variant annotations
         variant_class = None
@@ -177,6 +179,9 @@ class VCF_file:
         canonical = None
         sift = None
         polyphen = None
+        clinsig = None
+        hgvsc = None
+        hgvsp = None
 
         if not vep_json:
             # Ensembl-VEP query did not return any response
@@ -201,6 +206,7 @@ class VCF_file:
             else:
                 mutation_ids = []
                 cosmic_legacy_ids = []
+                clinsig_terms = []
                 for xref in colocated_variants:
                     if xref["allele_string"] == "COSMIC_MUTATION":
                         cosv = xref["id"]
@@ -210,16 +216,25 @@ class VCF_file:
                             cosmic_legacy_ids.append(cosm)
                         else:
                             continue
+                    elif alt_allele in xref.get("clin_sig_allele", ""):
+                        clinsig_alleles = xref.get("clin_sig_allele", "")
+                        match = re.search(
+                            rf"\b{alt_allele}:([A-Za-z0-9_]+)", clinsig_alleles
+                        )
+                        if match:
+                            clinsig_terms.append(match.group(1))
 
                 # Join list of found IDs into comma-separated string
-                mutation_ids = ",".join(mutation_ids) if mutation_ids else "None"
+                mutation_ids = ",".join(set(mutation_ids)) if mutation_ids else "None"
                 cosmic_legacy_ids = (
-                    ",".join(cosmic_legacy_ids) if cosmic_legacy_ids else "None"
+                    ",".join(set(cosmic_legacy_ids)) if cosmic_legacy_ids else "None"
                 )
+                clinsig = ",".join(set(clinsig_terms)) if clinsig_terms else "None"
 
         except NoColocatedVariantsException:
             mutation_ids = "None"
             cosmic_legacy_ids = "None"
+            clinsig = "None"
 
         transcript_cons = vep_json.get("transcript_consequences")
         # Transcript consequences can differ a lot per query
@@ -241,6 +256,9 @@ class VCF_file:
             if polyphen_prediction:
                 polyphen = f"{polyphen_prediction}({polyphen_score})"
 
+            hgvsc = transcript_cons[0].get("hgvsc")
+            hgvsp = transcript_cons[0].get("hgvsp")
+
         # Merge all annotations into a string to be returned
         annot_dict = OrderedDict(
             {
@@ -255,6 +273,9 @@ class VCF_file:
                 "canonical": canonical,
                 "SIFT": sift,
                 "PolyPhen": polyphen,
+                "Clinical_significance": clinsig,
+                "Codon_change": hgvsc,
+                "Aminoacid_change": hgvsp,
             }
         )
 
@@ -271,7 +292,7 @@ class VCF_file:
         Input: Server URL (string), e.g. "https://rest.ensembl.org"
         """
         # Set API search options
-        params = "canonical=1&variant_class=1&hgvs=1&vcf_string=1&pick=1"
+        params = "canonical=1&variant_class=1&hgvs=1&vcf_string=1&refseq=1&pick=1"
 
         if self.vcf.empty:
             # There are no variants to annotate
@@ -285,6 +306,9 @@ class VCF_file:
             start = var[1]["POS"]
             ref_allele = var[1]["REF"]
             alt_allele = var[1]["ALT"]
+            if not any(nt in ["A", "T", "G", "C"] for nt in alt_allele):
+                annotations.append(".")
+                continue
 
             start, end, ref_allele, alt_allele = self.get_query_allele_positions(
                 ref_allele, alt_allele, start
@@ -300,7 +324,7 @@ class VCF_file:
             # Query Ensembl with the VEP API, returns a JSON dict
             vep_json = self.ensembl_vep(query)
             # Parse JSON response to get annotations in a string
-            annotation_text = self.get_annotation_text(vep_json)
+            annotation_text = self.get_annotation_text(vep_json, alt_allele)
             # Add to annotations list
             annotations.append(annotation_text)
 
@@ -309,27 +333,15 @@ class VCF_file:
 
 
 if __name__ == "__main__":
-    dev = False
-    if not dev:
-        import argparse
+    parser = argparse.ArgumentParser(description="Filter a vcf")
 
-        parser = argparse.ArgumentParser(description="Filter a vcf")
+    parser.add_argument("variant_vcf", type=Path)
+    parser.add_argument("file_out", type=Path)
+    args = parser.parse_args()
 
-        parser.add_argument("variant_vcf", type=Path)
-        parser.add_argument("file_out", type=Path)
-        args = parser.parse_args()
+    # Can be added to argparse
+    server = "https://rest.ensembl.org"
 
-        # Can be added to argparse
-        server = "https://rest.ensembl.org"
-
-        vcf = VCF_file(args.variant_vcf)
-        vcf.annotate_vep(server)
-        vcf.write(args.file_out)
-
-    if dev:
-        variant_vcf = "a_test_file.vcf"
-        server = "https://rest.ensembl.org"
-
-        vcf = VCF_file(variant_vcf)
-        vcf.annotate_vep(server)
-        vcf.write("testannotate.vcf")
+    vcf = VCF_file(args.variant_vcf)
+    vcf.annotate_vep(server)
+    vcf.write(args.file_out)

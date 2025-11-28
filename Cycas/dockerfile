@@ -13,7 +13,14 @@ RUN micromamba install --yes --name base -c bioconda -c conda-forge \
       biopython \
       bokeh \
       tqdm \
-      bwa
+      bwa \
+      numpy \
+      pandas \
+      h5py \
+      mappy \
+      joblib \
+      scikit-learn=1.7.1
+      
 RUN micromamba clean --all --yes
 # add software to container.
 RUN mkdir /app

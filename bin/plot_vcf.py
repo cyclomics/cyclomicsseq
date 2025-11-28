@@ -1,45 +1,35 @@
 #!/usr/bin/env python
 
+import argparse
 import io
-from typing import List, Tuple, Any
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Any, List, Tuple
 
-from bokeh.plotting import figure
-from bokeh.layouts import column
-from bokeh.models import HoverTool
-from bokeh.embed import components
-
-from plotting_defaults import cyclomics_defaults
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from plotting_defaults import plotly_components
 
 chromosomal_region = Tuple[str, int, int]
 TAB_PRIORITY = 3
 
 
 def relaxed_float(x: Any) -> float:
-    """Return a float, with value error catch"""
+    """Return a float, with value error catch."""
     try:
-        my_float = float(x)
+        return float(x)
     except ValueError:
-        my_float = x
-    return my_float
+        return x
 
 
 def get_roi_pileup_df(
     df: pd.DataFrame, distance: int = 100
 ) -> List[chromosomal_region]:
-    """
-    Given a dataframe with CHROM and POS columns, find all streches in chromosomes that are less than `distance` appart.
-    reports
+    """Find chromosomal stretches where variants are < distance apart."""
 
-    """
-
-    def get_continous_strech(array: np.array, distance: int):
-        """
-        https://stackoverflow.com/questions/47183828/pandas-how-to-find-continuous-values-in-a-series-whose-differences-are-within-a
-        """
+    def get_continous_strech(array: np.ndarray, distance: int):
         m = np.concatenate(([True], array[1:] > array[:-1] + distance, [True]))
         idx = np.flatnonzero(m)
         l = array.tolist()
@@ -49,14 +39,15 @@ def get_roi_pileup_df(
     roi = []
     for chrom in assemblies:
         df_tmp = df[df.CHROM == chrom]
-        streches = get_continous_strech(df_tmp.POS.to_numpy(), distance)
-        for strech in streches:
-            roi.append((chrom, strech[0], strech[-1]))
+        stretches = get_continous_strech(df_tmp.POS.to_numpy(), distance)
+        for stretch in stretches:
+            roi.append((chrom, stretch[0], stretch[-1]))
 
     return roi
 
 
-def read_vcf(path):
+def read_vcf(path: Path) -> pd.DataFrame:
+    """Read a VCF file into a DataFrame."""
     with open(path, "r") as f:
         lines = [l for l in f if not l.startswith("##")]
     df = (
@@ -87,48 +78,27 @@ def read_vcf(path):
             lambda x: relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
         )
 
-    del df["FORMAT"]
-    del df["SAMPLE1"]
+    df.drop(columns=["FORMAT", "SAMPLE1"], inplace=True)
     return df
 
 
-def update_vcf_with_truth(true_vcf, df):
-    true_df = read_vcf(true_vcf)
-    true_df = true_df[["CHROM", "POS"]]
+def update_vcf_with_truth(true_vcf: Path, df: pd.DataFrame) -> pd.DataFrame:
+    """Add truth set labels to VCF data."""
+    true_df = read_vcf(true_vcf)[["CHROM", "POS"]]
     true_df["Variant"] = 1
-    df = pd.merge(
-        df, true_df, "left", left_on=["CHROM", "POS"], right_on=["CHROM", "POS"]
-    )
+    df = pd.merge(df, true_df, how="left", on=["CHROM", "POS"])
     df["Variant"].fillna(0, inplace=True)
-
     return df
 
 
-def make_scatter_plots(data, roi):
-    hover = HoverTool(
-        tooltips=[
-            ("position", "@CHROM : @POS"),
-            ("alleles", "@REF -> @ALT"),
-            ("VAF", "@VAF"),
-            ("Frequency", "@FREQ"),
-            ("forward ratio", "@FWDR"),
-            ("reverse ratio", "@REVR"),
-            ("Same base", "@SAME"),
-            ("Depth", "@DP"),
-            ("Depth after Qfilter", "@DPQ"),
-        ]
-    )
-
+def make_scatter_plots(data: pd.DataFrame, roi: List[chromosomal_region]):
+    """Make interactive scatter plots for VAF, direction ratios, and depth."""
     plots = []
-    for region in roi:
-        chrom = region[0]
-        start = region[1]
-        stop = region[2]
 
-        data_relevant = data.copy()
-        data_relevant = data_relevant[data_relevant.CHROM == chrom]
-        data_relevant = data_relevant[data_relevant.POS >= start]
-        data_relevant = data_relevant[data_relevant.POS <= stop]
+    for chrom, start, stop in roi:
+        data_relevant = data[
+            (data.CHROM == chrom) & (data.POS >= start) & (data.POS <= stop)
+        ].copy()
 
         data_snp = data_relevant[
             data_relevant.REF.str.len() == data_relevant.ALT.str.len()
@@ -137,122 +107,175 @@ def make_scatter_plots(data, roi):
             data_relevant.REF.str.len() != data_relevant.ALT.str.len()
         ]
 
-        # Pos scatter vaf
-        p_vaf = figure(
-            title=f"Positional VAF {chrom}:{start}-{stop}",
-            width=cyclomics_defaults.width,
-        )
-        p_vaf.xaxis.axis_label = "Position"
-        p_vaf.yaxis.axis_label = "VAF"
-        p_vaf.xaxis.formatter.use_scientific = False
-
-        p_vaf.scatter("POS", "VAF", source=data_snp, legend_label="SNP")
-        p_vaf.scatter(
-            "POS", "VAF", source=data_indel, color="red", legend_label="InDel"
+        # Create 3 stacked subplots for each region
+        fig = make_subplots(
+            rows=3,
+            cols=1,
+            subplot_titles=(
+                f"Variant allele frequencies in {chrom}:{start}-{stop}",
+                f"Variant support ratios per direction in {chrom}:{start}-{stop}",
+                f"Depth before and after base-quality filtering in {chrom}:{start}-{stop}",
+            ),
+            vertical_spacing=0.1,
         )
 
-        p_vaf.add_tools(hover)
-        p_vaf.title.text_font_size = "16pt"
-        p_vaf.xaxis.axis_label_text_font_size = "12pt"
-        p_vaf.yaxis.axis_label_text_font_size = "12pt"
-
-        # fwd ratio vs reverse ratio
-        p_ratio = figure(
-            title=f"Support ratio's per direction {chrom}:{start}-{stop}",
-            width=cyclomics_defaults.width,
+        # --- 1. Positional VAF ---
+        fig.add_trace(
+            go.Scatter(
+                x=data_snp["POS"],
+                y=data_snp["VAF"],
+                mode="markers",
+                name="SNP",
+                marker=dict(color="blue", size=6),
+                hovertext=[
+                    f"CHROM: {r.CHROM}<br>POS: {r.POS}<br>REF→ALT: {r.REF}->{r.ALT}<br>VAF: {r.VAF}"
+                    for _, r in data_snp.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=1,
+            col=1,
         )
-        p_ratio.xaxis.axis_label = "forward  ratio"
-        p_ratio.yaxis.axis_label = "reverse ratio"
-
-        p_ratio.scatter("FWDR", "REVR", source=data_snp, legend_label="SNP")
-        p_ratio.scatter(
-            "FWDR", "REVR", source=data_indel, color="red", legend_label="InDel"
+        fig.add_trace(
+            go.Scatter(
+                x=data_indel["POS"],
+                y=data_indel["VAF"],
+                mode="markers",
+                name="InDel",
+                marker=dict(color="red", size=6),
+                hovertext=[
+                    f"CHROM: {r.CHROM}<br>POS: {r.POS}<br>REF→ALT: {r.REF}->{r.ALT}<br>VAF: {r.VAF}"
+                    for _, r in data_indel.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=1,
+            col=1,
         )
 
-        p_ratio.add_tools(hover)
-        p_ratio.title.text_font_size = "18pt"
-        p_ratio.xaxis.axis_label_text_font_size = "16pt"
-        p_ratio.yaxis.axis_label_text_font_size = "16pt"
-        p_ratio.xaxis.major_label_text_font_size = "12pt"
-        p_ratio.yaxis.major_label_text_font_size = "12pt"
-
-        # Depth
-        p_depth = figure(
-            title=f"Depth pre and post base-quality filtering {chrom}:{start}-{stop}",
-            width=cyclomics_defaults.width,
+        # --- 2. Forward vs reverse ratio ---
+        fig.add_trace(
+            go.Scatter(
+                x=data_snp["FWDR"],
+                y=data_snp["REVR"],
+                mode="markers",
+                name="SNP",
+                marker=dict(color="blue", size=6),
+                hovertext=[
+                    f"FWDR: {r.FWDR}<br>REVR: {r.REVR}<br>VAF: {r.VAF}<br>DP: {r.DP}"
+                    for _, r in data_snp.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=2,
+            col=1,
         )
-        p_depth.xaxis.axis_label = "Position"
-        p_depth.yaxis.axis_label = "Depth"
-        p_depth.xaxis.formatter.use_scientific = False
-
-        p_depth.scatter(
-            "POS", "DP", source=data_relevant, color="orange", legend_label="depth"
+        fig.add_trace(
+            go.Scatter(
+                x=data_indel["FWDR"],
+                y=data_indel["REVR"],
+                mode="markers",
+                name="InDel",
+                marker=dict(color="red", size=6),
+                hovertext=[
+                    f"FWDR: {r.FWDR}<br>REVR: {r.REVR}<br>VAF: {r.VAF}<br>DP: {r.DP}"
+                    for _, r in data_indel.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=2,
+            col=1,
         )
-        p_depth.scatter(
-            "POS", "DPQ", source=data_relevant, legend_label="depth after Q filtering"
+
+        # --- 3. Depth pre/post filtering ---
+        fig.add_trace(
+            go.Scatter(
+                x=data_relevant["POS"],
+                y=data_relevant["DP"],
+                mode="markers",
+                name="Depth",
+                marker=dict(color="orange", size=5),
+                hovertext=[
+                    f"POS: {r.POS}<br>DP: {r.DP}<br>DPQ: {r.DPQ}"
+                    for _, r in data_relevant.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=3,
+            col=1,
         )
-        p_depth.add_tools(hover)
-        p_depth.legend.location = "bottom_center"
-        p_depth.title.text_font_size = "18pt"
-        p_depth.xaxis.axis_label_text_font_size = "16pt"
-        p_depth.yaxis.axis_label_text_font_size = "16pt"
-        p_depth.xaxis.major_label_text_font_size = "12pt"
-        p_depth.yaxis.major_label_text_font_size = "12pt"
+        fig.add_trace(
+            go.Scatter(
+                x=data_relevant["POS"],
+                y=data_relevant["DPQ"],
+                mode="markers",
+                name="Depth after Q filtering",
+                marker=dict(color="green", size=5),
+                hovertext=[
+                    f"POS: {r.POS}<br>DP: {r.DP}<br>DPQ: {r.DPQ}"
+                    for _, r in data_relevant.iterrows()
+                ],
+                hoverinfo="text",
+            ),
+            row=3,
+            col=1,
+        )
 
-        plots.append(p_vaf)
-        plots.append(p_ratio)
-        plots.append(p_depth)
+        # --- Layout ---
+        fig.update_layout(
+            template="plotly_white",
+            width=900,
+            height=1200,
+            showlegend=True,
+            legend=dict(orientation="h", y=-0.1),
+            hovermode="closest",
+        )
 
-    return column(*plots)
+        fig.update_xaxes(
+            title_text="Position", row=1, col=1, tickformat=",d", tickangle=-30
+        )
+        fig.update_yaxes(title_text="VAF", row=1, col=1)
+
+        fig.update_xaxes(title_text="Forward ratio", range=[0, 1], row=2, col=1)
+        fig.update_yaxes(title_text="Reverse ratio", range=[0, 1], row=2, col=1)
+
+        fig.update_xaxes(
+            title_text="Position", row=3, col=1, tickformat=",d", tickangle=-30
+        )
+        fig.update_yaxes(title_text="Depth", row=3, col=1)
+
+        plots.append(fig)
+
+    return plots
 
 
-def main(vcf_file, plot_file, priority_limit: int):
+def main(vcf_file: str, plot_file: str, priority_limit: int):
+    """Generate interactive variant plots and export JSON for embedding."""
     data = read_vcf(vcf_file)
     tab_name = "Variants"
-    json_obj = {}
-    json_obj[tab_name] = {}
-    json_obj[tab_name]["name"] = tab_name
-    json_obj[tab_name]["priority"] = TAB_PRIORITY
+    json_obj = {tab_name: {"name": tab_name, "priority": TAB_PRIORITY}}
 
     if TAB_PRIORITY < priority_limit:
         if data.empty:
             json_obj[tab_name]["script"], json_obj[tab_name]["div"] = (
-                "",
-                "<h1>One of the pileups was not deep enough.</h1>",
+                [],
+                ["<h1>No variants were found.</h1>"],
             )
-            with open(Path(plot_file).with_suffix(".json"), "w") as f:
-                f.write(json.dumps(json_obj))
-            return
-
-        roi = get_roi_pileup_df(data)
-        # print(data)
-        plot = make_scatter_plots(data, roi)
-
-        json_obj[tab_name]["script"], json_obj[tab_name]["div"] = components(plot)
+        else:
+            roi = get_roi_pileup_df(data)
+            figs = make_scatter_plots(data, roi)
+            scripts, divs = plotly_components(figs)
+            json_obj[tab_name]["script"], json_obj[tab_name]["div"] = scripts, divs
 
     with open(Path(plot_file).with_suffix(".json"), "w") as f:
-        f.write(json.dumps(json_obj))
+        f.write(json.dumps(json_obj, indent=2))
 
 
 if __name__ == "__main__":
-    dev = False
-    if not dev:
-        import argparse
+    parser = argparse.ArgumentParser(description="Create variant scatter plots.")
+    parser.add_argument("vcf_file")
+    parser.add_argument("plot_file")
+    parser.add_argument("priority_limit", type=int, default=89)
+    args = parser.parse_args()
 
-        parser = argparse.ArgumentParser(
-            description="Create hist plot from a regex for fastq and fastq.gz files."
-        )
-
-        parser.add_argument("vcf_file")
-        parser.add_argument("plot_file")
-        parser.add_argument("priority_limit", type=int, default=89)
-        args = parser.parse_args()
-
-        main(args.vcf_file, args.plot_file, args.priority_limit)
-
-    else:
-        vcf_file = "ABZ922.noisy_merged.vcf"
-        plot_file = "ABZ922.noisy_merged.html"
-        priority_limit = 9999
-
-        main(vcf_file, plot_file, priority_limit)
+    main(args.vcf_file, args.plot_file, args.priority_limit)

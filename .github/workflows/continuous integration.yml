@@ -15,42 +15,11 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-    
-  RunPipelineVariantCall:
-    strategy:
-      matrix:
-        nf_profile: [docker]
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout repo content
-        uses: actions/checkout@v2 
-
-      - name: Open std workdir
-        run: |
-          ls -la
-
-      - name: Set up conda
-        uses: s-weigand/setup-conda@v1
-
-      - name: Install Nextflow
-        run: |
-          wget -qO- get.nextflow.io | bash > /dev/null
-          sudo mv nextflow /usr/local/bin/
-
-      - name: Run Nextflow pipeline in Docker with altered varscan params
-        run: |
-          nextflow run main.nf \
-          --input_read_dir 'tests/informed' \
-          --read_pattern '/fastq_pass/*.fastq' \
-          --backbone_fasta 'tests/informed/backbone_test.fa' \
-          --reference 'tests/informed/tp53.fasta' \
-          --economy_mode -profile ${{ matrix.nf_profile }}
 
   RunPipelineVariantValidation:
     strategy:
       matrix:
-        nf_profile: [docker]
+        nf_profile: [standard]
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
@@ -74,16 +43,15 @@ jobs:
           nextflow run main.nf \
           --input_read_dir 'tests/informed' \
           --read_pattern '/fastq_pass/*.fastq' \
-          --backbone_fasta 'tests/informed/backbone_test.fa' \
-          --reference 'tests/informed/tp53.fasta' \
-          --control_vcf tests/informed/informed_variant.vcf \
+          --reference 'tests/informed/lambda_phage.fasta' \
+          --output_dir 'tests/result' \
           --economy_mode -profile ${{ matrix.nf_profile }}
       
 
   RunPythonUnitTests:
     runs-on: ubuntu-latest
     container:
-      image: docker://damicyclomics/cyclomicseq:latest
+      image: cyclomics/cyclomicsseq:2.0.0-rc1
     steps:
       - name: checkout repo content
         uses: actions/checkout@v2
