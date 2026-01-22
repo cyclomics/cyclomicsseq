@@ -73,6 +73,8 @@ class VCF_file:
                 "QUAL": str,
                 "FILTER": str,
                 "INFO": str,
+                "FORMAT": str,
+                "SAMPLE1": str,
             },
             sep="\t",
         ).rename(columns={"#CHROM": "CHROM"})
@@ -302,7 +304,7 @@ class VCF_file:
             # Parse JSON response to get annotations in a string
             annotation_text = self.get_annotation_text(vep_json)
             # Add to annotations list
-            annotations.append(annotation_text)
+            annotations.append(";".join([annotation_text, var[1]['INFO']]))
 
         # Write annotations to INFO column in VCF output file
         self.vcf["INFO"] = annotations

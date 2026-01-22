@@ -23,6 +23,7 @@ params.backbone                   = "BBCS"
 params.backbone_name              = ""
 params.backbone_file              = ""
 params.region_file                = "auto"
+params.variant_caller             = "validate"
 
 params.sample_id                  = ""
 params.reference                  = ""
@@ -120,6 +121,7 @@ include {
     ProcessTargetRegions
     CallContaminantMutants
     CallVariantsValidate
+    CallVariantsLofreq
     CrosscheckContaminantVariants
 } from "./subworkflows.nf"
 
@@ -261,8 +263,8 @@ workflow {
     PrepareGenome(reference_genome, params.reference, backbone)
     
     // We use .collect() to turn the genome into a value channel, enabling the input repeater
-    mmi_combi = PrepareGenome.out.mmi_combi.collect()
-    fasta_combi = PrepareGenome.out.fasta_combi.collect()
+    indexed_ref = PrepareGenome.out.indexed_ref.collect()
+    fasta_combi = indexed_ref.map { it -> it[0] }
     bwa_index = file("${params.reference}.{,amb,ann,bwt,pac,sa}")
 
     seq_summary = Channel.fromPath(params.sequencing_summary_path, checkIfExists: true)
@@ -278,7 +280,7 @@ workflow {
 ========================================================================================
 */
 
-    CycasConsensus(read_fastq_filtered, mmi_combi)
+    CycasConsensus(read_fastq_filtered, indexed_ref)
     base_unit_reads = CycasConsensus.out.fastq
     read_info_json = CycasConsensus.out.json
     split_bam = CycasConsensus.out.split_bam
@@ -293,7 +295,7 @@ workflow {
 ========================================================================================
 */    
 
-    AlignByID(consensus_by_id, mmi_combi, read_info_json)
+    AlignByID(consensus_by_id, indexed_ref, read_info_json)
     reads_aligned = AlignByID.out
 
     if (params.sequence_summary_tagging) {
@@ -314,10 +316,24 @@ workflow {
 
     ProcessTargetRegions(region_file, reads_aligned)
     regions = ProcessTargetRegions.out
-    CallVariantsValidate(reads_aligned_filtered, regions, fasta_combi)
-    locations = CallVariantsValidate.out.locations
-    variant_vcf = CallVariantsValidate.out.variants
 
+    if (params.variant_caller == "lofreq") {
+        // log.info "Using LoFreq for variant calling"
+        CallVariantsLofreq(reads_aligned_filtered, regions, indexed_ref)
+        locations = CallVariantsLofreq.out.locations
+        variant_vcf = CallVariantsLofreq.out.variants
+    }
+    else if (params.variant_caller == "validate") {
+        // log.info "Using in-house scripts to identify variants"
+        CallVariantsValidate(reads_aligned_filtered, regions, fasta_combi)
+        locations = CallVariantsValidate.out.locations
+        variant_vcf = CallVariantsValidate.out.variants
+    }
+    else {
+        // TODO: add freebayes and possibility of not calling variants
+        error "Invalid variant caller selection: ${params.variant_caller}"
+    }
+    
 
 /*
 ========================================================================================

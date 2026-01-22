@@ -5,8 +5,7 @@ include {
     Reference_info
     MergeFasta
     BwaIndex
-    Minimap2Index as IndexReference
-    Minimap2Index as IndexCombined
+    FastaIndex
     FilterShortReads
     SplitReadsOnAdapterSequence
     SplitReadFilesOnNumberOfReads
@@ -30,7 +29,10 @@ include {
 
     // Variant calling and contaminantion QC
     IntersectVCF
-    FindVariants
+    FindVariantsValidate
+    FindVariantsLofreq
+    FilterLofreqVcf
+    ReformatLofreqVcf
     SortVCF as SortNoisySnp
     SortVCF as SortNoisyIndel
     SortVCF as SortFilteredSnp
@@ -87,13 +89,14 @@ workflow PrepareGenome {
             genome = reference_genome
         }
         MergeFasta(genome, backbones_fasta)
-        IndexCombined(MergeFasta.out)
+        FastaIndex(MergeFasta.out)
         Reference_info(MergeFasta.out)
         
     emit:
-        mmi_combi = IndexCombined.out
-        fasta_combi = MergeFasta.out
-        fasta_ref = reference_genome
+        // mmi_combi = FastaIndex.out
+        // fasta_combi = MergeFasta.out
+        // fasta_ref = reference_genome
+        indexed_ref = FastaIndex.out
 }
 
 workflow FilterWithAdapterDetection {
@@ -265,6 +268,22 @@ workflow CallVariantsValidate{
         variants = AnnotateVCF.out
 }
 
+workflow CallVariantsLofreq{
+    take:
+        reads_aligned
+        positions
+        reference
+
+    main:
+        FindVariantsLofreq(reference, reads_aligned.combine(positions, by: [0, 1]))
+        FilterLofreqVcf(FindVariantsLofreq.out)
+        ReformatLofreqVcf(FilterLofreqVcf.out)
+        AnnotateVCF(ReformatLofreqVcf.out)
+    emit:
+        locations = AnnotateVCF.out
+        variants = AnnotateVCF.out
+}
+
 workflow CallContaminantMutants{
     take:
         reads_aligned
@@ -272,7 +291,7 @@ workflow CallContaminantMutants{
         reference
 
     main:
-        indexed_ref = IndexReference(reference)
+        indexed_ref = FastaIndex(reference)
         FreebayesContaminants(reads_aligned.combine(indexed_ref), positions)
         SeparateMultiallelicVariants(FreebayesContaminants.out)
 

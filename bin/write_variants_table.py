@@ -32,6 +32,7 @@ def load_vcf(vcf_file: Path) -> pd.DataFrame:
             "QUAL": str,
             "FILTER": str,
             "INFO": str,
+            "FORMAT": str,
             "SAMPLE1": str,
         },
         sep="\t",
