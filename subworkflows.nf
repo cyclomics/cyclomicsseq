@@ -245,9 +245,9 @@ workflow CallVariantsValidate{
 
     main:
         // Determine noisy SNPs, indels
-        FindVariants(reference, reads_aligned.combine(positions, by: [0, 1]))
-        noisy_snp = FindVariants.out.map(it -> it[0, 1, 2])
-        noisy_indel = FindVariants.out.map(it -> it[0, 1, 3])
+        FindVariantsValidate(reference, reads_aligned.combine(positions, by: [0, 1]))
+        noisy_snp = FindVariantsValidate.out.map(it -> it[0, 1, 2])
+        noisy_indel = FindVariantsValidate.out.map(it -> it[0, 1, 3])
         SortNoisySnp(noisy_snp)
         SortNoisyIndel(noisy_indel)
         MergeNoisyVCF(SortNoisySnp.out.combine(SortNoisyIndel.out, by: [0, 1]), 'noisy')
