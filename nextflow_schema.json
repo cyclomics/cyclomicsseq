@@ -66,6 +66,13 @@
           "description": "Minimum number of repeats in a concatemer to keep read in the analysis.",
           "default": 3
         },
+        "variant_caller": {
+          "type": "string",
+          "description": "Type of variant caller to use.",
+          "help_text": "Use 'validate' for the built-in CyclomicsSeq variant calling, or 'lofreq' to use LoFreq for variant calling.",
+          "default": "validate",
+          "enum": ["validate", "lofreq"]
+        },
         "report": {
           "type": "string",
           "description": "Type of report to generate at the end of the pipeline.",

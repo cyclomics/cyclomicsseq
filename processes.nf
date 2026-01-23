@@ -38,7 +38,7 @@ process BwaIndex{
         """
 }
 
-process Minimap2Index{
+process FastaIndex{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'few_memory_intensive'
     
@@ -54,7 +54,7 @@ process Minimap2Index{
         """
 }
 
-process FastaIndex{
+process Minimap2Index{
     // publishDir "${params.output_dir}/${task.process.replaceAll(':', '/')}", pattern: "", mode: 'copy'
     label 'few_memory_intensive'
     
@@ -386,7 +386,7 @@ process Cycas{
     }
 
 // VARIANT CALLING AND CONTAMINANTION QC
-process FindVariants {
+process FindVariantsValidate {
     // publishDir "${params.output_dir}/variants", mode: 'copy'
     label 'max_performance'
 
@@ -451,6 +451,71 @@ process FilterValidateVariants {
         else {
             error("Invalid merging mode (VCF type): ${mode}. Valid modes are 'snp' or 'indel'.")
         }
+}
+
+process FindVariantsLofreq {
+    // publishDir "${params.output_dir}/variants/noisy", mode: 'copy'
+    label 'max_performance'
+
+    input:
+        tuple path(reference_genome), path(reference_fai)
+        tuple val(sample_id), val(file_id), path(bam), path(bai), path(bed)
+
+    output:
+        tuple val(sample_id), val(file_id), path("${file_id}.vcf")
+
+    script:
+        """
+        BED_OPT=""
+        if [ -s "${bed}" ]; then
+            BED_OPT="-l ${bed}"
+        else
+            echo "ROI BED file is empty, running without -l"
+        fi
+
+        lofreq call-parallel \
+        -m 20 -d 1000000 --call-indels -a 1 -b 1 \
+        --pp-threads ${task.cpus} \
+        -f ${reference_genome} \
+        \$BED_OPT \
+        -o ${file_id}.vcf \
+        ${bam}
+        """
+}
+
+process FilterLofreqVcf {
+    // publishDir "${params.output_dir}/variants/filtered", mode: 'copy'
+    label 'many_low_cpu_low_mem'
+
+    input:
+        tuple val(sample_id), val(file_id), path(vcf)
+
+    output:
+        tuple val(sample_id), val(file_id), path("${file_id}_filtered.vcf")
+
+    script:
+        """
+        lofreq filter \
+        --af-min 0.001 \
+        -i ${vcf} \
+        -o ${file_id}_filtered.vcf 
+        """
+}
+
+process ReformatLofreqVcf {
+    publishDir "${params.output_dir}/variants/filtered", mode: 'copy'
+    label 'many_low_cpu_low_mem'
+
+    input:
+        tuple val(sample_id), val(file_id), path(vcf)
+
+    output:
+        tuple val(sample_id), val(file_id), path("${file_id}_reformatted.vcf")
+
+    script:
+        """
+        reformat_vcf.py lofreq ${vcf} ${file_id}_reformatted.vcf
+        """
 }
 
 
@@ -600,7 +665,7 @@ process SeparateMultiallelicVariants{
 }
 
 process FindRegionOfInterest{
-    // publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
+    publishDir "${params.output_dir}/regions", pattern: "", mode: 'copy'
     label 'many_cpu_medium'
     
     input:

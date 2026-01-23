@@ -9,6 +9,7 @@ class plot_defaults:
     plot_axis_text_size: str = "16pt"
     plot_label_size: str = "12pt"
 
+
 def human_format(num):
     if type(num) == str:
         try:
@@ -24,6 +25,7 @@ def human_format(num):
     return "{}{}".format(
         "{:f}".format(num).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude]
     )
+
 
 def findnth_occurance(input, search, n):
     """

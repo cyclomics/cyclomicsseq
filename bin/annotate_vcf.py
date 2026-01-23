@@ -73,6 +73,8 @@ class VCF_file:
                 "QUAL": str,
                 "FILTER": str,
                 "INFO": str,
+                "FORMAT": str,
+                "SAMPLE1": str,
             },
             sep="\t",
         ).rename(columns={"#CHROM": "CHROM"})
@@ -82,9 +84,9 @@ class VCF_file:
             formats = df.FORMAT[0].split(":")
             for i, fmt in enumerate(formats):
                 df[fmt] = df.SAMPLE1.apply(
-                    lambda x: self.relaxed_float(x.split(":")[i])
-                    if (x.split(":")[i])
-                    else 0
+                    lambda x: (
+                        self.relaxed_float(x.split(":")[i]) if (x.split(":")[i]) else 0
+                    )
                 )
 
         return df
@@ -302,7 +304,7 @@ class VCF_file:
             # Parse JSON response to get annotations in a string
             annotation_text = self.get_annotation_text(vep_json)
             # Add to annotations list
-            annotations.append(annotation_text)
+            annotations.append(";".join([annotation_text, var[1]["INFO"]]))
 
         # Write annotations to INFO column in VCF output file
         self.vcf["INFO"] = annotations

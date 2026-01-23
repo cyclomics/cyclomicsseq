@@ -1,4 +1,8 @@
-# changelog
+# Changelog
+
+## 1.2.0
+
+- Added the option to use LoFreq for variant calling, through user option `--variant_caller`. The 'validate' caller remains the default.
 
 ## 1.1.3
 

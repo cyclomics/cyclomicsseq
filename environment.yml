@@ -103,6 +103,7 @@ dependencies:
   - libxml2=2.9.14=h22db469_0
   - libzlib=1.2.12=h166bdaf_0
   - loguru=0.6.0=py38h578d9bd_1
+  - lofreq=2.1.5=py38h90bb486_7
   - lz4-c=1.9.3=h9c3ff4c_1
   - make=4.3=hd18ef5c_1
   - markupsafe=2.1.1=py38h0a891b7_1

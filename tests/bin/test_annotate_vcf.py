@@ -1,7 +1,4 @@
 import unittest
-from collections import defaultdict
-from math import exp
-from unittest.mock import MagicMock, Mock
 
 from bin import annotate_vcf as target
 
@@ -112,5 +109,5 @@ class TestGetAnnotationText(unittest.TestCase):
             "end": 55165450,
             "allele_string": "T/C",
         }
-        test_json1_result = "variant_class=SNV;consequence=intron_variant;COSMIC=None;COSMIC_legacy=None;gene=EGFR;impact=MODIFIER;biotype=protein_coding;amino_acids=None;canonical=1;SIFT=None;PolyPhen=None"
+        test_json1_result = "ANNOTATION;variant_class=SNV;consequence=intron_variant;COSMIC=None;COSMIC_legacy=None;gene=EGFR;impact=MODIFIER;biotype=protein_coding;amino_acids=None;canonical=1;SIFT=None;PolyPhen=None"
         self.assertEqual(target.VCF_file.get_annotation_text(json1), test_json1_result)

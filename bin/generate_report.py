@@ -23,7 +23,6 @@ from plotting_defaults import (
 )
 
 
-
 def get_template(template: str) -> Template:
     """
     get the correct template object from Jinja
@@ -204,7 +203,9 @@ def main(args):
 
     print(data["additional_info"])
     # print(tabs)
-    report_name = args.sample_name + "_report.html" if args.sample_name else "report.html"
+    report_name = (
+        args.sample_name + "_report.html" if args.sample_name else "report.html"
+    )
     with open(report_name, "w") as fh:
         fh.write(html_template.render(**data))
 

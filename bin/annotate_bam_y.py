@@ -105,18 +105,18 @@ def make_tags(gen_meta, seg_meta, seg_id, metadata_json) -> Dict:
     tags["YT"] = gen_meta["raw_length"]
     tags["YB"] = extract_barcode(gen_meta)
     tags["YP"] = extract_partner_locations(gen_meta)
-    tags['YS'] = metadata_json.stem
+    tags["YS"] = metadata_json.stem
     # add more info if we find the segment data
     if seg_id:
         tags["YI"] = seg_id
 
     requested_tags = {
-        "aligned_bases_before_consensus" : "YE" ,
-        "len" : "YL" ,
-        "alignment_position" : "YA" ,
-        "alignment_orientation" : "YR" ,
-        "alignment_count" : "YM" ,
-        "consensus_structure" : "YN" ,
+        "aligned_bases_before_consensus": "YE",
+        "len": "YL",
+        "alignment_position": "YA",
+        "alignment_orientation": "YR",
+        "alignment_count": "YM",
+        "consensus_structure": "YN",
     }
     if seg_meta:
         for metadata, tag in requested_tags.items():
@@ -125,11 +125,12 @@ def make_tags(gen_meta, seg_meta, seg_id, metadata_json) -> Dict:
             else:
                 print("Tag not found in segment metadata", metadata)
 
-
     return tags
 
 
-def main(metadata_json:Path, in_bam_path:Path, out_bam_path:Path, split_queryname=True):
+def main(
+    metadata_json: Path, in_bam_path: Path, out_bam_path: Path, split_queryname=True
+):
     """
     Look up the Y tags in the metadata for all reads in a bam.
     """
@@ -150,7 +151,7 @@ def main(metadata_json:Path, in_bam_path:Path, out_bam_path:Path, split_querynam
             gen_meta = metadata[query_name]
             seg_id, seg_meta = extract_segment_from_meta(gen_meta, full_name)
             tags = make_tags(gen_meta, seg_meta, seg_id, metadata_json)
-            
+
             aln = update_tags(aln, tags)
         out_bam_file.write(aln)
 
